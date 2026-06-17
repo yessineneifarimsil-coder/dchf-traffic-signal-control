@@ -1,0 +1,4 @@
+controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue
+QMIX V1,3599,62.159,83,226.941,1083.0,8.072,1.79,14.705,43
+QMIX V2,3599,64.72,80,175.814,857.0,7.948,1.79,14.658,40
+QMIX V3,3599,64.707,75,176.694,892.0,7.943,1.79,14.704,39

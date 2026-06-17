@@ -1,0 +1,2 @@
+horizon_type,scenario,sim_waiting_time,optimized_offset_waiting_time,qmix_waiting_time,optimized_offset_coordination_gain_percent,qmix_coordination_gain_percent,qmix_gap_vs_optimized_offset_percent,coordination_regime,capacity_regime,main_interpretation
+Three-intersection reference scalability horizon,"d12=300 m, d23=300 m",418.791,227.171,237.292,45.756,43.339,4.455,Effective coordination zone,Unconstrained,QMIX scalability from two to three intersections

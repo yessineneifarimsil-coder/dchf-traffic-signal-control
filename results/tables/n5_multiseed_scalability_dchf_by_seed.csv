@@ -1,0 +1,6 @@
+seed,scenario,N,distance_m,demand,simultaneous_waiting_time,best_offset_waiting_time,qmix_waiting_time,offset_coordination_gain_percent,qmix_coordination_gain_percent,qmix_gap_percent,dchf_regime,qmix_buffered_ratio,qmix_capacity_regime,qmix_total_teleports
+0,N5_d300_medium,5,300,medium,758.132,360.505,356.659,52.448,52.956,-1.067,Effective coordination zone,0.003,Unconstrained,0
+1,N5_d300_medium,5,300,medium,760.797,364.707,355.898,52.063,53.22,-2.415,Effective coordination zone,0.003,Unconstrained,0
+2,N5_d300_medium,5,300,medium,755.625,357.43,355.936,52.697,52.895,-0.418,Effective coordination zone,0.003,Unconstrained,0
+3,N5_d300_medium,5,300,medium,757.299,361.949,356.132,52.205,52.973,-1.607,Effective coordination zone,0.003,Unconstrained,0
+4,N5_d300_medium,5,300,medium,759.822,366.742,358.764,51.733,52.783,-2.175,Effective coordination zone,0.003,Unconstrained,0

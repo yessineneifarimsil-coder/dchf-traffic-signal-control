@@ -1,0 +1,2 @@
+scenario,N,distance_m,demand,simultaneous_waiting_time,best_offset_controller,best_offset_waiting_time,qmix_waiting_time,coordination_gain_percent,qmix_gap_percent,dchf_regime,buffered_ratio,capacity_regime
+N5_d300_medium,5,300,medium,758.132,Progression Offset 45s,360.505,356.659,52.956,-1.067,Effective coordination zone,0.003,Unconstrained

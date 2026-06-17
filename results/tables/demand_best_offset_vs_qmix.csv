@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,best_offset,best_offset_waiting_time,qmix_waiting_time,qmix_gap_vs_best_offset_percent,best_offset_speed,qmix_speed,best_offset_queue,qmix_queue,best_offset_buffered_ratio,qmix_buffered_ratio
+low,0.5,45,79.909,146.967,83.918,8.314,7.747,6.363,8.092,0.0,0.004
+medium,1.0,45,175.672,180.821,2.931,7.871,7.839,13.616,13.784,0.0,0.002
+high,1.5,55,938.916,985.865,5.0,4.869,4.637,55.749,60.022,0.107,0.07
+saturation,2.0,45,1261.463,1267.017,0.44,4.235,4.197,76.776,77.084,0.198,0.201
+oversaturation,2.5,50,2231.027,2355.914,5.598,3.39,3.32,126.63,130.166,0.294,0.309

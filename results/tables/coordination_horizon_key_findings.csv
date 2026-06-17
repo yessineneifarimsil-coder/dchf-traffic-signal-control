@@ -1,0 +1,8 @@
+finding,value
+Spatial effective coordination zone,"200 m, 300 m"
+Spatial marginal coordination zone,100 m
+Distances outside coordination horizon,"500 m, 750 m, 1000 m"
+Operational effective demand regimes,"medium, high, saturation"
+Operational marginal demand regimes,oversaturation
+Demand regimes outside coordination horizon,low
+Capacity-limited demand regimes,"high, saturation, oversaturation"

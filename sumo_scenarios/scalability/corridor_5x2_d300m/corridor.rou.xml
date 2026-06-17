@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<routes>
+    <vType accel="2.6" decel="4.5" id="car" length="5.0" maxSpeed="13.89" sigma="0.5" />
+    <route edges="E0 E1 E2 E3 E4 E5" id="W_to_E" />
+    <route edges="-E5 -E4 -E3 -E2 -E1 -E0" id="E_to_W" />
+    <flow begin="0" end="3600" id="f_W_to_E" route="W_to_E" type="car" vehsPerHour="900" />
+    <flow begin="0" end="3600" id="f_E_to_W" route="E_to_W" type="car" vehsPerHour="700" />
+    <route edges="N1_in S1_out" id="N1_to_S1" />
+    <route edges="S1_in N1_out" id="S1_to_N1" />
+    <flow begin="0" end="3600" id="f_N1_to_S1" route="N1_to_S1" type="car" vehsPerHour="300" />
+    <flow begin="0" end="3600" id="f_S1_to_N1" route="S1_to_N1" type="car" vehsPerHour="300" />
+    <route edges="N2_in S2_out" id="N2_to_S2" />
+    <route edges="S2_in N2_out" id="S2_to_N2" />
+    <flow begin="0" end="3600" id="f_N2_to_S2" route="N2_to_S2" type="car" vehsPerHour="300" />
+    <flow begin="0" end="3600" id="f_S2_to_N2" route="S2_to_N2" type="car" vehsPerHour="300" />
+    <route edges="N3_in S3_out" id="N3_to_S3" />
+    <route edges="S3_in N3_out" id="S3_to_N3" />
+    <flow begin="0" end="3600" id="f_N3_to_S3" route="N3_to_S3" type="car" vehsPerHour="300" />
+    <flow begin="0" end="3600" id="f_S3_to_N3" route="S3_to_N3" type="car" vehsPerHour="300" />
+    <route edges="N4_in S4_out" id="N4_to_S4" />
+    <route edges="S4_in N4_out" id="S4_to_N4" />
+    <flow begin="0" end="3600" id="f_N4_to_S4" route="N4_to_S4" type="car" vehsPerHour="300" />
+    <flow begin="0" end="3600" id="f_S4_to_N4" route="S4_to_N4" type="car" vehsPerHour="300" />
+    <route edges="N5_in S5_out" id="N5_to_S5" />
+    <route edges="S5_in N5_out" id="S5_to_N5" />
+    <flow begin="0" end="3600" id="f_N5_to_S5" route="N5_to_S5" type="car" vehsPerHour="300" />
+    <flow begin="0" end="3600" id="f_S5_to_N5" route="S5_to_N5" type="car" vehsPerHour="300" />
+</routes>

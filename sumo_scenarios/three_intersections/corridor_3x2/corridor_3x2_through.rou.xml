@@ -1,0 +1,31 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0" maxSpeed="13.89"/>
+
+    <!-- Main corridor through demand -->
+    <route id="W_to_E" edges="E0 E1 E2 -E3"/>
+    <route id="E_to_W" edges="E3 -E2 -E1 -E0"/>
+
+    <flow id="f_W_to_E" type="car" route="W_to_E" begin="0" end="3600" vehsPerHour="900"/>
+    <flow id="f_E_to_W" type="car" route="E_to_W" begin="0" end="3600" vehsPerHour="700"/>
+
+    <!-- Side-road through demand at J1 -->
+    <route id="N1_to_S1" edges="E4 -E5"/>
+    <route id="S1_to_N1" edges="E5 -E4"/>
+
+    <flow id="f_N1_to_S1" type="car" route="N1_to_S1" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="f_S1_to_N1" type="car" route="S1_to_N1" begin="0" end="3600" vehsPerHour="300"/>
+
+    <!-- Side-road through demand at J2 -->
+    <route id="N2_to_S2" edges="E6 -E7"/>
+    <route id="S2_to_N2" edges="E7 -E6"/>
+
+    <flow id="f_N2_to_S2" type="car" route="N2_to_S2" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="f_S2_to_N2" type="car" route="S2_to_N2" begin="0" end="3600" vehsPerHour="300"/>
+
+    <!-- Side-road through demand at J3 -->
+    <route id="N3_to_S3" edges="E8 -E9"/>
+    <route id="S3_to_N3" edges="E9 -E8"/>
+
+    <flow id="f_N3_to_S3" type="car" route="N3_to_S3" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="f_S3_to_N3" type="car" route="S3_to_N3" begin="0" end="3600" vehsPerHour="300"/>
+</routes>

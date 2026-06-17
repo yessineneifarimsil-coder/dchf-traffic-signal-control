@@ -1,0 +1,57 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0" maxSpeed="13.89"/>
+
+    <!-- Main corridor demand: West side entering from E0 -->
+    <route id="W_to_E_straight" edges="E0 E1 -E2"/>
+    <route id="W_to_J1_right" edges="E0 -E5"/>
+    <route id="W_to_J1_left" edges="E0 -E4"/>
+
+    <flow id="f_W_E_straight" type="car" route="W_to_E_straight" begin="0" end="3600" vehsPerHour="1260"/>
+    <flow id="f_W_J1_right" type="car" route="W_to_J1_right" begin="0" end="3600" vehsPerHour="270"/>
+    <flow id="f_W_J1_left" type="car" route="W_to_J1_left" begin="0" end="3600" vehsPerHour="270"/>
+
+    <!-- Main corridor demand: East side entering from E2 -->
+    <route id="E_to_W_straight" edges="E2 -E1 -E0"/>
+    <route id="E_to_J2_right" edges="E2 -E7"/>
+    <route id="E_to_J2_left" edges="E2 -E6"/>
+
+    <flow id="f_E_W_straight" type="car" route="E_to_W_straight" begin="0" end="3600" vehsPerHour="980"/>
+    <flow id="f_E_J2_right" type="car" route="E_to_J2_right" begin="0" end="3600" vehsPerHour="210"/>
+    <flow id="f_E_J2_left" type="car" route="E_to_J2_left" begin="0" end="3600" vehsPerHour="210"/>
+
+    <!-- Side road demand at J1: entering from E4 -->
+    <route id="N1_to_S1_straight" edges="E4 -E5"/>
+    <route id="N1_to_W_right" edges="E4 -E0"/>
+    <route id="N1_to_E_left" edges="E4 E1 -E2"/>
+
+    <flow id="f_N1_S1_straight" type="car" route="N1_to_S1_straight" begin="0" end="3600" vehsPerHour="420"/>
+    <flow id="f_N1_W_right" type="car" route="N1_to_W_right" begin="0" end="3600" vehsPerHour="90"/>
+    <flow id="f_N1_E_left" type="car" route="N1_to_E_left" begin="0" end="3600" vehsPerHour="90"/>
+
+    <!-- Side road demand at J1: entering from E5 -->
+    <route id="S1_to_N1_straight" edges="E5 -E4"/>
+    <route id="S1_to_E_right" edges="E5 E1 -E2"/>
+    <route id="S1_to_W_left" edges="E5 -E0"/>
+
+    <flow id="f_S1_N1_straight" type="car" route="S1_to_N1_straight" begin="0" end="3600" vehsPerHour="420"/>
+    <flow id="f_S1_E_right" type="car" route="S1_to_E_right" begin="0" end="3600" vehsPerHour="90"/>
+    <flow id="f_S1_W_left" type="car" route="S1_to_W_left" begin="0" end="3600" vehsPerHour="90"/>
+
+    <!-- Side road demand at J2: entering from E6 -->
+    <route id="N2_to_S2_straight" edges="E6 -E7"/>
+    <route id="N2_to_E_right" edges="E6 -E2"/>
+    <route id="N2_to_W_left" edges="E6 -E1 -E0"/>
+
+    <flow id="f_N2_S2_straight" type="car" route="N2_to_S2_straight" begin="0" end="3600" vehsPerHour="420"/>
+    <flow id="f_N2_E_right" type="car" route="N2_to_E_right" begin="0" end="3600" vehsPerHour="90"/>
+    <flow id="f_N2_W_left" type="car" route="N2_to_W_left" begin="0" end="3600" vehsPerHour="90"/>
+
+    <!-- Side road demand at J2: entering from E7 -->
+    <route id="S2_to_N2_straight" edges="E7 -E6"/>
+    <route id="S2_to_W_right" edges="E7 -E1 -E0"/>
+    <route id="S2_to_E_left" edges="E7 -E2"/>
+
+    <flow id="f_S2_N2_straight" type="car" route="S2_to_N2_straight" begin="0" end="3600" vehsPerHour="420"/>
+    <flow id="f_S2_W_right" type="car" route="S2_to_W_right" begin="0" end="3600" vehsPerHour="90"/>
+    <flow id="f_S2_E_left" type="car" route="S2_to_E_left" begin="0" end="3600" vehsPerHour="90"/>
+</routes>

@@ -1,0 +1,2 @@
+controller,simulation_steps,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue,total_departed,total_arrived,final_active,final_buffered,buffered_ratio
+Simultaneous Fixed-Time 3 Intersections,3600,92.896,111,418.791,1838.0,7.513,0.0,26.347,69,3400,3303,97,0,0.0

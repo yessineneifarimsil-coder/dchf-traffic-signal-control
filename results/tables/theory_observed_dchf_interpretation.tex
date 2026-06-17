@@ -1,0 +1,28 @@
+\begin{table}[H]
+\centering
+\caption{Theory-based interpretation of the observed DCHF horizons.}
+\label{tab:theory_observed_dchf_interpretation}
+\small
+\begin{tabular}{p{0.21\textwidth}p{0.25\textwidth}p{0.25\textwidth}p{0.21\textwidth}}
+\toprule
+\textbf{DCHF dimension} & \textbf{Theory-based expectation} & \textbf{Observed result} & \textbf{Interpretation} \\
+\midrule
+Low-demand coordination limit & Under low demand, platoons are weak and vehicle interactions are sparse; therefore, the benefit of coordinated signal control is expected to be limited. & Most low-demand cases fall outside the useful coordination horizon, even when the network is unconstrained. & The lower demand horizon is confirmed: coordination is not always useful when traffic pressure is too weak. \\
+\midrule
+Intermediate spacing & Classical progression theory suggests that coordination is most useful when intersections are close enough to preserve platoon structure but not so close that storage interference dominates. & The strongest useful coordination region is concentrated around 200--300 m, especially around 300 m. & The observed spatial horizon supports a non-monotonic coordination effect, with an intermediate favorable spacing region. \\
+\midrule
+Very short spacing & Very short spacing may increase interaction between signals but can also create queue spillback, limited storage, and rapid interference between intersections. & At 100 m, medium demand is marginal, while higher demand regimes mostly fall outside the useful coordination horizon. & Short distance alone does not guarantee useful coordination; storage and interference effects can dominate. \\
+\midrule
+Long-distance coordination decay & As distance increases, platoons disperse and the temporal coupling between upstream and downstream signals weakens. & At 500 m and 750 m, QMIX performance deteriorates in many demand regimes. At 1000 m, several cases are outside the coordination horizon. & The spatial coordination horizon is bounded; long links weaken useful learned coordination. \\
+\midrule
+Capacity and oversaturation & Under saturation and oversaturation, physical capacity constraints may dominate controller differences. & Several saturation and oversaturation cases have high buffered ratios. Some cases are algorithmically close to the optimized offset benchmark but capacity-limited. & A small QMIX gap is not sufficient to claim useful coordination; capacity state must also be considered. \\
+\midrule
+Integrated distance--demand diagnosis & Coordination effectiveness should emerge from the joint interaction between spacing, demand, and capacity rather than from a single threshold. & Only 4 of 30 distance--demand cases are useful effective coordination cases; 2 are algorithmically effective but capacity-limited; 1 is close but has no practical gain; 3 are marginal; and 20 are outside the horizon. & The coordination horizon is a surface, not a fixed distance or demand threshold. \\
+\midrule
+Scalability to three intersections & Adding a downstream signal increases coordination complexity and may reduce the transferability of a learned policy. & The three-intersection reference case remains effective with a QMIX gap of 4.455%, while the third-light distance experiment is effective only at 300 m and 500 m, marginal at 750 m, and outside at 100 m, 200 m, and 1000 m. & Early scalability is possible, but it remains bounded by downstream spacing and network structure. \\
+\midrule
+Robustness across seeds & If the DCHF regimes are meaningful, selected effective and outside-horizon cases should remain stable under stochastic vehicle insertion. & Multi-seed validation confirms 100% regime stability for selected effective and outside-horizon cases. & The observed horizon classifications are not artifacts of a single SUMO seed. \\
+\midrule
+\bottomrule
+\end{tabular}
+\end{table}

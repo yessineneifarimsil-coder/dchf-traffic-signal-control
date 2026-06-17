@@ -1,0 +1,74 @@
+=== Three-Intersection Corridor Geometry Summary ===
+Network file: sumo_scenarios\three_intersections\corridor_3x2\corridor_3x2.net.xml
+
+Edges:
+- -E0: lanes=2, length=289.60 m, speed=13.89 m/s, free_flow_time=20.85 s
+  lane_ids=-E0_0, -E0_1
+- -E1: lanes=2, length=279.20 m, speed=13.89 m/s, free_flow_time=20.10 s
+  lane_ids=-E1_0, -E1_1
+- -E2: lanes=2, length=279.20 m, speed=13.89 m/s, free_flow_time=20.10 s
+  lane_ids=-E2_0, -E2_1
+- -E3: lanes=2, length=289.60 m, speed=13.89 m/s, free_flow_time=20.85 s
+  lane_ids=-E3_0, -E3_1
+- -E4: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=-E4_0, -E4_1
+- -E5: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=-E5_0, -E5_1
+- -E6: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=-E6_0, -E6_1
+- -E7: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=-E7_0, -E7_1
+- -E8: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=-E8_0, -E8_1
+- -E9: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=-E9_0, -E9_1
+- E0: lanes=2, length=289.60 m, speed=13.89 m/s, free_flow_time=20.85 s
+  lane_ids=E0_0, E0_1
+- E1: lanes=2, length=279.20 m, speed=13.89 m/s, free_flow_time=20.10 s
+  lane_ids=E1_0, E1_1
+- E2: lanes=2, length=279.20 m, speed=13.89 m/s, free_flow_time=20.10 s
+  lane_ids=E2_0, E2_1
+- E3: lanes=2, length=289.60 m, speed=13.89 m/s, free_flow_time=20.85 s
+  lane_ids=E3_0, E3_1
+- E4: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=E4_0, E4_1
+- E5: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=E5_0, E5_1
+- E6: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=E6_0, E6_1
+- E7: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=E7_0, E7_1
+- E8: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=E8_0, E8_1
+- E9: lanes=2, length=189.60 m, speed=13.89 m/s, free_flow_time=13.65 s
+  lane_ids=E9_0, E9_1
+
+Traffic lights:
+
+Traffic light: J1
+Number of phases: 4
+  Phase 0: duration=42, state=GGGgrrrrGGGgrrrr
+  Phase 1: duration=3, state=yyyyrrrryyyyrrrr
+  Phase 2: duration=42, state=rrrrGGGgrrrrGGGg
+  Phase 3: duration=3, state=rrrryyyyrrrryyyy
+
+Traffic light: J2
+Number of phases: 4
+  Phase 0: duration=42, state=GGGgrrrrGGGgrrrr
+  Phase 1: duration=3, state=yyyyrrrryyyyrrrr
+  Phase 2: duration=42, state=rrrrGGGgrrrrGGGg
+  Phase 3: duration=3, state=rrrryyyyrrrryyyy
+
+Traffic light: J3
+Number of phases: 4
+  Phase 0: duration=42, state=GGGgrrrrGGGgrrrr
+  Phase 1: duration=3, state=yyyyrrrryyyyrrrr
+  Phase 2: duration=42, state=rrrrGGGgrrrrGGGg
+  Phase 3: duration=3, state=rrrryyyyrrrryyyy
+
+Key corridor interpretation:
+- Main corridor links are expected to be E1 between J1--J2 and E2 between J2--J3.
+- Reverse-direction links are expected to be -E1 and -E2.
+- The initial 3-intersection corridor uses d12 = 300 m and d23 = 300 m.
+- This distance is used as a reference configuration because 300 m belonged to the effective coordination zone identified in the two-intersection analysis.
+- It is not assumed to be universally optimal for three intersections; this must be tested later by varying d23.

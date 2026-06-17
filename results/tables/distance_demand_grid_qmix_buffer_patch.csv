@@ -1,0 +1,31 @@
+scenario_label,distance,demand_name,demand_multiplier,expected_total_vehicles,qmix_total_departed,qmix_total_arrived,qmix_final_active,qmix_final_buffered,qmix_buffered_ratio_new,qmix_capacity_regime_new
+d100_low,100,low,0.5,1400,1400,1384,22,0,0.0,Unconstrained
+d100_medium,100,medium,1.0,2800,2794,2750,50,6,0.0021,Unconstrained
+d100_high,100,high,1.5,4200,3811,3647,170,389,0.0926,Mild insertion pressure
+d100_saturation,100,saturation,2.0,5600,4050,3893,163,1550,0.2768,Oversaturated
+d100_oversaturation,100,oversaturation,2.5,7000,4648,4378,276,2352,0.336,Oversaturated
+d200_low,200,low,0.5,1400,1400,1383,23,0,0.0,Unconstrained
+d200_medium,200,medium,1.0,2800,2794,2749,51,6,0.0021,Unconstrained
+d200_high,200,high,1.5,4200,3811,3649,168,389,0.0926,Mild insertion pressure
+d200_saturation,200,saturation,2.0,5600,4096,3922,180,1504,0.2686,Oversaturated
+d200_oversaturation,200,oversaturation,2.5,7000,4662,4404,264,2338,0.334,Oversaturated
+d300_low,300,low,0.5,1400,1400,1376,30,0,0.0,Unconstrained
+d300_medium,300,medium,1.0,2800,2794,2749,51,6,0.0021,Unconstrained
+d300_high,300,high,1.5,4200,3928,3771,163,272,0.0648,Mild insertion pressure
+d300_saturation,300,saturation,2.0,5600,4473,4292,187,1127,0.2013,Capacity-limited
+d300_oversaturation,300,oversaturation,2.5,7000,4931,4667,270,2069,0.2956,Oversaturated
+d500_low,500,low,0.5,1400,1400,1376,30,0,0.0,Unconstrained
+d500_medium,500,medium,1.0,2800,2794,2729,71,6,0.0021,Unconstrained
+d500_high,500,high,1.5,4200,3859,3677,188,341,0.0812,Mild insertion pressure
+d500_saturation,500,saturation,2.0,5600,4208,4025,189,1392,0.2486,Capacity-limited
+d500_oversaturation,500,oversaturation,2.5,7000,4748,4491,263,2252,0.3217,Oversaturated
+d750_low,750,low,0.5,1400,1400,1378,28,0,0.0,Unconstrained
+d750_medium,750,medium,1.0,2800,2794,2716,84,6,0.0021,Unconstrained
+d750_high,750,high,1.5,4200,3616,3432,190,584,0.139,Capacity-limited
+d750_saturation,750,saturation,2.0,5600,4107,3919,194,1493,0.2666,Oversaturated
+d750_oversaturation,750,oversaturation,2.5,7000,4754,4473,287,2246,0.3209,Oversaturated
+d1000_low,1000,low,0.5,1400,1400,1369,37,0,0.0,Unconstrained
+d1000_medium,1000,medium,1.0,2800,2794,2727,73,6,0.0021,Unconstrained
+d1000_high,1000,high,1.5,4200,3915,3717,204,285,0.0679,Mild insertion pressure
+d1000_saturation,1000,saturation,2.0,5600,4381,4172,215,1219,0.2177,Capacity-limited
+d1000_oversaturation,1000,oversaturation,2.5,7000,4841,4545,302,2159,0.3084,Oversaturated

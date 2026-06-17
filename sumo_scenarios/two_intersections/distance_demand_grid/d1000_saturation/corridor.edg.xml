@@ -1,0 +1,30 @@
+<edges>
+    <!-- Main corridor: W <-> J1 <-> J2 <-> E -->
+    <edge id="E0" from="W" to="J1" numLanes="2" speed="13.89" priority="3"/>
+    <edge id="-E0" from="J1" to="W" numLanes="2" speed="13.89" priority="3"/>
+
+    <edge id="E1" from="J1" to="J2" numLanes="2" speed="13.89" priority="3"/>
+    <edge id="-E1" from="J2" to="J1" numLanes="2" speed="13.89" priority="3"/>
+
+    <!-- IMPORTANT:
+         E2 is the incoming edge from East to J2.
+         -E2 is the outgoing edge from J2 to East.
+         This keeps the same convention as the previous corridor scenario.
+    -->
+    <edge id="E2" from="E" to="J2" numLanes="2" speed="13.89" priority="3"/>
+    <edge id="-E2" from="J2" to="E" numLanes="2" speed="13.89" priority="3"/>
+
+    <!-- Side roads at J1 -->
+    <edge id="E4" from="N1" to="J1" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="-E4" from="J1" to="N1" numLanes="2" speed="13.89" priority="2"/>
+
+    <edge id="E5" from="S1" to="J1" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="-E5" from="J1" to="S1" numLanes="2" speed="13.89" priority="2"/>
+
+    <!-- Side roads at J2 -->
+    <edge id="E6" from="N2" to="J2" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="-E6" from="J2" to="N2" numLanes="2" speed="13.89" priority="2"/>
+
+    <edge id="E7" from="S2" to="J2" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="-E7" from="J2" to="S2" numLanes="2" speed="13.89" priority="2"/>
+</edges>

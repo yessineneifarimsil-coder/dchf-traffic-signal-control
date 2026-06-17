@@ -1,0 +1,7 @@
+d23,best_offset_j2,best_offset_j3,best_offset_waiting_time,qmix_waiting_time,qmix_gap_vs_best_offset_percent,coordination_regime,best_offset_speed,qmix_speed,best_offset_queue,qmix_queue,best_offset_buffered_ratio,qmix_buffered_ratio,qmix_total_departed,qmix_total_arrived,qmix_final_active,qmix_final_buffered
+100,45.0,40.0,203.881,571.78,180.448,Outside coordination horizon,8.146,6.552,16.537,31.797,0.0,0.0,3400,3303,97,0
+200,40.0,45.0,216.245,290.146,34.174,Outside coordination horizon,8.337,7.163,16.23,24.999,0.0,0.0,3400,3310,90,0
+300,45.0,0.0,227.171,237.292,4.455,Effective coordination zone,7.671,7.633,21.192,21.599,0.0,0.0,3400,3311,89,0
+500,45.0,0.0,194.986,203.587,4.411,Effective coordination zone,8.621,8.569,16.409,16.801,0.0,0.0,3400,3311,89,0
+750,40.0,0.0,219.268,239.328,9.149,Marginal coordination zone,9.058,8.939,16.399,17.626,0.0,0.0,3400,3308,92,0
+1000,45.0,45.0,203.739,403.46,98.028,Outside coordination horizon,9.039,8.307,17.501,27.166,0.0,0.0,3400,3285,115,0

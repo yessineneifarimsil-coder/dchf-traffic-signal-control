@@ -1,0 +1,7 @@
+horizon_type,scenario,sim_waiting_time,optimized_offset_waiting_time,qmix_waiting_time,optimized_offset_coordination_gain_percent,qmix_coordination_gain_percent,qmix_gap_vs_optimized_offset_percent,coordination_regime,capacity_regime,main_interpretation
+Two-intersection spatial horizon,100 m,986.371,217.763,235.912,77.923,76.083,8.334,Marginal coordination zone,Mild insertion pressure,Distance effect on transferred QMIX generalization
+Two-intersection spatial horizon,200 m,321.064,195.628,197.619,39.069,38.449,1.018,Effective coordination zone,Unconstrained,Distance effect on transferred QMIX generalization
+Two-intersection spatial horizon,300 m,274.231,175.672,180.821,35.94,34.063,2.931,Effective coordination zone,Unconstrained,Distance effect on transferred QMIX generalization
+Two-intersection spatial horizon,500 m,291.246,226.379,335.613,22.272,-15.234,48.253,Outside coordination horizon,Unconstrained,Distance effect on transferred QMIX generalization
+Two-intersection spatial horizon,750 m,197.676,197.676,360.508,0.0,-82.373,82.373,Outside coordination horizon,Unconstrained,Distance effect on transferred QMIX generalization
+Two-intersection spatial horizon,1000 m,185.13,185.0,294.072,0.07,-58.846,58.958,Outside coordination horizon,Unconstrained,Distance effect on transferred QMIX generalization

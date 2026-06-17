@@ -1,0 +1,2 @@
+simulation_steps,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed
+3600,174.709,238,3282.79,7441.0,2.268,0.0

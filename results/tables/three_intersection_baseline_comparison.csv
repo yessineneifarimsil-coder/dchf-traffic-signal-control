@@ -1,0 +1,5 @@
+controller,offset_j2,offset_j3,mean_total_waiting_time,mean_speed,mean_total_queue,max_total_queue,total_departed,total_arrived,final_active,final_buffered,buffered_ratio
+Simultaneous Fixed-Time,0.0,0.0,418.791,7.513,26.347,69.0,3400.0,3303.0,97.0,0.0,0.0
+Best Offset - Minimum Waiting,45.0,0.0,227.171,7.671,21.192,70.0,3400.0,3315.0,85.0,0.0,0.0
+Best Offset - Maximum Speed,30.0,35.0,283.633,8.327,19.03,45.0,3400.0,3324.0,76.0,0.0,0.0
+Best Offset - Minimum Queue,35.0,40.0,273.669,8.289,18.531,42.0,3400.0,3327.0,73.0,0.0,0.0

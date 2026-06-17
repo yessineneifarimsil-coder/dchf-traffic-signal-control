@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<edges>
+    <edge from="W" id="E0" numLanes="2" speed="13.89" to="J1" />
+    <edge from="J1" id="E1" numLanes="2" speed="13.89" to="J2" />
+    <edge from="J2" id="E2" numLanes="2" speed="13.89" to="J3" />
+    <edge from="J3" id="E3" numLanes="2" speed="13.89" to="J4" />
+    <edge from="J4" id="E4" numLanes="2" speed="13.89" to="J5" />
+    <edge from="J5" id="E5" numLanes="2" speed="13.89" to="E" />
+    <edge from="J1" id="-E0" numLanes="2" speed="13.89" to="W" />
+    <edge from="J2" id="-E1" numLanes="2" speed="13.89" to="J1" />
+    <edge from="J3" id="-E2" numLanes="2" speed="13.89" to="J2" />
+    <edge from="J4" id="-E3" numLanes="2" speed="13.89" to="J3" />
+    <edge from="J5" id="-E4" numLanes="2" speed="13.89" to="J4" />
+    <edge from="E" id="-E5" numLanes="2" speed="13.89" to="J5" />
+    <edge from="N1" id="N1_in" numLanes="2" speed="13.89" to="J1" />
+    <edge from="J1" id="N1_out" numLanes="2" speed="13.89" to="N1" />
+    <edge from="S1" id="S1_in" numLanes="2" speed="13.89" to="J1" />
+    <edge from="J1" id="S1_out" numLanes="2" speed="13.89" to="S1" />
+    <edge from="N2" id="N2_in" numLanes="2" speed="13.89" to="J2" />
+    <edge from="J2" id="N2_out" numLanes="2" speed="13.89" to="N2" />
+    <edge from="S2" id="S2_in" numLanes="2" speed="13.89" to="J2" />
+    <edge from="J2" id="S2_out" numLanes="2" speed="13.89" to="S2" />
+    <edge from="N3" id="N3_in" numLanes="2" speed="13.89" to="J3" />
+    <edge from="J3" id="N3_out" numLanes="2" speed="13.89" to="N3" />
+    <edge from="S3" id="S3_in" numLanes="2" speed="13.89" to="J3" />
+    <edge from="J3" id="S3_out" numLanes="2" speed="13.89" to="S3" />
+    <edge from="N4" id="N4_in" numLanes="2" speed="13.89" to="J4" />
+    <edge from="J4" id="N4_out" numLanes="2" speed="13.89" to="N4" />
+    <edge from="S4" id="S4_in" numLanes="2" speed="13.89" to="J4" />
+    <edge from="J4" id="S4_out" numLanes="2" speed="13.89" to="S4" />
+    <edge from="N5" id="N5_in" numLanes="2" speed="13.89" to="J5" />
+    <edge from="J5" id="N5_out" numLanes="2" speed="13.89" to="N5" />
+    <edge from="S5" id="S5_in" numLanes="2" speed="13.89" to="J5" />
+    <edge from="J5" id="S5_out" numLanes="2" speed="13.89" to="S5" />
+</edges>

@@ -1,0 +1,11 @@
+controller,seed,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue
+Best Offset Fixed-Time 45s,0,3600,64.982,75,174.603,646.0,7.919,2.144,14.618,41
+QMIX V2,0,80,63.575,75,445.012,753.0,5.341,4.649,30.65,39
+Best Offset Fixed-Time 45s,1,3600,64.69,75,172.754,627.0,7.95,1.871,14.52,39
+QMIX V2,1,80,62.788,70,439.788,755.0,5.301,4.541,30.562,39
+Best Offset Fixed-Time 45s,2,3600,64.924,75,173.056,652.0,7.923,1.928,14.548,41
+QMIX V2,2,80,63.175,73,442.962,760.0,5.336,4.804,30.562,38
+Best Offset Fixed-Time 45s,3,3600,64.778,75,173.999,636.0,7.939,2.068,14.64,41
+QMIX V2,3,80,63.225,72,444.038,736.0,5.384,4.815,30.862,38
+Best Offset Fixed-Time 45s,4,3600,64.737,75,175.195,662.0,7.943,1.995,14.706,41
+QMIX V2,4,80,62.862,72,444.975,761.0,5.329,4.599,30.75,38

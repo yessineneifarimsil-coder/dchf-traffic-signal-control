@@ -1,0 +1,13 @@
+horizon_type,gap_threshold_percent,effective_scenarios_under_threshold,max_tested_effective_condition_value,number_of_effective_scenarios,interpretation
+Three-intersection reference scalability horizon,3,None,,0,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Three-intersection reference scalability horizon,5,"d12=300 m, d23=300 m",3.0,1,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Three-intersection reference scalability horizon,10,"d12=300 m, d23=300 m",3.0,1,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Three-intersection third-light spatial horizon,3,None,,0,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Three-intersection third-light spatial horizon,5,"d23=300 m, d23=500 m",500.0,2,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Three-intersection third-light spatial horizon,10,"d23=300 m, d23=500 m, d23=750 m",750.0,3,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Two-intersection demand horizon,3,"medium (1.0x), saturation (2.0x)",2.0,2,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Two-intersection demand horizon,5,"medium (1.0x), high (1.5x), saturation (2.0x)",2.0,3,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Two-intersection demand horizon,10,"medium (1.0x), high (1.5x), saturation (2.0x), oversaturation (2.5x)",2.5,4,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Two-intersection spatial horizon,3,"200 m, 300 m",300.0,2,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Two-intersection spatial horizon,5,"200 m, 300 m",300.0,2,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.
+Two-intersection spatial horizon,10,"100 m, 200 m, 300 m",300.0,3,QMIX is considered effective where its approximation gap to the optimized fixed-offset benchmark is below the threshold.

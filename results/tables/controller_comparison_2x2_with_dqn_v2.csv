@@ -1,0 +1,6 @@
+controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed
+Safe Fixed-Time,3600,88.083,134,820.743,3981.0,3.86,0.0
+Queue-Based Adaptive V1,3600,130.892,149,15220.938,35341.0,1.584,0.0
+Queue-Based Adaptive V2,3600,94.338,146,972.205,4333.0,3.709,0.0
+Queue-Based Adaptive V3,3600,102.351,142,1188.698,5392.0,3.113,0.0
+DQN V2 Per-Second,3599,80.991,116,824.473,3807.0,4.015,0.663

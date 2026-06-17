@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,best_waiting_offset,best_waiting_time,best_speed_offset,best_speed,best_queue_offset,best_queue,departed_at_best_waiting,arrived_at_best_waiting,active_at_best_waiting,buffered_at_best_waiting,buffered_ratio_at_best_waiting,max_queue_at_best_waiting
+low,0.5,45,79.909,5,8.314,45,6.363,1396,1376,20,0,0.0,22
+medium,1.0,45,175.672,45,7.871,45,13.616,2800,2748,52,0,0.0,34
+high,1.5,55,938.916,55,4.869,55,55.749,3756,3627,129,448,0.107,92
+saturation,2.0,45,1261.463,45,4.235,45,76.776,4492,4319,173,1108,0.198,108
+oversaturation,2.5,50,2231.027,45,3.39,45,126.63,4939,4666,273,2057,0.294,196

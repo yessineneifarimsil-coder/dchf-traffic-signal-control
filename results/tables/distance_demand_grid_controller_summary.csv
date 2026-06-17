@@ -1,0 +1,91 @@
+distance,demand_name,demand_multiplier,scenario_label,controller,offset,expected_total_vehicles,mean_total_waiting_time,mean_speed,mean_total_queue,max_total_queue,total_departed,total_arrived,final_active,final_buffered,buffered_ratio,capacity_regime
+100,low,0.5,d100_low,Fixed offset,0.0,1400,87.592,8.093,5.931,21,1406.0,1389.0,17.0,0.0,0.0,Unconstrained
+100,low,0.5,d100_low,Fixed offset,20.0,1400,80.632,8.022,5.87,17,1406.0,1379.0,27.0,0.0,0.0,Unconstrained
+100,low,0.5,d100_low,QMIX V2,,1400,122.389,7.07,8.59,23,,,,,,Not available
+100,medium,1.0,d100_medium,Fixed offset,0.0,2800,986.371,4.321,49.075,102,2720.0,2616.0,104.0,80.0,0.029,Mild insertion pressure
+100,medium,1.0,d100_medium,Fixed offset,25.0,2800,217.763,7.206,15.296,32,2800.0,2748.0,52.0,0.0,0.0,Unconstrained
+100,medium,1.0,d100_medium,QMIX V2,,2800,235.912,6.847,17.715,43,,,,,,Not available
+100,high,1.5,d100_high,Fixed offset,0.0,4200,1802.907,3.404,83.838,143,3506.0,3357.0,149.0,694.0,0.165,Capacity-limited
+100,high,1.5,d100_high,Fixed offset,60.0,4200,847.036,4.595,52.182,85,3900.0,3776.0,124.0,300.0,0.071,Mild insertion pressure
+100,high,1.5,d100_high,QMIX V2,,4200,1359.369,3.548,79.431,138,,,,,,Not available
+100,saturation,2.0,d100_saturation,Fixed offset,0.0,5600,2097.762,3.435,91.595,144,4071.0,3901.0,170.0,1529.0,0.273,Oversaturated
+100,saturation,2.0,d100_saturation,Fixed offset,30.0,5600,1313.721,3.733,79.829,126,4460.0,4279.0,181.0,1140.0,0.204,Capacity-limited
+100,saturation,2.0,d100_saturation,QMIX V2,,5600,2180.832,3.463,91.328,142,,,,,,Not available
+100,oversaturation,2.5,d100_oversaturation,Fixed offset,0.0,7000,3094.882,2.729,143.239,230,4506.0,4245.0,261.0,2494.0,0.356,Oversaturated
+100,oversaturation,2.5,d100_oversaturation,Fixed offset,25.0,7000,2294.378,2.956,130.94,207,4835.0,4567.0,268.0,2165.0,0.309,Oversaturated
+100,oversaturation,2.5,d100_oversaturation,QMIX V2,,7000,2748.355,2.765,139.703,239,,,,,,Not available
+200,low,0.5,d200_low,Fixed offset,0.0,1400,89.399,8.224,6.14,23,1406.0,1383.0,23.0,0.0,0.0,Unconstrained
+200,low,0.5,d200_low,Fixed offset,80.0,1400,88.987,8.218,6.15,21,1406.0,1384.0,22.0,0.0,0.0,Unconstrained
+200,low,0.5,d200_low,QMIX V2,,1400,142.023,7.356,8.534,29,,,,,,Not available
+200,medium,1.0,d200_medium,Fixed offset,0.0,2800,321.064,6.78,19.937,51,2800.0,2745.0,55.0,0.0,0.0,Unconstrained
+200,medium,1.0,d200_medium,Fixed offset,45.0,2800,195.628,7.387,15.462,36,2800.0,2749.0,51.0,0.0,0.0,Unconstrained
+200,medium,1.0,d200_medium,QMIX V2,,2800,197.619,7.365,15.496,38,,,,,,Not available
+200,high,1.5,d200_high,Fixed offset,0.0,4200,1384.668,3.69,78.842,145,3645.0,3474.0,171.0,555.0,0.132,Capacity-limited
+200,high,1.5,d200_high,Fixed offset,50.0,4200,828.716,4.826,52.021,88,3925.0,3785.0,140.0,275.0,0.065,Mild insertion pressure
+200,high,1.5,d200_high,QMIX V2,,4200,1272.349,3.825,75.78,142,,,,,,Not available
+200,saturation,2.0,d200_saturation,Fixed offset,0.0,5600,1722.79,3.669,89.028,143,4162.0,3985.0,177.0,1438.0,0.257,Oversaturated
+200,saturation,2.0,d200_saturation,Fixed offset,50.0,5600,1233.98,4.139,76.258,123,4556.0,4378.0,178.0,1044.0,0.186,Capacity-limited
+200,saturation,2.0,d200_saturation,QMIX V2,,5600,1947.589,3.625,91.782,146,,,,,,Not available
+200,oversaturation,2.5,d200_oversaturation,Fixed offset,0.0,7000,2769.526,2.906,141.926,210,4546.0,4282.0,264.0,2454.0,0.351,Oversaturated
+200,oversaturation,2.5,d200_oversaturation,Fixed offset,35.0,7000,2178.009,3.242,126.669,198,4998.0,4728.0,270.0,2002.0,0.286,Oversaturated
+200,oversaturation,2.5,d200_oversaturation,QMIX V2,,7000,2697.359,2.949,139.162,211,,,,,,Not available
+300,low,0.5,d300_low,Fixed offset,0.0,1400,90.362,8.346,6.287,24,1406.0,1380.0,26.0,0.0,0.0,Unconstrained
+300,low,0.5,d300_low,Fixed offset,45.0,1400,82.233,8.181,6.477,22,1406.0,1381.0,25.0,0.0,0.0,Unconstrained
+300,low,0.5,d300_low,QMIX V2,,1400,167.802,7.598,8.665,29,,,,,,Not available
+300,medium,1.0,d300_medium,Fixed offset,0.0,2800,274.231,7.403,17.474,47,2800.0,2743.0,57.0,0.0,0.0,Unconstrained
+300,medium,1.0,d300_medium,Fixed offset,45.0,2800,175.672,7.871,13.616,34,2800.0,2748.0,52.0,0.0,0.0,Unconstrained
+300,medium,1.0,d300_medium,QMIX V2,,2800,180.821,7.839,13.784,36,,,,,,Not available
+300,high,1.5,d300_high,Fixed offset,0.0,4200,1284.135,4.045,76.119,153,3805.0,3632.0,173.0,395.0,0.094,Mild insertion pressure
+300,high,1.5,d300_high,Fixed offset,55.0,4200,881.743,4.965,53.303,87,3748.0,3616.0,132.0,452.0,0.108,Capacity-limited
+300,high,1.5,d300_high,QMIX V2,,4200,922.181,4.803,56.507,99,,,,,,Not available
+300,saturation,2.0,d300_saturation,Fixed offset,0.0,5600,1432.412,3.947,85.179,156,4309.0,4126.0,183.0,1291.0,0.231,Capacity-limited
+300,saturation,2.0,d300_saturation,Fixed offset,45.0,5600,1261.463,4.235,76.776,108,4492.0,4319.0,173.0,1108.0,0.198,Capacity-limited
+300,saturation,2.0,d300_saturation,QMIX V2,,5600,1267.017,4.197,77.084,115,,,,,,Not available
+300,oversaturation,2.5,d300_oversaturation,Fixed offset,0.0,7000,2587.158,3.08,137.479,227,4604.0,4340.0,264.0,2396.0,0.342,Oversaturated
+300,oversaturation,2.5,d300_oversaturation,Fixed offset,50.0,7000,2235.634,3.389,126.229,190,4885.0,4617.0,268.0,2115.0,0.302,Oversaturated
+300,oversaturation,2.5,d300_oversaturation,QMIX V2,,7000,2242.664,3.374,127.141,193,,,,,,Not available
+500,low,0.5,d500_low,Fixed offset,0.0,1400,142.543,7.932,8.972,30,1406.0,1376.0,30.0,0.0,0.0,Unconstrained
+500,low,0.5,d500_low,Fixed offset,50.0,1400,75.894,8.978,5.498,16,1406.0,1380.0,26.0,0.0,0.0,Unconstrained
+500,low,0.5,d500_low,QMIX V2,,1400,165.049,7.817,9.452,31,,,,,,Not available
+500,medium,1.0,d500_medium,Fixed offset,0.0,2800,291.246,7.546,19.569,56,2800.0,2742.0,58.0,0.0,0.0,Unconstrained
+500,medium,1.0,d500_medium,Fixed offset,70.0,2800,226.379,7.977,16.102,41,2800.0,2736.0,64.0,0.0,0.0,Unconstrained
+500,medium,1.0,d500_medium,QMIX V2,,2800,335.613,7.399,20.974,42,,,,,,Not available
+500,high,1.5,d500_high,Fixed offset,0.0,4200,849.522,5.475,53.026,119,3963.0,3819.0,144.0,237.0,0.056,Mild insertion pressure
+500,high,1.5,d500_high,Fixed offset,0.0,4200,849.522,5.475,53.026,119,3963.0,3819.0,144.0,237.0,0.056,Mild insertion pressure
+500,high,1.5,d500_high,QMIX V2,,4200,1295.221,4.364,76.817,160,,,,,,Not available
+500,saturation,2.0,d500_saturation,Fixed offset,0.0,5600,1345.466,4.464,81.626,161,4485.0,4292.0,193.0,1115.0,0.199,Capacity-limited
+500,saturation,2.0,d500_saturation,Fixed offset,10.0,5600,1324.596,4.531,79.975,144,4484.0,4290.0,194.0,1116.0,0.199,Capacity-limited
+500,saturation,2.0,d500_saturation,QMIX V2,,5600,1489.553,4.236,83.967,140,,,,,,Not available
+500,oversaturation,2.5,d500_oversaturation,Fixed offset,0.0,7000,2310.723,3.63,130.824,224,4900.0,4615.0,285.0,2100.0,0.3,Oversaturated
+500,oversaturation,2.5,d500_oversaturation,Fixed offset,0.0,7000,2310.723,3.63,130.824,224,4900.0,4615.0,285.0,2100.0,0.3,Oversaturated
+500,oversaturation,2.5,d500_oversaturation,QMIX V2,,7000,2449.686,3.457,133.327,224,,,,,,Not available
+750,low,0.5,d750_low,Fixed offset,0.0,1400,99.407,8.701,7.53,29,1406.0,1376.0,30.0,0.0,0.0,Unconstrained
+750,low,0.5,d750_low,Fixed offset,40.0,1400,88.713,9.278,6.105,17,1406.0,1375.0,31.0,0.0,0.0,Unconstrained
+750,low,0.5,d750_low,QMIX V2,,1400,125.337,8.591,8.058,33,,,,,,Not available
+750,medium,1.0,d750_medium,Fixed offset,0.0,2800,197.676,8.439,15.552,51,2800.0,2740.0,60.0,0.0,0.0,Unconstrained
+750,medium,1.0,d750_medium,Fixed offset,0.0,2800,197.676,8.439,15.552,51,2800.0,2740.0,60.0,0.0,0.0,Unconstrained
+750,medium,1.0,d750_medium,QMIX V2,,2800,360.508,7.706,21.974,46,,,,,,Not available
+750,high,1.5,d750_high,Fixed offset,0.0,4200,830.32,5.941,51.926,123,3940.0,3781.0,159.0,260.0,0.062,Mild insertion pressure
+750,high,1.5,d750_high,Fixed offset,10.0,4200,818.705,5.96,51.189,106,3903.0,3755.0,148.0,297.0,0.071,Mild insertion pressure
+750,high,1.5,d750_high,QMIX V2,,4200,1476.175,4.5,81.039,150,,,,,,Not available
+750,saturation,2.0,d750_saturation,Fixed offset,0.0,5600,1223.407,5.14,75.578,155,4578.0,4377.0,201.0,1022.0,0.182,Capacity-limited
+750,saturation,2.0,d750_saturation,Fixed offset,0.0,5600,1223.407,5.14,75.578,155,4578.0,4377.0,201.0,1022.0,0.182,Capacity-limited
+750,saturation,2.0,d750_saturation,QMIX V2,,5600,1949.399,4.457,90.923,150,,,,,,Not available
+750,oversaturation,2.5,d750_oversaturation,Fixed offset,0.0,7000,2209.334,4.09,126.085,214,4986.0,4705.0,281.0,2014.0,0.288,Oversaturated
+750,oversaturation,2.5,d750_oversaturation,Fixed offset,5.0,7000,2194.289,4.067,126.638,221,4991.0,4707.0,284.0,2009.0,0.287,Oversaturated
+750,oversaturation,2.5,d750_oversaturation,QMIX V2,,7000,2412.179,3.753,134.036,218,,,,,,Not available
+1000,low,0.5,d1000_low,Fixed offset,0.0,1400,76.254,9.558,5.652,22,1406.0,1375.0,31.0,0.0,0.0,Unconstrained
+1000,low,0.5,d1000_low,Fixed offset,0.0,1400,76.254,9.558,5.652,22,1406.0,1375.0,31.0,0.0,0.0,Unconstrained
+1000,low,0.5,d1000_low,QMIX V2,,1400,176.973,8.831,8.851,36,,,,,,Not available
+1000,medium,1.0,d1000_medium,Fixed offset,0.0,2800,185.13,9.122,13.333,37,2800.0,2733.0,67.0,0.0,0.0,Unconstrained
+1000,medium,1.0,d1000_medium,Fixed offset,85.0,2800,185.0,9.132,13.309,38,2800.0,2731.0,69.0,0.0,0.0,Unconstrained
+1000,medium,1.0,d1000_medium,QMIX V2,,2800,294.072,8.422,19.288,39,,,,,,Not available
+1000,high,1.5,d1000_high,Fixed offset,0.0,4200,1295.321,5.131,74.552,138,3709.0,3518.0,191.0,491.0,0.117,Capacity-limited
+1000,high,1.5,d1000_high,Fixed offset,40.0,4200,881.374,6.187,54.073,89,3884.0,3725.0,159.0,316.0,0.075,Mild insertion pressure
+1000,high,1.5,d1000_high,QMIX V2,,4200,1160.779,5.489,69.29,106,,,,,,Not available
+1000,saturation,2.0,d1000_saturation,Fixed offset,0.0,5600,1389.375,5.146,79.959,150,4333.0,4127.0,206.0,1267.0,0.226,Capacity-limited
+1000,saturation,2.0,d1000_saturation,Fixed offset,45.0,5600,1358.308,5.178,81.632,117,4450.0,4234.0,216.0,1150.0,0.205,Capacity-limited
+1000,saturation,2.0,d1000_saturation,QMIX V2,,5600,1414.407,5.041,84.475,123,,,,,,Not available
+1000,oversaturation,2.5,d1000_oversaturation,Fixed offset,0.0,7000,2297.868,4.171,129.338,202,4817.0,4535.0,282.0,2183.0,0.312,Oversaturated
+1000,oversaturation,2.5,d1000_oversaturation,Fixed offset,0.0,7000,2297.868,4.171,129.338,202,4817.0,4535.0,282.0,2183.0,0.312,Oversaturated
+1000,oversaturation,2.5,d1000_oversaturation,QMIX V2,,7000,2311.272,4.171,131.434,200,,,,,,Not available

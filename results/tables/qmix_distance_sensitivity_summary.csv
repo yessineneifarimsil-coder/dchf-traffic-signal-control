@@ -1,0 +1,7 @@
+distance,controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue
+100,QMIX V2 transferred,3599,60.733,75,235.912,1070.0,6.847,2.144,17.715,43
+200,QMIX V2 transferred,3599,61.23,77,197.619,991.0,7.365,2.144,15.496,38
+300,QMIX V2 transferred,3599,62.118,76,180.821,916.0,7.839,2.144,13.784,36
+500,QMIX V2 transferred,3599,75.75,94,335.613,1022.0,7.399,2.144,20.974,42
+750,QMIX V2 transferred,3599,84.08,105,360.508,1210.0,7.706,2.144,21.974,46
+1000,QMIX V2 transferred,3599,86.934,104,294.072,918.0,8.422,2.144,19.288,39

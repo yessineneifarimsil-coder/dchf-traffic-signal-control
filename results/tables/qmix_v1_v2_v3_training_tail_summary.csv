@@ -1,0 +1,4 @@
+controller,training_rows,last20_mean_episode_reward,last20_mean_loss,last20_mean_final_waiting,last20_mean_final_speed,last20_mean_final_queue,last_epsilon
+QMIX V1,100,-963128.95,9.004,803.1,5.261,32.3,0.1
+QMIX V2,300,-740235.55,12.508,566.7,6.387,27.1,0.05
+QMIX V3,500,-709761.05,12.569,527.0,5.161,30.95,0.05

@@ -1,0 +1,5 @@
+link,column,mean_queue,max_queue,std_queue,zero_queue_percentage
+J1_to_J2,E1_queue_J1_J2,2.402,19,4.603,71.111
+J2_to_J1,neg_E1_queue_J2_J1,2.297,18,4.587,73.111
+J2_to_J3,E2_queue_J2_J3,2.688,21,4.977,69.889
+J3_to_J2,neg_E2_queue_J3_J2,2.003,18,3.93,72.417

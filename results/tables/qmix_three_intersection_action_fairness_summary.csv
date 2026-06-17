@@ -1,0 +1,2 @@
+total_seconds_logged,total_decisions,dominant_action_pattern,dominant_action_pattern_percentage,mean_total_waiting_time,mean_speed,mean_total_queue,max_total_queue,max_mean_link_queue,min_mean_link_queue,avg_mean_link_queue,queue_imbalance_absolute,queue_imbalance_relative
+3600,80,1-0-1,48.75,237.292,7.633,21.599,68,2.688,2.003,2.348,0.685,0.292

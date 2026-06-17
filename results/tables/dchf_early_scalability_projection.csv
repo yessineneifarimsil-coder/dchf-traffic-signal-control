@@ -1,0 +1,3 @@
+N,scenario_source,qmix_coordination_gain_percent,qmix_gap_vs_optimized_offset_percent,reference_regime_5_10
+2,300 m,34.063,2.931,Effective coordination zone
+3,"d12=300 m, d23=300 m",43.339,4.455,Effective coordination zone

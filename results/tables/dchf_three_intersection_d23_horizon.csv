@@ -1,0 +1,7 @@
+horizon_type,scenario,sim_waiting_time,optimized_offset_waiting_time,qmix_waiting_time,optimized_offset_coordination_gain_percent,qmix_coordination_gain_percent,qmix_gap_vs_optimized_offset_percent,coordination_regime,capacity_regime,main_interpretation
+Three-intersection third-light spatial horizon,d23=100 m,378.779,203.881,571.78,46.174,-50.953,180.448,Outside coordination horizon,Unconstrained,Effect of third-light position on QMIX generalization
+Three-intersection third-light spatial horizon,d23=200 m,461.093,216.245,290.146,53.102,37.074,34.175,Outside coordination horizon,Unconstrained,Effect of third-light position on QMIX generalization
+Three-intersection third-light spatial horizon,d23=300 m,418.791,227.171,237.292,45.756,43.339,4.455,Effective coordination zone,Unconstrained,Effect of third-light position on QMIX generalization
+Three-intersection third-light spatial horizon,d23=500 m,444.502,194.986,203.587,56.134,54.199,4.411,Effective coordination zone,Unconstrained,Effect of third-light position on QMIX generalization
+Three-intersection third-light spatial horizon,d23=750 m,300.667,219.268,239.328,27.073,20.401,9.149,Marginal coordination zone,Unconstrained,Effect of third-light position on QMIX generalization
+Three-intersection third-light spatial horizon,d23=1000 m,256.17,203.739,403.46,20.467,-57.497,98.028,Outside coordination horizon,Unconstrained,Effect of third-light position on QMIX generalization

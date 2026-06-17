@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<configuration>
+    <input>
+        <net-file value="corridor.net.xml" />
+        <route-files value="corridor.rou.xml" />
+    </input>
+    <time>
+        <begin value="0" />
+        <end value="3600" />
+        <step-length value="1" />
+    </time>
+    <report>
+        <no-step-log value="true" />
+    </report>
+</configuration>

@@ -1,0 +1,2 @@
+scenario,N,seeds,qmix_gap_mean,qmix_gap_std,qmix_gain_mean,qmix_gain_std,qmix_buffered_ratio_mean,qmix_buffered_ratio_std,qmix_total_teleports_mean,effective_regime_stability_percent,final_interpretation
+N5_d300_medium,5,5,-1.536,0.815,52.965,0.161,0.003,0.0,0.0,100.0,Stable effective scalability at N=5

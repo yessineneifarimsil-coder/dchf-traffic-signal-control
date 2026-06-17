@@ -1,0 +1,4 @@
+controller,mean_total_waiting_time_mean,mean_total_waiting_time_std,mean_speed_mean,mean_speed_std,mean_total_queue_mean,mean_total_queue_std,mean_vehicle_count_mean,mean_vehicle_count_std,buffered_ratio_mean,buffered_ratio_std
+Best Offset Pattern,228.497,2.787,7.676,0.013,21.305,0.167,91.784,0.143,0.0,0.0
+QMIX 3 Agents,235.298,1.626,7.643,0.014,21.503,0.085,92.027,0.162,0.0,0.0
+Simultaneous Fixed-Time,419.461,1.572,7.525,0.011,26.371,0.054,92.735,0.147,0.0,0.0

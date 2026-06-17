@@ -1,0 +1,1010 @@
+Structure du dossier
+Le numéro de série du volume est 00000027 88DE:8D84
+C:.
+|   .gitignore
+|   edge_ids.txt
+|   environment.yml
+|   gitignore_backup.txt
+|   PROJECT_TREE.txt
+|   README.md
+|   reproduce_all.bat
+|   requirements.txt
+|   
++---archive_old_article
+|       main_backup_before_github_clean.tex
+|       main_old_not_final.tex
+|       
++---article
+|       README.md
+|       references.bib
+|       
++---notes
+|       learning_log.md
+|       project_master_plan.md
+|       
++---results
+|   +---figures
+|   |       capacity_buffered_ratio_by_demand.png
+|   |       capacity_max_queue_by_demand.png
+|   |       central_occupancy_ratio_by_demand.png
+|   |       controller_comparison_mean_queue.png
+|   |       controller_comparison_mean_speed.png
+|   |       controller_comparison_mean_waiting_time.png
+|   |       controller_comparison_waiting_time.png
+|   |       coordination_horizon_demand_capacity.png
+|   |       coordination_horizon_demand_gap.png
+|   |       coordination_horizon_distance_gap.png
+|   |       dchf_gain_d23.pdf
+|   |       dchf_gain_d23.png
+|   |       dchf_gain_demand.pdf
+|   |       dchf_gain_demand.png
+|   |       dchf_gain_distance.pdf
+|   |       dchf_gain_distance.png
+|   |       dchf_gain_scalability.pdf
+|   |       dchf_gain_scalability.png
+|   |       dchf_gap_d23.pdf
+|   |       dchf_gap_d23.png
+|   |       dchf_gap_demand.pdf
+|   |       dchf_gap_demand.png
+|   |       dchf_gap_distance.pdf
+|   |       dchf_gap_distance.png
+|   |       dchf_gap_scalability.pdf
+|   |       dchf_gap_scalability.png
+|   |       dchf_threshold_sensitivity.pdf
+|   |       dchf_threshold_sensitivity.png
+|   |       demand_best_offset_vs_qmix_queue.png
+|   |       demand_best_offset_vs_qmix_waiting_time.png
+|   |       demand_buffered_ratio_comparison.png
+|   |       demand_qmix_gap_vs_best_offset.png
+|   |       distance_best_offset_vs_qmix_queue.png
+|   |       distance_best_offset_vs_qmix_waiting_time.png
+|   |       distance_qmix_gap_vs_best_offset.png
+|   |       distance_vs_best_offset.png
+|   |       distance_vs_best_queue.png
+|   |       distance_vs_best_waiting_time.png
+|   |       final_heatmap_distance_demand_integrated_dchf.pdf
+|   |       final_heatmap_distance_demand_integrated_dchf.png
+|   |       heatmap_distance_demand_buffered_ratio.pdf
+|   |       heatmap_distance_demand_buffered_ratio.png
+|   |       heatmap_distance_demand_coordination_gain.pdf
+|   |       heatmap_distance_demand_coordination_gain.png
+|   |       heatmap_distance_demand_qmix_gap.pdf
+|   |       heatmap_distance_demand_qmix_gap.png
+|   |       heatmap_distance_demand_regime.pdf
+|   |       heatmap_distance_demand_regime.png
+|   |       multiseed_horizon_coordination_gain.pdf
+|   |       multiseed_horizon_coordination_gain.png
+|   |       multiseed_horizon_qmix_gap.pdf
+|   |       multiseed_horizon_qmix_gap.png
+|   |       multiseed_horizon_regime_stability.pdf
+|   |       multiseed_horizon_regime_stability.png
+|   |       multiseed_robustness_waiting_time.png
+|   |       multiseed_scenario_b_waiting_time.png
+|   |       multiseed_three_intersection_queue.png
+|   |       multiseed_three_intersection_speed.png
+|   |       multiseed_three_intersection_waiting_time.png
+|   |       n5_multiseed_coordination_gain.pdf
+|   |       n5_multiseed_coordination_gain.png
+|   |       n5_multiseed_qmix_gap.pdf
+|   |       n5_multiseed_qmix_gap.png
+|   |       n5_multiseed_waiting_time_by_controller.pdf
+|   |       n5_multiseed_waiting_time_by_controller.png
+|   |       offset_0_90_vs_mean_speed.png
+|   |       offset_0_90_vs_queue.png
+|   |       offset_0_90_vs_waiting_time.png
+|   |       offset_turning_0_90_vs_mean_speed.png
+|   |       offset_turning_0_90_vs_queue.png
+|   |       offset_turning_0_90_vs_waiting_time.png
+|   |       offset_vs_mean_speed.png
+|   |       offset_vs_queue.png
+|   |       offset_vs_waiting_time.png
+|   |       qmix_three_action_distribution.png
+|   |       qmix_three_action_patterns.png
+|   |       qmix_three_queue_fairness.png
+|   |       scenario_b_controller_comparison_waiting_time.png
+|   |       three_intersection_d23_best_offset_vs_qmix_queue.png
+|   |       three_intersection_d23_best_offset_vs_qmix_waiting.png
+|   |       three_intersection_d23_qmix_gap.png
+|   |       three_intersection_offset_heatmap_queue.png
+|   |       three_intersection_offset_heatmap_speed.png
+|   |       three_intersection_offset_heatmap_waiting_time.png
+|   |       updated_heatmap_distance_demand_coordination_gain.pdf
+|   |       updated_heatmap_distance_demand_coordination_gain.png
+|   |       updated_heatmap_distance_demand_integrated_dchf.pdf
+|   |       updated_heatmap_distance_demand_integrated_dchf.png
+|   |       updated_heatmap_distance_demand_qmix_buffered_ratio.pdf
+|   |       updated_heatmap_distance_demand_qmix_buffered_ratio.png
+|   |       updated_heatmap_distance_demand_qmix_capacity_regime.pdf
+|   |       updated_heatmap_distance_demand_qmix_capacity_regime.png
+|   |       updated_heatmap_distance_demand_qmix_gap.pdf
+|   |       updated_heatmap_distance_demand_qmix_gap.png
+|   |       updated_heatmap_distance_demand_regime.pdf
+|   |       updated_heatmap_distance_demand_regime.png
+|   |       
+|   +---overnight_logs
+|   |       n10_coarse_benchmark_log.txt
+|   |       n10_probe_log.txt
+|   |       n5_distance_demand_scan_log.txt
+|   |       n5_multiseed_rerun_log.txt
+|   |       n5_qmix_distance_demand_eval_log.txt
+|   |       
+|   +---raw
+|   |       demand_offset_sweep_raw.csv
+|   |       distance_offset_sweep_raw.csv
+|   |       dqn_evaluation_single_intersection.csv
+|   |       dqn_evaluation_single_intersection_v2.csv
+|   |       dqn_single_intersection_model.pth
+|   |       dqn_single_intersection_model_v2.pth
+|   |       dqn_training_single_intersection.csv
+|   |       dqn_training_single_intersection_v2.csv
+|   |       dqn_v2_per_second_2x2.csv
+|   |       dqn_v2_step_log_2x2.csv
+|   |       fixed_time_corridor_2x2.csv
+|   |       fixed_time_corridor_offset_20s_2x2.csv
+|   |       fixed_time_corridor_turning_2x2.csv
+|   |       fixed_time_single_intersection.csv
+|   |       fixed_time_three_intersections.csv
+|   |       independent_dqn_corridor_evaluation.csv
+|   |       independent_dqn_corridor_per_second.csv
+|   |       independent_dqn_corridor_training.csv
+|   |       independent_dqn_J1_model.pth
+|   |       independent_dqn_J2_model.pth
+|   |       max_pressure_corridor_2x2_seed0.csv
+|   |       max_pressure_corridor_2x2_seed1.csv
+|   |       max_pressure_corridor_2x2_seed2.csv
+|   |       max_pressure_corridor_2x2_seed3.csv
+|   |       max_pressure_corridor_2x2_seed4.csv
+|   |       max_pressure_corridor_2x2_seed5.csv
+|   |       max_pressure_corridor_2x2_seed6.csv
+|   |       max_pressure_corridor_2x2_seed7.csv
+|   |       max_pressure_corridor_2x2_seed8.csv
+|   |       max_pressure_corridor_2x2_seed9.csv
+|   |       multiseed_controller_results.csv
+|   |       multiseed_horizon_validation_controller_raw.csv
+|   |       multiseed_offset_qmix_per_second_raw.csv
+|   |       multiseed_scenario_b_raw.csv
+|   |       multiseed_three_intersection_controllers_raw.csv
+|   |       n5_distance_demand_benchmark_raw.csv
+|   |       n5_progression_offset_raw.csv
+|   |       offset_sweep_raw_0_90_2x2.csv
+|   |       offset_sweep_raw_2x2.csv
+|   |       offset_sweep_turning_raw_0_90_2x2.csv
+|   |       qmix_corridor_evaluation.csv
+|   |       qmix_corridor_evaluation_v2.csv
+|   |       qmix_corridor_model.pth
+|   |       qmix_corridor_model_v2.pth
+|   |       qmix_corridor_model_v2_turning.pth
+|   |       qmix_corridor_model_v3.pth
+|   |       qmix_corridor_per_second.csv
+|   |       qmix_corridor_training.csv
+|   |       qmix_corridor_training_v2.csv
+|   |       qmix_corridor_training_v2_turning.csv
+|   |       qmix_corridor_training_v3.csv
+|   |       qmix_corridor_v2_per_second.csv
+|   |       qmix_corridor_v2_turning_per_second.csv
+|   |       qmix_corridor_v2_turning_trained_per_second.csv
+|   |       qmix_corridor_v3_per_second.csv
+|   |       qmix_demand_sensitivity_raw.csv
+|   |       qmix_distance_sensitivity_raw.csv
+|   |       qmix_n5_distance_demand_evaluation_raw.csv
+|   |       qmix_n5_scalability_evaluation_raw.csv
+|   |       qmix_n5_scalability_model.pth
+|   |       qmix_n5_scalability_training.csv
+|   |       qmix_three_intersections_model.pth
+|   |       qmix_three_intersections_per_second.csv
+|   |       qmix_three_intersections_training.csv
+|   |       qmix_three_intersection_d23_sensitivity_raw.csv
+|   |       queue_based_2x2.csv
+|   |       queue_based_corridor_2x2.csv
+|   |       queue_based_v2_2x2.csv
+|   |       queue_based_v3_2x2.csv
+|   |       safe_fixed_time_2x2.csv
+|   |       spillback_demand_raw.csv
+|   |       three_intersection_offset_sweep_raw.csv
+|   |       
+|   \---tables
+|           baseline_comparison_2x2.csv
+|           controller_comparison_2x2.csv
+|           controller_comparison_2x2_with_dqn_v2.csv
+|           coordination_horizon_demand_regimes.csv
+|           coordination_horizon_distance_regimes.csv
+|           coordination_horizon_key_findings.csv
+|           corridor_connections_summary.txt
+|           corridor_controller_comparison.csv
+|           corridor_controller_comparison_with_independent_dqn.csv
+|           corridor_controller_comparison_with_qmix_v2.csv
+|           corridor_fixed_time_comparison.csv
+|           corridor_geometry_summary.txt
+|           dchf_capacity_horizon_summary.csv
+|           dchf_coordination_gain_surface_projection.csv
+|           dchf_early_scalability_projection.csv
+|           dchf_horizon_summary_by_threshold.csv
+|           dchf_key_findings.csv
+|           dchf_master_synthesis.csv
+|           dchf_three_intersection_d23_horizon.csv
+|           dchf_three_intersection_reference_horizon.csv
+|           dchf_threshold_sensitivity_by_scenario.csv
+|           dchf_two_intersection_demand_horizon.csv
+|           dchf_two_intersection_distance_horizon.csv
+|           demand_best_offset_vs_qmix.csv
+|           demand_offset_best_summary.csv
+|           demand_offset_sweep_summary.csv
+|           distance_best_offset_vs_qmix.csv
+|           distance_demand_grid_controller_summary.csv
+|           distance_demand_grid_dchf_summary.csv
+|           distance_demand_grid_dchf_summary_updated.csv
+|           distance_demand_grid_offset_sweep_summary.csv
+|           distance_demand_grid_qmix_buffer_patch.csv
+|           distance_offset_best_summary.csv
+|           distance_offset_sweep_summary.csv
+|           final_distance_demand_integrated_dchf_classes.csv
+|           final_distance_demand_integrated_dchf_counts.csv
+|           fixed_time_corridor_summary.csv
+|           fixed_time_corridor_turning_summary.csv
+|           fixed_time_summary.csv
+|           fixed_time_three_intersections_summary.csv
+|           max_pressure_corridor_2x2_summary.csv
+|           multiseed_controller_summary.csv
+|           multiseed_horizon_regime_stability.csv
+|           multiseed_horizon_validation_plan.csv
+|           multiseed_horizon_validation_plan_latex.txt
+|           multiseed_horizon_validation_seed_metrics.csv
+|           multiseed_horizon_validation_summary.csv
+|           multiseed_offset_qmix_per_second_summary.csv
+|           multiseed_scenario_b_summary.csv
+|           multiseed_three_intersection_controllers_summary.csv
+|           n5_best_progression_offset_summary.csv
+|           n5_distance_demand_benchmark_dchf_summary.csv
+|           n5_distance_demand_full_dchf_classification.csv
+|           n5_distance_demand_offset_sweep_summary.csv
+|           n5_multiseed_scalability_controller_summary.csv
+|           n5_multiseed_scalability_dchf_by_seed.csv
+|           n5_multiseed_scalability_summary.csv
+|           n5_progression_offset_sweep_summary.csv
+|           n5_scalability_dchf_summary.csv
+|           offset_sweep_summary_0_90_2x2.csv
+|           offset_sweep_summary_2x2.csv
+|           offset_sweep_turning_summary_0_90_2x2.csv
+|           qmix_demand_sensitivity_summary.csv
+|           qmix_distance_sensitivity_summary.csv
+|           qmix_n5_distance_demand_summary.csv
+|           qmix_n5_scalability_summary.csv
+|           qmix_three_intersections_summary.csv
+|           qmix_three_intersection_action_distribution.csv
+|           qmix_three_intersection_action_fairness_summary.csv
+|           qmix_three_intersection_action_patterns.csv
+|           qmix_three_intersection_queue_fairness.csv
+|           qmix_v1_v2_v3_comparison.csv
+|           qmix_v1_v2_v3_training_tail_summary.csv
+|           qmix_v2_turning_summary.csv
+|           qmix_v2_turning_trained_summary.csv
+|           scenario_a_seed_level_metrics_with_max_pressure.csv
+|           scenario_a_wilcoxon_ci_tests.csv
+|           scenario_b_controller_comparison.csv
+|           scenario_b_dchf_summary.csv
+|           spillback_demand_summary.csv
+|           table_n5_scalability_by_seed.tex
+|           table_n5_scalability_summary.tex
+|           theory_observed_dchf_interpretation.csv
+|           theory_observed_dchf_interpretation.tex
+|           three_intersection_baseline_comparison.csv
+|           three_intersection_coordination_horizon_key_findings.csv
+|           three_intersection_coordination_horizon_regimes.csv
+|           three_intersection_d23_best_offset_vs_qmix.csv
+|           three_intersection_d23_offset_best_summary.csv
+|           three_intersection_d23_offset_sweep_summary.csv
+|           three_intersection_geometry_summary.txt
+|           three_intersection_offset_best_summary.csv
+|           three_intersection_offset_sweep_summary.csv
+|           three_intersection_qmix_comparison.csv
+|           
++---src
+|   +---analysis
+|   |       build_dchf_synthesis_tables.py
+|   |       build_scenario_b_dchf_summary.py
+|   |       build_theory_observed_dchf_table.py
+|   |       calculate_dchf_thresholds.py
+|   |       generate_distance_demand_grid.py
+|   |       generate_n5_article_outputs.py
+|   |       generate_n_intersection_corridor.py
+|   |       inspect_n5_phases.py
+|   |       patch_qmix_buffered_ratio_distance_demand.py
+|   |       plan_multiseed_horizon_validation.py
+|   |       plot_dchf_figures.py
+|   |       plot_distance_demand_heatmaps.py
+|   |       plot_distance_demand_heatmaps_updated.py
+|   |       plot_final_integrated_dchf_distance_demand.py
+|   |       plot_multiseed_horizon_validation.py
+|   |       run_distance_demand_grid_dchf.py
+|   |       run_multiseed_horizon_validation.py
+|   |       run_n10_coarse_benchmark_scan.py
+|   |       run_n10_coarse_scalability_probe.py
+|   |       run_n5_distance_demand_benchmark_scan.py
+|   |       run_n5_multiseed_scalability.py
+|   |       scenario_a_statistical_tests.py
+|   |       
+|   +---baselines
+|   |   |   analyze_fixed_time.py
+|   |   |   compare_baselines_2x2.py
+|   |   |   fixed_time_controller.py
+|   |   |   queue_based_controller.py
+|   |   |   queue_based_controller_v2.py
+|   |   |   queue_based_controller_v3.py
+|   |   |   safe_fixed_time_controller.py
+|   |   |   
+|   |   +---scalability
+|   |   |       run_n5_progression_offset_benchmark.py
+|   |   |       
+|   |   +---three_intersections
+|   |   |   |   analyze_qmix_three_intersection_actions.py
+|   |   |   |   compare_three_intersection_baselines.py
+|   |   |   |   compare_three_intersection_qmix.py
+|   |   |   |   evaluate_multiseed_three_intersection_controllers.py
+|   |   |   |   fixed_time_three_intersections.py
+|   |   |   |   plot_multiseed_three_intersection_comparison.py
+|   |   |   |   plot_qmix_three_action_fairness.py
+|   |   |   |   plot_three_intersection_offset_heatmaps.py
+|   |   |   |   run_three_intersection_d23_offset_sweep.py
+|   |   |   |   run_three_intersection_offset_sweep.py
+|   |   |   |   
+|   |   |   \---__pycache__
+|   |   |           run_three_intersection_d23_offset_sweep.cpython-37.pyc
+|   |   |           
+|   |   \---two_intersections
+|   |       |   analyze_corridor_baseline.py
+|   |       |   analyze_corridor_baseline_turning.py
+|   |       |   analyze_spillback_demand.py
+|   |       |   build_coordination_horizon_synthesis.py
+|   |       |   compare_corridor_controllers.py
+|   |       |   compare_corridor_fixed_time.py
+|   |       |   compare_scenario_b_controllers.py
+|   |       |   evaluate_multiseed_controllers.py
+|   |       |   evaluate_multiseed_offset_qmix_per_second.py
+|   |       |   evaluate_multiseed_scenario_b.py
+|   |       |   fixed_time_corridor.py
+|   |       |   fixed_time_corridor_offset.py
+|   |       |   fixed_time_corridor_turning.py
+|   |       |   max_pressure_corridor.py
+|   |       |   plot_controller_comparison.py
+|   |       |   plot_controller_metrics_grouped.py
+|   |       |   plot_demand_qmix_comparison.py
+|   |       |   plot_distance_qmix_comparison.py
+|   |       |   plot_distance_sensitivity.py
+|   |       |   plot_multiseed_robustness.py
+|   |       |   plot_multiseed_scenario_b.py
+|   |       |   plot_offset_sweep.py
+|   |       |   plot_offset_sweep_turning.py
+|   |       |   plot_scenario_b_controller_comparison.py
+|   |       |   plot_spillback_capacity_analysis.py
+|   |       |   queue_based_corridor.py
+|   |       |   run_demand_offset_sweep.py
+|   |       |   run_distance_offset_sweep.py
+|   |       |   run_offset_sweep.py
+|   |       |   run_offset_sweep_turning.py
+|   |       |   
+|   |       \---__pycache__
+|   |               run_distance_offset_sweep.cpython-37.pyc
+|   |               
+|   +---dqn
+|   |   |   dqn_agent.py
+|   |   |   dqn_network.py
+|   |   |   evaluate_dqn_single_intersection.py
+|   |   |   evaluate_dqn_single_intersection_v2.py
+|   |   |   evaluate_dqn_single_intersection_v2_per_second.py
+|   |   |   evaluate_dqn_single_intersection_v2_step_log.py
+|   |   |   replay_buffer.py
+|   |   |   test_dqn_agent.py
+|   |   |   test_dqn_network.py
+|   |   |   test_replay_buffer.py
+|   |   |   train_dqn_single_intersection.py
+|   |   |   train_dqn_single_intersection_v2.py
+|   |   |   
+|   |   +---two_intersections
+|   |   |       evaluate_independent_dqn_corridor.py
+|   |   |       evaluate_independent_dqn_corridor_per_second.py
+|   |   |       train_independent_dqn_corridor.py
+|   |   |       
+|   |   \---__pycache__
+|   |           dqn_agent.cpython-37.pyc
+|   |           dqn_network.cpython-37.pyc
+|   |           replay_buffer.cpython-37.pyc
+|   |           
+|   +---env
+|   |   |   single_intersection_env.py
+|   |   |   test_single_intersection_env.py
+|   |   |   
+|   |   +---scalability
+|   |   |   |   generic_corridor_env.py
+|   |   |   |   test_generic_corridor_env.py
+|   |   |   |   
+|   |   |   \---__pycache__
+|   |   |           generic_corridor_env.cpython-37.pyc
+|   |   |           
+|   |   +---three_intersections
+|   |   |   |   test_three_intersection_env.py
+|   |   |   |   three_intersection_env.py
+|   |   |   |   
+|   |   |   \---__pycache__
+|   |   |           three_intersection_env.cpython-37.pyc
+|   |   |           
+|   |   +---two_intersections
+|   |   |   |   test_two_intersection_env.py
+|   |   |   |   test_two_intersection_env_v3.py
+|   |   |   |   two_intersection_env.py
+|   |   |   |   two_intersection_env_v3.py
+|   |   |   |   
+|   |   |   \---__pycache__
+|   |   |           two_intersection_env.cpython-37.pyc
+|   |   |           two_intersection_env_v3.cpython-37.pyc
+|   |   |           
+|   |   \---__pycache__
+|   |           single_intersection_env.cpython-37.pyc
+|   |           
+|   +---qmix
+|   |   |   analyze_qmix_v2_turning.py
+|   |   |   analyze_qmix_v2_turning_trained.py
+|   |   |   compare_qmix_v1_v2_v3.py
+|   |   |   evaluate_qmix_corridor.py
+|   |   |   evaluate_qmix_corridor_per_second.py
+|   |   |   evaluate_qmix_corridor_v2.py
+|   |   |   evaluate_qmix_corridor_v2_per_second.py
+|   |   |   evaluate_qmix_corridor_v2_turning_per_second.py
+|   |   |   evaluate_qmix_corridor_v2_turning_trained_per_second.py
+|   |   |   evaluate_qmix_corridor_v3_per_second.py
+|   |   |   evaluate_qmix_demand_sensitivity.py
+|   |   |   evaluate_qmix_distance_sensitivity.py
+|   |   |   evaluate_qmix_n5_distance_demand.py
+|   |   |   evaluate_qmix_n5_scalability.py
+|   |   |   evaluate_qmix_three_intersections_per_second.py
+|   |   |   evaluate_qmix_three_intersection_d23_sensitivity.py
+|   |   |   mixing_network.py
+|   |   |   plot_three_intersection_d23_qmix_sensitivity.py
+|   |   |   qmix_agent.py
+|   |   |   q_network.py
+|   |   |   replay_buffer.py
+|   |   |   summarize_three_intersection_coordination_horizon.py
+|   |   |   test_mixing_network.py
+|   |   |   test_qmix_agent.py
+|   |   |   test_q_network.py
+|   |   |   test_replay_buffer.py
+|   |   |   train_qmix_corridor.py
+|   |   |   train_qmix_corridor_v2.py
+|   |   |   train_qmix_corridor_v2_turning.py
+|   |   |   train_qmix_corridor_v3.py
+|   |   |   train_qmix_n5_scalability.py
+|   |   |   train_qmix_three_intersections.py
+|   |   |   
+|   |   \---__pycache__
+|   |           evaluate_qmix_distance_sensitivity.cpython-37.pyc
+|   |           evaluate_qmix_three_intersection_d23_sensitivity.cpython-37.pyc
+|   |           mixing_network.cpython-37.pyc
+|   |           qmix_agent.cpython-37.pyc
+|   |           q_network.cpython-37.pyc
+|   |           replay_buffer.cpython-37.pyc
+|   |           
+|   \---traci_tests
+|           generate_demand_scenarios.py
+|           generate_distance_scenarios.py
+|           generate_three_intersection_corridor.py
+|           generate_three_intersection_distance_scenarios.py
+|           inspect_corridor_connections.py
+|           inspect_corridor_geometry.py
+|           inspect_phases_2x2.py
+|           inspect_phase_lanes_2x2.py
+|           inspect_three_intersection_geometry.py
+|           inspect_two_intersections.py
+|           test_traci_basic.py
+|           
+\---sumo_scenarios
+    +---multi_intersections
+    +---scalability
+    |   +---corridor_5x2_d200m_high
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d200m_low
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d200m_medium
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d200m_saturation
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d300m
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d300m_high
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d300m_low
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d300m_medium
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d300m_saturation
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d500m_high
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d500m_low
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d500m_medium
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d500m_saturation
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d750m_high
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d750m_low
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   +---corridor_5x2_d750m_medium
+    |   |       corridor.edg.xml
+    |   |       corridor.net.xml
+    |   |       corridor.nod.xml
+    |   |       corridor.rou.xml
+    |   |       corridor.sumocfg
+    |   |       
+    |   \---corridor_5x2_d750m_saturation
+    |           corridor.edg.xml
+    |           corridor.net.xml
+    |           corridor.nod.xml
+    |           corridor.rou.xml
+    |           corridor.sumocfg
+    |           
+    +---single_intersection
+    |   +---1tls_2x2
+    |   |       1tls_2x2.net.xml
+    |   |       1tls_2x2.rou.xml
+    |   |       1tls_2x2.sumocfg
+    |   |       1tls_2x2.tll.xml
+    |   |       gui-settings.cfg
+    |   |       tripinfo.xml
+    |   |       
+    |   \---1tls_3x3
+    |           1tls_3x3.net.xml
+    |           1tls_3x3.rou.xml
+    |           1tls_3x3.sumocfg
+    |           1tls_3x3.tll.xml
+    |           gui-settings.cfg
+    |           tripinfo.xml
+    |           
+    +---three_intersections
+    |   +---corridor_3x2
+    |   |       corridor_3x2.edg.xml
+    |   |       corridor_3x2.net.xml
+    |   |       corridor_3x2.nod.xml
+    |   |       corridor_3x2_through.rou.xml
+    |   |       corridor_3x2_through.sumocfg
+    |   |       
+    |   \---distance_sensitivity
+    |       +---d23_1000m
+    |       |       corridor_3x2.edg.xml
+    |       |       corridor_3x2.net.xml
+    |       |       corridor_3x2.nod.xml
+    |       |       corridor_3x2_through.rou.xml
+    |       |       corridor_3x2_through.sumocfg
+    |       |       
+    |       +---d23_100m
+    |       |       corridor_3x2.edg.xml
+    |       |       corridor_3x2.net.xml
+    |       |       corridor_3x2.nod.xml
+    |       |       corridor_3x2_through.rou.xml
+    |       |       corridor_3x2_through.sumocfg
+    |       |       
+    |       +---d23_200m
+    |       |       corridor_3x2.edg.xml
+    |       |       corridor_3x2.net.xml
+    |       |       corridor_3x2.nod.xml
+    |       |       corridor_3x2_through.rou.xml
+    |       |       corridor_3x2_through.sumocfg
+    |       |       
+    |       +---d23_300m
+    |       |       corridor_3x2.edg.xml
+    |       |       corridor_3x2.net.xml
+    |       |       corridor_3x2.nod.xml
+    |       |       corridor_3x2_through.rou.xml
+    |       |       corridor_3x2_through.sumocfg
+    |       |       
+    |       +---d23_500m
+    |       |       corridor_3x2.edg.xml
+    |       |       corridor_3x2.net.xml
+    |       |       corridor_3x2.nod.xml
+    |       |       corridor_3x2_through.rou.xml
+    |       |       corridor_3x2_through.sumocfg
+    |       |       
+    |       \---d23_750m
+    |               corridor_3x2.edg.xml
+    |               corridor_3x2.net.xml
+    |               corridor_3x2.nod.xml
+    |               corridor_3x2_through.rou.xml
+    |               corridor_3x2_through.sumocfg
+    |               
+    \---two_intersections
+        +---corridor_2x2
+        |       corridor_2x2.net.xml
+        |       corridor_2x2.rou.xml
+        |       corridor_2x2.sumocfg
+        |       corridor_2x2_turning.rou.xml
+        |       corridor_2x2_turning.sumocfg
+        |       
+        +---demand_sensitivity
+        |   +---demand_high
+        |   |       corridor.net.xml
+        |   |       corridor_turning.rou.xml
+        |   |       corridor_turning.sumocfg
+        |   |       
+        |   +---demand_low
+        |   |       corridor.net.xml
+        |   |       corridor_turning.rou.xml
+        |   |       corridor_turning.sumocfg
+        |   |       
+        |   +---demand_medium
+        |   |       corridor.net.xml
+        |   |       corridor_turning.rou.xml
+        |   |       corridor_turning.sumocfg
+        |   |       
+        |   +---demand_oversaturation
+        |   |       corridor.net.xml
+        |   |       corridor_turning.rou.xml
+        |   |       corridor_turning.sumocfg
+        |   |       
+        |   \---demand_saturation
+        |           corridor.net.xml
+        |           corridor_turning.rou.xml
+        |           corridor_turning.sumocfg
+        |           
+        +---distance_1000m
+        |       corridor.edg.xml
+        |       corridor.net.xml
+        |       corridor.nod.xml
+        |       corridor_tls.add.xml
+        |       corridor_turning.rou.xml
+        |       corridor_turning.sumocfg
+        |       
+        +---distance_100m
+        |       corridor.edg.xml
+        |       corridor.net.xml
+        |       corridor.nod.xml
+        |       corridor_tls.add.xml
+        |       corridor_turning.rou.xml
+        |       corridor_turning.sumocfg
+        |       
+        +---distance_200m
+        |       corridor.edg.xml
+        |       corridor.net.xml
+        |       corridor.nod.xml
+        |       corridor_tls.add.xml
+        |       corridor_turning.rou.xml
+        |       corridor_turning.sumocfg
+        |       
+        +---distance_300m
+        |       corridor.edg.xml
+        |       corridor.net.xml
+        |       corridor.nod.xml
+        |       corridor_tls.add.xml
+        |       corridor_turning.rou.xml
+        |       corridor_turning.sumocfg
+        |       
+        +---distance_500m
+        |       corridor.edg.xml
+        |       corridor.net.xml
+        |       corridor.nod.xml
+        |       corridor_tls.add.xml
+        |       corridor_turning.rou.xml
+        |       corridor_turning.sumocfg
+        |       
+        +---distance_750m
+        |       corridor.edg.xml
+        |       corridor.net.xml
+        |       corridor.nod.xml
+        |       corridor_tls.add.xml
+        |       corridor_turning.rou.xml
+        |       corridor_turning.sumocfg
+        |       
+        \---distance_demand_grid
+            +---d1000_high
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d1000_low
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d1000_medium
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d1000_oversaturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d1000_saturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d100_high
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d100_low
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d100_medium
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d100_oversaturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d100_saturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d200_high
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d200_low
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d200_medium
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d200_oversaturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d200_saturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d300_high
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d300_low
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d300_medium
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d300_oversaturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d300_saturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d500_high
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d500_low
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d500_medium
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d500_oversaturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d500_saturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d750_high
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d750_low
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d750_medium
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            +---d750_oversaturation
+            |       corridor.edg.xml
+            |       corridor.net.xml
+            |       corridor.nod.xml
+            |       corridor_tls.add.xml
+            |       corridor_turning.rou.xml
+            |       corridor_turning.sumocfg
+            |       
+            \---d750_saturation
+                    corridor.edg.xml
+                    corridor.net.xml
+                    corridor.nod.xml
+                    corridor_tls.add.xml
+                    corridor_turning.rou.xml
+                    corridor_turning.sumocfg
+                    

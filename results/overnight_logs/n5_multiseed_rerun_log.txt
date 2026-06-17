@@ -1,0 +1,36 @@
+Interrupt signal received, trying to exit gracefully.
+
+================================================================================
+Running N=5 multi-seed validation | seed=0
+================================================================================
+Running simultaneous fixed-time...
+ seed              controller  rows  mean_vehicle_count  max_vehicle_count  mean_total_waiting_time  max_total_waiting_time  mean_speed  mean_total_queue  max_total_queue  total_expected  total_departed  total_arrived  buffered_ratio capacity_regime  total_teleports
+    0 Simultaneous Fixed-Time  3600             161.292                196                  758.132                  3125.0       7.773            45.947              112          4600.0            4600           4437             0.0   Unconstrained                0
+
+Running progression offset 45s...
+Traceback (most recent call last):
+  File "src\analysis\run_n5_multiseed_scalability.py", line 483, in <module>
+    main()
+  File "src\analysis\run_n5_multiseed_scalability.py", line 448, in main
+    controller_name=f"Progression Offset {BEST_OFFSET}s",
+  File "src\analysis\run_n5_multiseed_scalability.py", line 188, in run_offset_controller
+    "mean_speed": get_mean_speed(),
+  File "src\analysis\run_n5_multiseed_scalability.py", line 80, in get_mean_speed
+    return sum(traci.vehicle.getSpeed(v) for v in vehicles) / len(vehicles)
+  File "src\analysis\run_n5_multiseed_scalability.py", line 80, in <genexpr>
+    return sum(traci.vehicle.getSpeed(v) for v in vehicles) / len(vehicles)
+  File "C:\Program Files (x86)\Eclipse\Sumo\tools\traci\_vehicle.py", line 282, in getSpeed
+    return self._getUniversal(tc.VAR_SPEED, vehID)
+  File "C:\Program Files (x86)\Eclipse\Sumo\tools\traci\domain.py", line 152, in _getUniversal
+    return _parse(self._retValFunc, varID, self._getCmd(varID, objectID, format, *values))
+  File "C:\Program Files (x86)\Eclipse\Sumo\tools\traci\domain.py", line 157, in _getCmd
+    r = self._connection._sendCmd(self._cmdGetID, varID, objID, format, *values)
+  File "C:\Program Files (x86)\Eclipse\Sumo\tools\traci\connection.py", line 232, in _sendCmd
+    return self._sendExact()
+  File "C:\Program Files (x86)\Eclipse\Sumo\tools\traci\connection.py", line 131, in _sendExact
+    result = self._recvExact()
+  File "C:\Program Files (x86)\Eclipse\Sumo\tools\traci\connection.py", line 109, in _recvExact
+    t = self._socket.recv(4 - len(result))
+KeyboardInterrupt
+Error: tcpip::Socket::recvAndCheck @ recv: Socket reset by peer
+Quitting (on error).

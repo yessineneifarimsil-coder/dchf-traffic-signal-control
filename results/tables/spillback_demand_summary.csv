@@ -1,0 +1,11 @@
+controller,demand_scenario,demand_multiplier,rows,mean_vehicle_count,mean_total_waiting_time,mean_speed,mean_total_queue,max_total_queue,mean_central_occupancy_ratio,max_central_occupancy_ratio,spillback_frequency_80,severe_spillback_frequency_95,mean_E1_halting,mean_neg_E1_halting,final_active,final_buffered,buffered_ratio
+Best Offset Fixed-Time,low,0.5,3600,29.4,79.909,8.217,6.363,22,0.071,0.134,0.0,0.0,0.86,0.691,20,0,0.0
+QMIX V2 transferred,low,0.5,3599,31.224,146.967,7.747,8.092,27,0.076,0.188,0.0,0.0,0.841,1.356,19,6,0.004
+Best Offset Fixed-Time,medium,1.0,3600,61.761,175.672,7.871,13.616,34,0.136,0.255,0.0,0.0,1.253,1.074,52,0,0.0
+QMIX V2 transferred,medium,1.0,3599,62.118,180.821,7.839,13.784,36,0.137,0.255,0.0,0.0,1.181,1.133,51,6,0.002
+Best Offset Fixed-Time,high,1.5,3600,133.114,938.916,4.869,55.749,92,0.163,0.309,0.0,0.0,2.56,1.043,129,448,0.107
+QMIX V2 transferred,high,1.5,3599,146.158,985.865,4.637,60.022,106,0.174,0.322,0.0,0.0,1.712,1.715,171,295,0.07
+Best Offset Fixed-Time,saturation,2.0,3600,178.334,1261.463,4.235,76.776,108,0.19,0.336,0.0,0.0,2.287,2.034,173,1108,0.198
+QMIX V2 transferred,saturation,2.0,3599,178.984,1267.017,4.197,77.084,115,0.189,0.322,0.0,0.0,2.196,2.102,187,1127,0.201
+Best Offset Fixed-Time,oversaturation,2.5,3600,245.078,2231.027,3.381,126.689,196,0.194,0.376,0.0,0.0,2.949,1.712,273,2057,0.294
+QMIX V2 transferred,oversaturation,2.5,3599,245.558,2355.914,3.32,130.166,213,0.18,0.47,0.0,0.0,3.47,2.792,271,2161,0.309

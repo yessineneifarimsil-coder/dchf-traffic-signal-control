@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue,total_departed,total_arrived,final_active,final_buffered,buffered_ratio
+low,0.5,QMIX V2 transferred,3599,31.224,49,146.967,1026.0,7.747,1.439,8.092,27,1390,1377,19,6,0.004
+medium,1.0,QMIX V2 transferred,3599,62.118,76,180.821,916.0,7.839,2.144,13.784,36,2794,2749,51,6,0.002
+high,1.5,QMIX V2 transferred,3599,146.158,187,985.865,2073.0,4.637,2.144,60.022,106,3909,3744,171,295,0.07
+saturation,2.0,QMIX V2 transferred,3599,178.984,208,1267.017,2260.0,4.197,2.144,77.084,115,4473,4292,187,1127,0.201
+oversaturation,2.5,QMIX V2 transferred,3599,245.558,313,2355.914,7331.0,3.32,1.348,130.166,213,4835,4570,271,2161,0.309

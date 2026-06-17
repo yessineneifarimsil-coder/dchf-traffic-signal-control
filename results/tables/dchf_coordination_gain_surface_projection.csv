@@ -1,0 +1,5 @@
+projection,number_of_tested_scenarios,qmix_cg_min_percent,qmix_cg_mean_percent,qmix_cg_max_percent,offset_cg_mean_percent,gap_min_percent,gap_mean_percent,gap_max_percent,effective_scenarios_reference_5pct,interpretation
+Three-intersection reference scalability horizon,1,43.339,43.339,43.339,45.756,4.455,4.455,4.455,"d12=300 m, d23=300 m","This row is one observed projection of the latent Coordination Gain surface CG = F(d, rho, N, B)."
+Three-intersection third-light spatial horizon,6,-57.497,7.76,54.199,41.451,4.411,55.111,180.448,"d23=300 m, d23=500 m","This row is one observed projection of the latent Coordination Gain surface CG = F(d, rho, N, B)."
+Two-intersection demand horizon,5,-58.024,2.558,34.063,19.198,0.44,19.577,83.918,"medium (1.0x), high (1.5x), saturation (2.0x)","This row is one observed projection of the latent Coordination Gain surface CG = F(d, rho, N, B)."
+Two-intersection spatial horizon,6,-82.373,-1.31,76.083,29.212,1.018,33.644,82.373,"200 m, 300 m","This row is one observed projection of the latent Coordination Gain surface CG = F(d, rho, N, B)."

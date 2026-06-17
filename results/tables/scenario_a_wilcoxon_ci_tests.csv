@@ -1,0 +1,4 @@
+metric,controller_1,controller_2,mean_controller_1,mean_controller_2,mean_difference_c1_minus_c2,ci95_low_difference,ci95_high_difference,mean_percent_difference_vs_c2,ci95_low_percent_difference,ci95_high_percent_difference,wilcoxon_statistic,wilcoxon_p_value,paired_t_statistic,paired_t_p_value,n_paired_seeds
+mean_waiting,Best Offset Fixed-Time 45s,QMIX V2,169.781606,177.290831,-7.509225,-8.448336,-6.553295,-4.232761,-4.751758,-3.701384,0.0,0.001953,-14.807998,0.0,10
+mean_waiting,Best Offset Fixed-Time 45s,Max Pressure,169.781606,149.911306,19.8703,18.019773,21.807282,13.289568,11.931884,14.724118,0.0,0.001953,19.567358,0.0,10
+mean_waiting,QMIX V2,Max Pressure,177.290831,149.911306,27.379525,25.777354,28.928559,18.295056,17.060419,19.501634,0.0,0.001953,32.13049,0.0,10

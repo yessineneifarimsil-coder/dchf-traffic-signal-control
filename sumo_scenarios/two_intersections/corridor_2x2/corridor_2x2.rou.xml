@@ -1,0 +1,25 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="13.89"/>
+
+    <!-- Main corridor routes -->
+    <route id="west_to_east" edges="E0 E1 -E2"/>
+    <route id="east_to_west" edges="E2 -E1 -E0"/>
+
+    <!-- Side-road routes at intersection 1 -->
+    <route id="north1_to_south1" edges="E4 -E5"/>
+    <route id="south1_to_north1" edges="E5 -E4"/>
+
+    <!-- Side-road routes at intersection 2 -->
+    <route id="north2_to_south2" edges="E7 -E6"/>
+    <route id="south2_to_north2" edges="E6 -E7"/>
+
+    <!-- Traffic flows -->
+    <flow id="f_w_e" type="car" route="west_to_east" begin="0" end="3600" vehsPerHour="900"/>
+    <flow id="f_e_w" type="car" route="east_to_west" begin="0" end="3600" vehsPerHour="700"/>
+
+    <flow id="f_n1_s1" type="car" route="north1_to_south1" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="f_s1_n1" type="car" route="south1_to_north1" begin="0" end="3600" vehsPerHour="300"/>
+
+    <flow id="f_n2_s2" type="car" route="north2_to_south2" begin="0" end="3600" vehsPerHour="300"/>
+    <flow id="f_s2_n2" type="car" route="south2_to_north2" begin="0" end="3600" vehsPerHour="300"/>
+</routes>

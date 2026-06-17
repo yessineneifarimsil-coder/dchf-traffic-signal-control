@@ -1,0 +1,81 @@
+=== Corridor Connection Summary ===
+Network file: sumo_scenarios\two_intersections\corridor_2x2\corridor_2x2.net.xml
+
+Valid outgoing movements from each incoming edge:
+
+From edge -E1:
+  -> -E0
+     lane 0 -> lane 0, tl=J1, linkIndex=5, dir=s
+     lane 1 -> lane 1, tl=J1, linkIndex=6, dir=s
+  -> -E4
+     lane 0 -> lane 0, tl=J1, linkIndex=4, dir=r
+  -> -E5
+     lane 1 -> lane 1, tl=J1, linkIndex=7, dir=l
+
+From edge E0:
+  -> -E4
+     lane 1 -> lane 1, tl=J1, linkIndex=15, dir=l
+  -> -E5
+     lane 0 -> lane 0, tl=J1, linkIndex=12, dir=r
+  -> E1
+     lane 0 -> lane 0, tl=J1, linkIndex=13, dir=s
+     lane 1 -> lane 1, tl=J1, linkIndex=14, dir=s
+
+From edge E1:
+  -> -E2
+     lane 0 -> lane 0, tl=J2, linkIndex=13, dir=s
+     lane 1 -> lane 1, tl=J2, linkIndex=14, dir=s
+  -> -E6
+     lane 0 -> lane 0, tl=J2, linkIndex=12, dir=r
+  -> -E7
+     lane 1 -> lane 1, tl=J2, linkIndex=15, dir=l
+
+From edge E2:
+  -> -E1
+     lane 0 -> lane 0, tl=J2, linkIndex=5, dir=s
+     lane 1 -> lane 1, tl=J2, linkIndex=6, dir=s
+  -> -E6
+     lane 1 -> lane 1, tl=J2, linkIndex=7, dir=l
+  -> -E7
+     lane 0 -> lane 0, tl=J2, linkIndex=4, dir=r
+
+From edge E4:
+  -> -E0
+     lane 0 -> lane 0, tl=J1, linkIndex=0, dir=r
+  -> -E5
+     lane 0 -> lane 0, tl=J1, linkIndex=1, dir=s
+     lane 1 -> lane 1, tl=J1, linkIndex=2, dir=s
+  -> E1
+     lane 1 -> lane 1, tl=J1, linkIndex=3, dir=l
+
+From edge E5:
+  -> -E0
+     lane 1 -> lane 1, tl=J1, linkIndex=11, dir=l
+  -> -E4
+     lane 0 -> lane 0, tl=J1, linkIndex=9, dir=s
+     lane 1 -> lane 1, tl=J1, linkIndex=10, dir=s
+  -> E1
+     lane 0 -> lane 0, tl=J1, linkIndex=8, dir=r
+
+From edge E6:
+  -> -E1
+     lane 1 -> lane 1, tl=J2, linkIndex=11, dir=l
+  -> -E2
+     lane 0 -> lane 0, tl=J2, linkIndex=8, dir=r
+  -> -E7
+     lane 0 -> lane 0, tl=J2, linkIndex=9, dir=s
+     lane 1 -> lane 1, tl=J2, linkIndex=10, dir=s
+
+From edge E7:
+  -> -E1
+     lane 0 -> lane 0, tl=J2, linkIndex=0, dir=r
+  -> -E2
+     lane 1 -> lane 1, tl=J2, linkIndex=3, dir=l
+  -> -E6
+     lane 0 -> lane 0, tl=J2, linkIndex=1, dir=s
+     lane 1 -> lane 1, tl=J2, linkIndex=2, dir=s
+
+Interpretation guide:
+- If an edge appears under 'From edge X -> Y', then route X Y is allowed.
+- Through movements and turning movements must use only valid edge sequences.
+- We will use this file to build Scenario B route definitions safely.

@@ -1,0 +1,13 @@
+finding,value
+Two-intersection tested effective spatial horizon,"200 m, 300 m"
+Two-intersection marginal spatial horizon,100 m
+Two-intersection outside spatial horizon,"500 m, 750 m, 1000 m"
+Two-intersection effective demand horizon,"medium (1.0x), saturation (2.0x)"
+Two-intersection marginal demand horizon,"high (1.5x), oversaturation (2.5x)"
+Two-intersection outside demand horizon,low (0.5x)
+Three-intersection reference QMIX gap,4.455%
+Three-intersection reference regime,Effective coordination zone
+Best tested third-light distance,d23=500 m with optimized offset waiting time = 194.986
+Three-intersection tested effective d23 horizon,"d23=300 m, d23=500 m"
+Three-intersection marginal d23 horizon,d23=750 m
+Three-intersection outside d23 horizon,"d23=100 m, d23=200 m, d23=1000 m"

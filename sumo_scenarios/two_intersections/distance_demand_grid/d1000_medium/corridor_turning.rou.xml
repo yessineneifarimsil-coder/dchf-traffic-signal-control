@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='utf-8'?>
+<routes>
+    <vType accel="2.6" decel="4.5" id="car" length="5.0" maxSpeed="13.89" sigma="0.5" />
+
+    
+    
+    
+    
+    
+    <route edges="E0 E1 -E2" id="W_to_E_straight" />
+    <route edges="E0 -E5" id="W_to_J1_right" />
+    <route edges="E0 -E4" id="W_to_J1_left" />
+
+    <flow begin="0" end="3600" id="f_W_E_straight" route="W_to_E_straight" type="car" vehsPerHour="630.0" />
+    <flow begin="0" end="3600" id="f_W_J1_right" route="W_to_J1_right" type="car" vehsPerHour="135.0" />
+    <flow begin="0" end="3600" id="f_W_J1_left" route="W_to_J1_left" type="car" vehsPerHour="135.0" />
+
+    
+    
+    
+    
+    
+    <route edges="E2 -E1 -E0" id="E_to_W_straight" />
+    <route edges="E2 -E7" id="E_to_J2_right" />
+    <route edges="E2 -E6" id="E_to_J2_left" />
+
+    <flow begin="0" end="3600" id="f_E_W_straight" route="E_to_W_straight" type="car" vehsPerHour="490.0" />
+    <flow begin="0" end="3600" id="f_E_J2_right" route="E_to_J2_right" type="car" vehsPerHour="105.0" />
+    <flow begin="0" end="3600" id="f_E_J2_left" route="E_to_J2_left" type="car" vehsPerHour="105.0" />
+
+    
+    
+    
+    
+    
+    <route edges="E4 -E5" id="N1_to_S1_straight" />
+    <route edges="E4 -E0" id="N1_to_W_right" />
+    <route edges="E4 E1 -E2" id="N1_to_E_left" />
+
+    <flow begin="0" end="3600" id="f_N1_S1_straight" route="N1_to_S1_straight" type="car" vehsPerHour="210.0" />
+    <flow begin="0" end="3600" id="f_N1_W_right" route="N1_to_W_right" type="car" vehsPerHour="45.0" />
+    <flow begin="0" end="3600" id="f_N1_E_left" route="N1_to_E_left" type="car" vehsPerHour="45.0" />
+
+    
+    
+    
+    
+    
+    <route edges="E5 -E4" id="S1_to_N1_straight" />
+    <route edges="E5 E1 -E2" id="S1_to_E_right" />
+    <route edges="E5 -E0" id="S1_to_W_left" />
+
+    <flow begin="0" end="3600" id="f_S1_N1_straight" route="S1_to_N1_straight" type="car" vehsPerHour="210.0" />
+    <flow begin="0" end="3600" id="f_S1_E_right" route="S1_to_E_right" type="car" vehsPerHour="45.0" />
+    <flow begin="0" end="3600" id="f_S1_W_left" route="S1_to_W_left" type="car" vehsPerHour="45.0" />
+
+    
+    
+    
+    
+    
+    <route edges="E6 -E7" id="N2_to_S2_straight" />
+    <route edges="E6 -E2" id="N2_to_E_right" />
+    <route edges="E6 -E1 -E0" id="N2_to_W_left" />
+
+    <flow begin="0" end="3600" id="f_N2_S2_straight" route="N2_to_S2_straight" type="car" vehsPerHour="210.0" />
+    <flow begin="0" end="3600" id="f_N2_E_right" route="N2_to_E_right" type="car" vehsPerHour="45.0" />
+    <flow begin="0" end="3600" id="f_N2_W_left" route="N2_to_W_left" type="car" vehsPerHour="45.0" />
+
+    
+    
+    
+    
+    
+    <route edges="E7 -E6" id="S2_to_N2_straight" />
+    <route edges="E7 -E1 -E0" id="S2_to_W_right" />
+    <route edges="E7 -E2" id="S2_to_E_left" />
+
+    <flow begin="0" end="3600" id="f_S2_N2_straight" route="S2_to_N2_straight" type="car" vehsPerHour="210.0" />
+    <flow begin="0" end="3600" id="f_S2_W_right" route="S2_to_W_right" type="car" vehsPerHour="45.0" />
+    <flow begin="0" end="3600" id="f_S2_E_left" route="S2_to_E_left" type="car" vehsPerHour="45.0" />
+</routes>

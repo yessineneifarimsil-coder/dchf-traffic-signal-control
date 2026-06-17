@@ -1,0 +1,4 @@
+scenario,controller,mean_waiting_time,mean_speed,mean_queue,coordination_gain_percent,gap_vs_best_offset_percent,regime
+Scenario B turning movements,Best Offset Fixed-Time 45s,168.585,7.955,13.274,37.691,0.0,Optimized benchmark
+Scenario B turning movements,QMIX V2 transferred,180.616,7.852,13.84,33.244,7.136,Marginal coordination zone
+Scenario B turning movements,QMIX V2 trained on Scenario B,257.235,7.663,15.887,4.926,52.585,Outside coordination horizon

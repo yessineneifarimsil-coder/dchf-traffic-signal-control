@@ -1,0 +1,5 @@
+horizon_type,acceptable_capacity_scenarios,oversaturated_scenarios,capacity_horizon_interpretation
+Three-intersection reference scalability horizon,"d12=300 m, d23=300 m",None,Scenarios classified as oversaturated are beyond the acceptable capacity horizon H_B under the current buffered-ratio rule.
+Three-intersection third-light spatial horizon,"d23=100 m, d23=200 m, d23=300 m, d23=500 m, d23=750 m, d23=1000 m",None,Scenarios classified as oversaturated are beyond the acceptable capacity horizon H_B under the current buffered-ratio rule.
+Two-intersection demand horizon,"low (0.5x), medium (1.0x), high (1.5x), saturation (2.0x)",oversaturation (2.5x),Scenarios classified as oversaturated are beyond the acceptable capacity horizon H_B under the current buffered-ratio rule.
+Two-intersection spatial horizon,"100 m, 200 m, 300 m, 500 m, 750 m, 1000 m",None,Scenarios classified as oversaturated are beyond the acceptable capacity horizon H_B under the current buffered-ratio rule.

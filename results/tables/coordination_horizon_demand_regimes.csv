@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,best_offset,best_offset_waiting_time,qmix_waiting_time,qmix_gap_percent,best_offset_buffered_ratio,qmix_buffered_ratio,max_buffered_ratio,coordination_regime,capacity_status
+low,0.5,45,79.909,146.967,83.918,0.0,0.004,0.004,Outside coordination horizon,Unconstrained
+medium,1.0,45,175.672,180.821,2.931,0.0,0.002,0.002,Effective coordination zone,Unconstrained
+high,1.5,55,938.916,985.865,5.0,0.107,0.07,0.107,Effective coordination zone,Capacity-limited
+saturation,2.0,45,1261.463,1267.017,0.44,0.198,0.201,0.201,Effective coordination zone,Capacity-limited
+oversaturation,2.5,50,2231.027,2355.914,5.598,0.294,0.309,0.309,Marginal coordination zone,Oversaturated

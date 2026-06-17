@@ -1,0 +1,2 @@
+controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,mean_total_queue,max_total_queue,total_expected,total_departed,total_arrived,buffered_ratio,capacity_regime
+QMIX 5 Agents,3599,159.27,193,356.659,1509.0,7.81,35.37,111,4600.0,4588,4446,0.003,Unconstrained

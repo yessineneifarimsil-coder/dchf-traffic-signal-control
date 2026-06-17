@@ -1,0 +1,16 @@
+seed,controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,mean_total_queue,max_total_queue,total_expected,total_departed,total_arrived,buffered_ratio,capacity_regime,total_teleports
+0,Simultaneous Fixed-Time,3600,161.292,196,758.132,3125.0,7.773,45.947,112,4600.0,4600,4437,0.0,Unconstrained,0
+0,Progression Offset 45s,3600,159.512,189,360.505,1496.0,7.8,35.586,110,4600.0,4600,4450,0.0,Unconstrained,0
+0,QMIX 5 Agents,3599,159.27,193,356.659,1509.0,7.81,35.37,111,4600.0,4588,4446,0.003,Unconstrained,0
+1,Simultaneous Fixed-Time,3600,161.145,197,760.797,3123.0,7.785,45.965,112,4600.0,4600,4438,0.0,Unconstrained,0
+1,Progression Offset 45s,3600,159.615,189,364.707,1451.0,7.795,35.777,112,4600.0,4600,4453,0.0,Unconstrained,0
+1,QMIX 5 Agents,3599,159.079,194,355.898,1466.0,7.823,35.382,110,4600.0,4588,4446,0.003,Unconstrained,0
+2,Simultaneous Fixed-Time,3600,161.045,196,755.625,3087.0,7.787,45.796,112,4600.0,4600,4434,0.0,Unconstrained,0
+2,Progression Offset 45s,3600,159.366,189,357.43,1487.0,7.807,35.389,108,4600.0,4600,4449,0.0,Unconstrained,0
+2,QMIX 5 Agents,3599,159.235,194,355.936,1493.0,7.814,35.301,113,4600.0,4588,4446,0.003,Unconstrained,0
+3,Simultaneous Fixed-Time,3600,160.872,195,757.299,3100.0,7.798,45.893,112,4600.0,4600,4436,0.0,Unconstrained,0
+3,Progression Offset 45s,3600,159.284,189,361.949,1482.0,7.811,35.775,109,4600.0,4600,4450,0.0,Unconstrained,0
+3,QMIX 5 Agents,3599,159.268,190,356.132,1485.0,7.813,35.388,109,4600.0,4588,4445,0.003,Unconstrained,0
+4,Simultaneous Fixed-Time,3600,160.695,195,759.822,3097.0,7.807,45.963,111,4600.0,4600,4439,0.0,Unconstrained,0
+4,Progression Offset 45s,3600,159.415,190,366.742,1483.0,7.803,36.064,110,4600.0,4600,4451,0.0,Unconstrained,0
+4,QMIX 5 Agents,3599,158.928,191,358.764,1547.0,7.827,35.588,112,4600.0,4588,4447,0.003,Unconstrained,0

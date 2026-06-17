@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-05-26T11:40:04.013999+01:00 by Eclipse SUMO GUI 1.25.0
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="./env/custom_env/data/1tls_3x3/1tls_3x3.net.xml"/>
+        <route-files value="./env/custom_env/data/1tls_3x3/1tls_3x3.rou.xml"/>
+        <additional-files value="./env/custom_env/data/1tls_3x3/1tls_3x3.tll.xml"/>
+    </input>
+
+    <output>
+        <tripinfo-output value="./env/custom_env/data/1tls_3x3/tripinfo.xml"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+    </time>
+
+    <processing>
+        <time-to-teleport value="3600"/>
+        <waiting-time-memory value="3600"/>
+    </processing>
+
+    <report>
+        <verbose value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+    <traci_server>
+        <remote-port value="61361"/>
+    </traci_server>
+
+    <gui_only>
+        <gui-settings-file value="./env/custom_env/data/1tls_3x3/gui-settings.cfg"/>
+        <quit-on-end value="true"/>
+        <start value="true"/>
+        <delay value="0"/>
+    </gui_only>
+
+</sumoConfiguration>
+-->
+
+<tripinfos xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tripinfo_file.xsd">
+</tripinfos>

@@ -1,0 +1,8 @@
+controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue
+Simultaneous Fixed-Time,3600,61.872,79,221.901,967.0,8.136,0.0,14.47,39
+Best Offset Fixed-Time 45s,3600,64.62,76,171.501,643.0,7.954,0.0,14.526,39
+Queue-Based Corridor,3600,62.369,83,232.037,1025.0,8.032,0.0,14.932,39
+Independent DQN,3599,62.114,83,226.279,993.0,8.08,1.79,14.682,39
+QMIX V1,3599,62.159,83,226.941,1083.0,8.072,1.79,14.705,43
+QMIX V2,3599,64.72,80,175.814,857.0,7.948,1.79,14.658,40
+QMIX V3,3599,64.707,75,176.694,892.0,7.943,1.79,14.704,39

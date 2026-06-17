@@ -1,0 +1,2 @@
+controller,rows,mean_vehicle_count,max_vehicle_count,mean_total_waiting_time,max_total_waiting_time,mean_speed,min_mean_speed,mean_total_queue,max_total_queue,total_departed,total_arrived,final_active,final_buffered,buffered_ratio
+QMIX 3 Agents,3600,92.135,116,237.292,1031.0,7.633,0.0,21.599,68,3400,3311,89,0,0.0

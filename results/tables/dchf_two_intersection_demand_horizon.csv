@@ -1,0 +1,6 @@
+horizon_type,scenario,sim_waiting_time,optimized_offset_waiting_time,qmix_waiting_time,optimized_offset_coordination_gain_percent,qmix_coordination_gain_percent,qmix_gap_vs_optimized_offset_percent,coordination_regime,capacity_regime,main_interpretation
+Two-intersection demand horizon,low (0.5x),93.003,79.909,146.967,14.079,-58.024,83.918,Outside coordination horizon,Unconstrained,Demand and capacity effect on coordination
+Two-intersection demand horizon,medium (1.0x),274.231,175.672,180.821,35.94,34.063,2.931,Effective coordination zone,Unconstrained,Demand and capacity effect on coordination
+Two-intersection demand horizon,high (1.5x),1226.653,938.916,985.865,23.457,19.63,5.0,Marginal coordination zone,Capacity-limited,Demand and capacity effect on coordination
+Two-intersection demand horizon,saturation (2.0x),1432.412,1261.463,1267.017,11.934,11.547,0.44,Effective coordination zone,Capacity-limited,Demand and capacity effect on coordination
+Two-intersection demand horizon,oversaturation (2.5x),2494.985,2231.027,2355.914,10.58,5.574,5.598,Marginal coordination zone,Oversaturated,Demand and capacity effect on coordination

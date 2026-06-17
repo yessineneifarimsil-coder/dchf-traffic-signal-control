@@ -1,0 +1,7 @@
+agent,action,action_label,count_decisions,percentage_decisions
+J1,0,side_priority,41,51.25
+J1,1,main_priority,39,48.75
+J2,0,side_priority,41,51.25
+J2,1,main_priority,39,48.75
+J3,0,side_priority,40,50.0
+J3,1,main_priority,40,50.0
