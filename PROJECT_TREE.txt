@@ -1,5 +1,5 @@
 Structure du dossier
-Le numéro de série du volume est 00000027 88DE:8D84
+Le numéro de série du volume est 000000B9 88DE:8D84
 C:.
 |   .gitignore
 |   edge_ids.txt
@@ -17,6 +17,9 @@ C:.
 +---article
 |       README.md
 |       references.bib
+|       
++---docs
+|       RESULTS_SUMMARY.md
 |       
 +---notes
 |       learning_log.md
