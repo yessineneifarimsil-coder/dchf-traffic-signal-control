@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,seeds_run,mp_waiting_mean,mp_waiting_std,mp_speed_mean,mp_speed_std,mp_queue_mean,mp_queue_std,mp_buffered_ratio_mean,mp_buffered_ratio_std,mp_capacity_regime
+low,0.5,5,66.215,2.522,9.505,0.045,3.905,0.104,0.0,0.0,Unconstrained
+medium,1.0,5,148.995,8.777,9.024,0.074,9.244,0.326,0.0,0.0,Unconstrained
+high,1.5,5,185.884,7.498,8.476,0.073,14.977,0.489,0.0361,0.0003,Mild insertion pressure
+saturation,2.0,5,202.306,15.404,7.799,0.164,21.279,1.358,0.144,0.0005,Capacity-limited
+oversaturation,2.5,5,534.988,29.81,4.486,0.213,66.34,3.631,0.2323,0.0021,Capacity-limited

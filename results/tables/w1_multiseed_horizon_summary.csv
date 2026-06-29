@@ -1,0 +1,9 @@
+dim,case,offset_wt_mean,offset_wt_std,qmix_wt_mean,qmix_wt_std,mean_gap_pct,ci_low,ci_high,mean_regime,regime_stability_pct
+spatial,d=200m,191.263,2.693,198.435,0.982,3.769,2.366,4.992,Effective,80.0
+spatial,d=300m,172.848,1.796,177.476,2.218,2.678,1.969,3.279,Effective,100.0
+spatial,d=500m,230.173,5.45,288.943,35.946,25.487,14.685,37.096,Outside horizon,100.0
+demand,low,80.808,1.494,142.873,8.468,76.864,68.168,85.33,Outside horizon,100.0
+demand,medium,172.848,1.796,177.476,2.218,2.678,1.969,3.279,Effective,100.0
+demand,high,947.483,21.401,973.104,26.491,2.74,-0.022,5.257,Effective,60.0
+demand,saturation,1252.372,7.87,1264.683,11.222,0.985,0.33,1.831,Effective,100.0
+demand,oversaturation,2206.851,17.189,2363.725,74.83,7.123,4.168,9.774,Marginal,60.0

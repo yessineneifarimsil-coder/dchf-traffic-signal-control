@@ -1,0 +1,2 @@
+model,seeds,mean_waiting,std_waiting,ci_low,ci_high,gap_vs_offset_pct
+"Scenario B, warm-start from Scenario A (no curriculum)",5,295.09,4.76,291.446,298.534,71.467

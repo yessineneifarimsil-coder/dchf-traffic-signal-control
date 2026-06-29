@@ -1,0 +1,3 @@
+condition,N,offset_wt,qmix_wt,mp_wt_mean,mp_wt_std,mp_ci_low,mp_ci_high,G_MP_vs_offset_pct,best_controller
+"N=3, d=300m medium",3,227.171,237.292,195.16,8.048,190.155,202.351,-14.091,Max Pressure
+"N=5, d=300m medium",5,360.505,356.659,198.83,8.881,193.025,206.248,-44.847,Max Pressure

@@ -1,0 +1,2 @@
+distance,best_offset_mode,offset_wt_mean,offset_wt_std,qmix_wt_mean,qmix_wt_std,mp_wt_mean,mp_wt_std,G_QMIX_mean,G_QMIX_ci,G_MP_mean,G_MP_ci,qmix_regime,best_controller
+450,45,194.763,4.15,205.317,3.895,212.567,4.293,5.468,"[3.17, 8.56]",9.186,"[6.12, 11.29]",Marginal,Optimized offset

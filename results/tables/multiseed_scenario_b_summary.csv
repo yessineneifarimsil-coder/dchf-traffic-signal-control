@@ -1,4 +1,4 @@
 controller,mean_total_waiting_time_mean,mean_total_waiting_time_std,mean_speed_mean,mean_speed_std,mean_total_queue_mean,mean_total_queue_std,mean_vehicle_count_mean,mean_vehicle_count_std
-Best Offset Fixed-Time 45s,173.113,2.21,7.898,0.026,13.496,0.122,61.606,0.206
-QMIX V2 trained on Scenario B,260.127,4.44,7.604,0.013,16.154,0.07,63.926,0.135
-QMIX V2 transferred,178.626,1.882,7.86,0.011,13.714,0.101,61.939,0.099
+Best Offset Fixed-Time 45s,172.097,2.08,7.907,0.022,13.444,0.107,61.54,0.168
+QMIX V2 trained on Scenario B,258.964,3.958,7.619,0.026,16.06,0.163,63.791,0.22
+QMIX V2 transferred,178.455,1.548,7.863,0.011,13.707,0.079,61.921,0.088

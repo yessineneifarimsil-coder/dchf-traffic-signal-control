@@ -24,7 +24,7 @@ GREEN_DURATION = 42
 YELLOW_DURATION = 3
 CYCLE_LENGTH = 2 * (GREEN_DURATION + YELLOW_DURATION)
 
-SEEDS = [0, 1, 2, 3, 4]
+SEEDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 BEST_OFFSET = 45
 
 QMIX_TRANSFERRED_MODEL = "results/raw/qmix_corridor_model_v2.pth"

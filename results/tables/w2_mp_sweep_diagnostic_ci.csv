@@ -1,0 +1,12 @@
+dimension,condition,comparison,n_mp_seeds,mp_waiting_mean,mp_waiting_ci95_low,mp_waiting_ci95_high,G_MP_pct_mean,G_MP_pct_ci95_low,G_MP_pct_ci95_high,G_QMIX_pct_reference,mp_dchf_regime,evidence_level
+demand,low,max_pressure_vs_offset_reference,5,66.215,64.004,68.426,-17.137,-19.903,-14.371,83.918,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+demand,medium,max_pressure_vs_offset_reference,5,148.995,141.302,156.688,-15.186,-19.565,-10.806,2.931,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+demand,high,max_pressure_vs_offset_reference,5,185.884,179.312,192.456,-80.202,-80.902,-79.502,5.0,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+demand,saturation,max_pressure_vs_offset_reference,5,202.306,188.804,215.808,-83.963,-85.033,-82.892,0.44,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+demand,oversaturation,max_pressure_vs_offset_reference,5,534.988,508.858,561.118,-76.021,-77.192,-74.849,5.598,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+spatial,100,max_pressure_vs_offset_reference,5,71.523,68.562,74.484,-67.156,-68.515,-65.796,8.334,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+spatial,200,max_pressure_vs_offset_reference,5,105.812,102.794,108.83,-45.912,-47.454,-44.369,1.018,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+spatial,300,max_pressure_vs_offset_reference,5,148.995,141.302,156.688,-15.186,-19.565,-10.806,2.931,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+spatial,500,max_pressure_vs_offset_reference,5,237.26,226.165,248.355,4.807,-0.095,9.708,48.253,Effective,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+spatial,750,max_pressure_vs_offset_reference,5,458.735,446.521,470.949,132.064,125.885,138.243,82.373,Outside horizon,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)
+spatial,1000,max_pressure_vs_offset_reference,5,616.177,596.509,635.845,233.069,222.437,243.7,58.958,Outside horizon,DIAGNOSTIC: MP 5-seed CI vs single-seed offset/QMIX reference (NOT paired)

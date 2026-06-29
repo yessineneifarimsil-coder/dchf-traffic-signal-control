@@ -1,0 +1,41 @@
+dim,case,seed,offset_wt,qmix_wt,gap_pct,regime
+spatial,d=200m,0,195.627,197.619,1.018,Effective
+spatial,d=200m,1,192.133,198.12,3.116,Effective
+spatial,d=200m,2,189.393,198.076,4.585,Effective
+spatial,d=200m,3,189.744,198.22,4.467,Effective
+spatial,d=200m,4,189.418,200.142,5.661,Marginal
+spatial,d=300m,0,175.673,180.821,2.931,Effective
+spatial,d=300m,1,173.423,175.961,1.464,Effective
+spatial,d=300m,2,171.626,177.705,3.542,Effective
+spatial,d=300m,3,171.154,175.03,2.265,Effective
+spatial,d=300m,4,172.366,177.865,3.19,Effective
+spatial,d=500m,0,226.379,335.613,48.253,Outside horizon
+spatial,d=500m,1,235.631,300.568,27.559,Outside horizon
+spatial,d=500m,2,236.374,303.145,28.248,Outside horizon
+spatial,d=500m,3,224.62,249.108,10.902,Outside horizon
+spatial,d=500m,4,227.861,256.282,12.473,Outside horizon
+demand,low,0,79.909,146.967,83.918,Outside horizon
+demand,low,1,82.418,146.473,77.72,Outside horizon
+demand,low,2,82.349,133.728,62.393,Outside horizon
+demand,low,3,79.128,134.313,69.741,Outside horizon
+demand,low,4,80.234,152.883,90.547,Outside horizon
+demand,medium,0,175.673,180.821,2.931,Effective
+demand,medium,1,173.423,175.961,1.464,Effective
+demand,medium,2,171.626,177.705,3.542,Effective
+demand,medium,3,171.154,175.03,2.265,Effective
+demand,medium,4,172.366,177.865,3.19,Effective
+demand,high,0,938.916,985.865,5.0,Marginal
+demand,high,1,944.569,976.583,3.389,Effective
+demand,high,2,981.737,993.102,1.158,Effective
+demand,high,3,923.496,983.05,6.449,Marginal
+demand,high,4,948.697,926.917,-2.296,Effective
+demand,saturation,0,1261.463,1267.017,0.44,Effective
+demand,saturation,1,1250.134,1281.243,2.489,Effective
+demand,saturation,2,1245.607,1262.947,1.392,Effective
+demand,saturation,3,1259.89,1262.178,0.182,Effective
+demand,saturation,4,1244.767,1250.028,0.423,Effective
+demand,oversaturation,0,2231.027,2355.914,5.598,Marginal
+demand,oversaturation,1,2214.472,2243.355,1.304,Effective
+demand,oversaturation,2,2186.609,2378.757,8.788,Marginal
+demand,oversaturation,3,2206.677,2395.59,8.561,Marginal
+demand,oversaturation,4,2195.468,2445.007,11.366,Outside horizon

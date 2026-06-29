@@ -1,0 +1,2 @@
+model,seeds,mean_waiting,std_waiting,ci_low,ci_high,gap_vs_offset_pct
+"QMIX direct Scenario B, 600 episodes",5,274.856,2.22,272.959,276.471,59.71

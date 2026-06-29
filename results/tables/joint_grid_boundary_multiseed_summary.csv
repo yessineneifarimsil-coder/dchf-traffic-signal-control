@@ -1,0 +1,7 @@
+cell,offset_wt_mean,qmix_wt_mean,single_seed_gap_pct,mean_gap_pct,ci_low,ci_high,mean_regime,regime_stability_pct
+"d=100, medium",217.298,235.92,8.334,8.573,8.114,9.351,Marginal,80.0
+"d=500, saturation",1352.086,1451.493,12.453,7.406,4.415,10.645,Marginal,40.0
+"d=500, oversaturation",2343.845,2484.405,6.014,6.031,3.232,10.107,Marginal,20.0
+"d=750, oversaturation",2220.272,2493.432,9.93,12.333,9.093,16.657,Outside horizon,60.0
+"d=1000, saturation",1376.913,1400.344,4.13,1.768,-0.776,3.735,Effective,100.0
+"d=1000, oversaturation",2330.843,2371.947,0.583,1.794,0.108,3.853,Effective,80.0

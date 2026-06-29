@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,offset_waiting,qmix_waiting_single_seed,mp_waiting_mean,mp_waiting_std,G_QMIX_pct,G_MP_pct,mp_buffered_ratio,mp_capacity_regime,qmix_dchf_regime,mp_dchf_regime,best_controller
+low,0.5,79.909,146.967,66.215,2.522,83.918,-17.137,0.0,Unconstrained,Outside horizon,Effective,Max Pressure
+medium,1.0,175.672,180.821,148.995,8.777,2.931,-15.186,0.0,Unconstrained,Effective,Effective,Max Pressure
+high,1.5,938.916,985.865,185.884,7.498,5.0,-80.202,0.0361,Mild insertion pressure,Marginal,Effective,Max Pressure
+saturation,2.0,1261.463,1267.017,202.306,15.404,0.44,-83.963,0.144,Capacity-limited,Effective,Effective,Max Pressure
+oversaturation,2.5,2231.027,2355.914,534.988,29.81,5.598,-76.021,0.2323,Capacity-limited,Marginal,Effective,Max Pressure
