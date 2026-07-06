@@ -1,5 +1,5 @@
 """
-THRESHOLD-CURVE FIGURE (addresses Perplexity 2.1).
+THRESHOLD-CURVE FIGURE .
 
 Plots the offset-sweep performance curve (mean total waiting time vs. offset) for
 the reference condition d=300 m, medium demand, read from the existing offset-sweep
@@ -57,7 +57,7 @@ def main():
     ax.axvspan(lo5, hi5, color="#2ca02c", alpha=0.15,
                label=f"within 5% of optimum ({lo5:.0f}--{hi5:.0f} s)")
     ax.plot([best_off], [best], "*", color="#d62728", markersize=14,
-            label=f"optimum ({best_off:.0f} s, {best:.1f} s/veh)")
+            label=f"optimum ({best_off:.0f} s, {best:.1f} s)")
 
     ax.set_xlabel("Offset $\\Delta$ (s)")
     ax.set_ylabel("Mean total waiting time (s)")
@@ -68,7 +68,7 @@ def main():
     plt.savefig(OUT, bbox_inches="tight")
 
     print(f"Saved threshold curve to: {OUT}")
-    print(f"\nOptimum: offset {best_off:.0f} s, waiting {best:.3f} s/veh")
+    print(f"\nOptimum: offset {best_off:.0f} s, waiting {best:.3f} s")
     print(f"5% flat-minimum band: offsets {lo5:.0f}--{hi5:.0f} s "
           f"(width {hi5 - lo5:.0f} s, about +/-{(hi5 - lo5) / 2:.0f} s around optimum)")
     print("Upload the PDF to your Overleaf figures/ folder.")
