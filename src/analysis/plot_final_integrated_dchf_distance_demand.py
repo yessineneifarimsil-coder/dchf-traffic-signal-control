@@ -24,16 +24,17 @@ def classify_integrated(row):
     cg = row["qmix_coordination_gain_percent"]
     br = row["qmix_buffered_ratio"]
 
-    if pd.isna(gap):
+    if pd.isna(gap) or pd.isna(cg) or pd.isna(br):
         return np.nan, "Not available"
 
-    if gap <= 5 and cg > 0 and br < 0.25:
+    # Capacity status takes precedence within approximation-effective cells.
+    if gap <= 5 and br >= 0.10:
+        return 2, "Algorithmically effective but capacity-constrained"
+
+    if gap <= 5 and cg > 0 and br < 0.10:
         return 1, "Useful effective coordination"
 
-    if gap <= 5 and br >= 0.25:
-        return 2, "Algorithmically effective but capacity-limited"
-
-    if gap <= 5 and cg <= 0 and br < 0.25:
+    if gap <= 5 and cg <= 0 and br < 0.10:
         return 3, "Algorithmically close but no practical gain"
 
     if gap <= 10:
@@ -56,13 +57,48 @@ def main():
     df["final_integrated_dchf_code"] = codes
     df["final_integrated_dchf_label"] = labels
 
+    expected_counts = {1: 3, 2: 4, 3: 0, 4: 3, 5: 20}
+
+    actual_counts = (
+        df["final_integrated_dchf_code"]
+        .value_counts()
+        .reindex([1, 2, 3, 4, 5], fill_value=0)
+        .astype(int)
+        .to_dict()
+    )
+
+    assert actual_counts == expected_counts, (
+        f"Unexpected integrated DCHF counts: {actual_counts}"
+    )
+
     df.to_csv(OUT_CLASSES, index=False)
 
-    counts = (
-        df.groupby(["final_integrated_dchf_code", "final_integrated_dchf_label"])
-        .size()
-        .reset_index(name="number_of_cases")
-        .sort_values("final_integrated_dchf_code")
+    class_labels = {
+        1: "Useful effective coordination",
+        2: "Algorithmically effective but capacity-constrained",
+        3: "Algorithmically close but no practical gain",
+        4: "Marginal coordination",
+        5: "Outside coordination horizon",
+    }
+
+    counts = pd.DataFrame(
+        {
+            "final_integrated_dchf_code": [1, 2, 3, 4, 5],
+            "final_integrated_dchf_label": [
+                class_labels[1],
+                class_labels[2],
+                class_labels[3],
+                class_labels[4],
+                class_labels[5],
+            ],
+            "number_of_cases": [
+                actual_counts[1],
+                actual_counts[2],
+                actual_counts[3],
+                actual_counts[4],
+                actual_counts[5],
+            ],
+        }
     )
 
     counts.to_csv(OUT_COUNTS, index=False)
@@ -88,7 +124,7 @@ def main():
 
     cbar = plt.colorbar(im)
     cbar.set_label(
-        "1=Useful, 2=Capacity-limited, 3=Close/no gain, 4=Marginal, 5=Outside"
+        "1=Useful, 2=Capacity-constrained, 3=Close/no gain, 4=Marginal, 5=Outside"
     )
 
     for i in range(matrix.shape[0]):
