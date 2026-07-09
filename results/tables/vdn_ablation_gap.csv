@@ -1,0 +1,3 @@
+controller,n_seeds,offset_mean_waiting,learned_mean_waiting,gap_percent,gap_ci_low,gap_ci_high,dchf_regime
+QMIX V2,10,169.782,177.291,4.423,3.842,5.003,Effective
+VDN,10,169.782,241.235,42.085,40.652,43.61,Outside horizon

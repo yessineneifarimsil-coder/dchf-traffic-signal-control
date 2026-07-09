@@ -6,6 +6,7 @@ import torch.optim as optim
 
 from q_network import AgentQNetwork
 from mixing_network import MixingNetwork
+from vdn_mixer import VDNMixer
 from replay_buffer import QMIXReplayBuffer
 
 
@@ -31,6 +32,7 @@ class QMIXAgent:
         obs_dim=3,
         state_dim=6,
         action_dim=2,
+        mixer_type="qmix",
         learning_rate=1e-3,
         gamma=0.99,
         epsilon_start=1.0,
@@ -69,15 +71,10 @@ class QMIXAgent:
         ])
 
         # Mixing networks
-        self.mixer = MixingNetwork(
-            n_agents=n_agents,
-            state_dim=state_dim,
-        ).to(self.device)
+        self.mixer_type = mixer_type
 
-        self.target_mixer = MixingNetwork(
-            n_agents=n_agents,
-            state_dim=state_dim,
-        ).to(self.device)
+        self.mixer = self._build_mixer(mixer_type, n_agents, state_dim).to(self.device)
+        self.target_mixer = self._build_mixer(mixer_type, n_agents, state_dim).to(self.device)
 
         self.update_target_networks()
 
@@ -86,6 +83,16 @@ class QMIXAgent:
         self.loss_fn = nn.MSELoss()
 
         self.memory = QMIXReplayBuffer(capacity=buffer_capacity)
+
+    def _build_mixer(self, mixer_type, n_agents, state_dim):
+        if mixer_type == "qmix":
+            return MixingNetwork(n_agents=n_agents, state_dim=state_dim)
+        elif mixer_type == "vdn":
+            return VDNMixer(n_agents=n_agents, state_dim=state_dim)
+        else:
+            raise ValueError(
+                "Unknown mixer_type '{}'. Expected 'qmix' or 'vdn'.".format(mixer_type)
+            )
 
     def select_actions(self, observations):
         """
@@ -228,10 +235,19 @@ class QMIXAgent:
             "mixer": self.mixer.state_dict(),
             "target_mixer": self.target_mixer.state_dict(),
             "epsilon": self.epsilon,
+            "mixer_type": self.mixer_type,
         }, path)
 
     def load(self, path):
         checkpoint = torch.load(path, map_location=self.device)
+
+        ckpt_mixer_type = checkpoint.get("mixer_type", "qmix")
+        if ckpt_mixer_type != self.mixer_type:
+            raise ValueError(
+                "Checkpoint mixer_type '{}' does not match agent mixer_type "
+                "'{}'. Construct the agent with mixer_type='{}' before loading."
+                .format(ckpt_mixer_type, self.mixer_type, ckpt_mixer_type)
+            )
 
         for net, state_dict in zip(self.agent_networks, checkpoint["agent_networks"]):
             net.load_state_dict(state_dict)
