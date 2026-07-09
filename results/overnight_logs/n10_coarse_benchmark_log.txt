@@ -1,4 +1,0 @@
-  File "src\analysis\run_n10_coarse_benchmark_scan.py", line 58
-    scenario_dir = f"sumo_scenarios/scalability/corridor_10x2_d{distance}m_{demand_name}"
-                 ^
-SyntaxError: invalid syntax
