@@ -8,6 +8,11 @@ This ablation trains the direct model for 600 episodes and re-evaluates it, to t
 whether the transfer advantage is a training-BUDGET effect or a genuine
 curriculum/initialization effect.
 
+METRIC DEFINITION:
+  Every waiting value reported here is the time average of the network-wide
+  sum of SUMO vehicle waiting-time states, expressed in seconds. It is not
+  a per-vehicle delay.
+
 DESIGN (zero guesswork -- reuses the repo's OWN proven scripts):
   1. Copy train_qmix_corridor_v2_turning.py, patch ONLY:
         NUM_EPISODES 300 -> 600
@@ -18,24 +23,24 @@ DESIGN (zero guesswork -- reuses the repo's OWN proven scripts):
         OUTPUT_CSV  -> ..._600ep.csv
      Run it -> writes a per-second eval log with a total_waiting_time column.
   3. Read the eval CSV, compute mean total_waiting_time, compute gap vs the
-     published optimized-offset benchmark (172.097 s/veh, 10-seed).
+     published optimized-offset benchmark (172.097 s, 10-seed).
 
 Reference values (already in the paper):
-  Optimized offset (Scenario B):        172.097 s/veh
-  QMIX transferred from A:              178.455 s/veh  (gap 3.694%, Effective)
-  QMIX direct, 300 episodes:           258.964 s/veh  (gap 50.476%, Outside)
+  Optimized offset (Scenario B):        172.097 s
+  QMIX transferred from A:              178.455 s  (gap 3.694%, Effective)
+  QMIX direct, 300 episodes:           258.964 s  (gap 50.476%, Outside)
 
 INTERPRETATION:
-  - 600-ep direct ~178-185 s/veh (gap < ~7%): advantage was a TRAINING-BUDGET effect.
-  - 600-ep direct still ~250+ s/veh (gap ~50%): advantage is NOT budget -> genuine
+  - 600-ep direct ~178-185 s (gap < ~7%): advantage was a TRAINING-BUDGET effect.
+  - 600-ep direct still ~250+ s (gap ~50%): advantage is NOT budget -> genuine
     curriculum/initialization/landscape effect (claim stands, strengthened).
 
 SANITY: training should show decreasing waiting time; eval mean should be a plausible
-corridor delay. A crash or >2000 s/veh means a problem; STOP and report.
+time-averaged network waiting measure. A crash or a value >2000 s means a problem; STOP and report.
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/run_scenario_b_600ep_ablation.py
+    python src/qmix/run_scenario_b_600ep_ablation.py
 """
 import os, sys, re, csv, importlib.util
 
@@ -116,12 +121,12 @@ def main():
         gap = (mean_wt - OFFSET_WT_10SEED) / OFFSET_WT_10SEED * 100.0
 
         print("\n========== SCENARIO B 600-EPISODE ABLATION RESULT ==========")
-        print(f"  600-episode direct model mean waiting time: {mean_wt:.3f} s/veh")
-        print(f"  Optimized-offset benchmark:                 {OFFSET_WT_10SEED:.3f} s/veh")
+        print(f"  600-episode direct model network waiting measure: {mean_wt:.3f} s")
+        print(f"  Optimized-offset benchmark:                 {OFFSET_WT_10SEED:.3f} s")
         print(f"  Gap vs offset:                              {gap:+.3f}%")
         print("\n  Reference (published):")
-        print("    transferred-from-A:      178.455 s/veh  (gap 3.694%, Effective)")
-        print("    direct 300-episode:      258.964 s/veh  (gap 50.476%, Outside)")
+        print("    transferred-from-A:      178.455 s  (gap 3.694%, Effective)")
+        print("    direct 300-episode:      258.964 s  (gap 50.476%, Outside)")
         print("\n  INTERPRETATION:")
         if mean_wt < 200:
             print("    -> approaches the transferred model: advantage was a TRAINING-BUDGET effect.")

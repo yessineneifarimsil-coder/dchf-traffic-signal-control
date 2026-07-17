@@ -9,11 +9,11 @@ the benchmark's own offset response.
 
 No new simulation -- reads results/tables/distance_offset_sweep_summary.csv.
 
-Output: figures/offset_sweep_threshold_curve.pdf
+Output: results/figures/offset_sweep_threshold_curve.pdf
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/plot_offset_sweep_threshold_curve.py
+    python src/baselines/two_intersections/plot_offset_sweep_threshold_curve.py
 """
 import os
 import pandas as pd
@@ -24,11 +24,11 @@ import matplotlib.pyplot as plt
 
 CSV = "results/tables/distance_offset_sweep_summary.csv"
 REF_DISTANCE = 300
-OUT = "figures/offset_sweep_threshold_curve.pdf"
+OUT = "results/figures/offset_sweep_threshold_curve.pdf"
 
 
 def main():
-    os.makedirs("figures", exist_ok=True)
+    os.makedirs("results/figures", exist_ok=True)
     if not os.path.exists(CSV):
         print(f"[ERROR] missing {CSV}")
         return
@@ -57,7 +57,7 @@ def main():
     ax.axvspan(lo5, hi5, color="#2ca02c", alpha=0.15,
                label=f"within 5% of optimum ({lo5:.0f}--{hi5:.0f} s)")
     ax.plot([best_off], [best], "*", color="#d62728", markersize=14,
-            label=f"optimum ({best_off:.0f} s, {best:.1f} s/veh)")
+            label=f"optimum ({best_off:.0f} s, {best:.1f} s)")
 
     ax.set_xlabel("Offset $\\Delta$ (s)")
     ax.set_ylabel("Mean total waiting time (s)")
@@ -68,7 +68,10 @@ def main():
     plt.savefig(OUT, bbox_inches="tight")
 
     print(f"Saved threshold curve to: {OUT}")
-    print(f"\nOptimum: offset {best_off:.0f} s, waiting {best:.3f} s/veh")
+    print(
+    f"\nOptimum: offset {best_off:.0f} s, "
+    f"network waiting measure {best:.3f} s"
+)
     print(f"5% flat-minimum band: offsets {lo5:.0f}--{hi5:.0f} s "
           f"(width {hi5 - lo5:.0f} s, about +/-{(hi5 - lo5) / 2:.0f} s around optimum)")
     print("Upload the PDF to your Overleaf figures/ folder.")

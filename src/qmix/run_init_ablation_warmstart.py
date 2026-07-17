@@ -7,9 +7,9 @@ The reviewer asks for a 3-way comparison on Scenario B:
    (i)   WARM-START : initialize from Scenario A weights, then train on B (no further
                       A training; fresh exploration). [THIS SCRIPT runs it]
    (ii)  RANDOM-INIT: random weights, train on B, identical budget.
-                      [ALREADY HAVE: direct 300-ep = 258.964 s/veh]
+                      [ALREADY HAVE: direct 300-ep = 258.964 s]
    (iii) TRANSFER   : the Scenario A policy evaluated on B.
-                      [ALREADY HAVE: 178.455 s/veh]
+                      [ALREADY HAVE: 178.455 s]
 
 INTERPRETATION:
    - WARM-START approx TRANSFER  -> the benefit is essentially INITIALIZATION
@@ -29,12 +29,17 @@ DESIGN (safe, no guesswork): copies the proven Scenario B training script
 Then it evaluates the warm-start model on 5 seeds by reusing the proven evaluator
 (same as the 600-ep multiseed eval).
 
-SANITY: warm-start eval should be a plausible corridor delay. Compare to the two
-references above. A crash or >2000 s/veh = problem; STOP.
+METRIC DEFINITION:
+  Every waiting value reported here is the time average of the network-wide
+  sum of SUMO vehicle waiting-time states, expressed in seconds. It is not
+  a per-vehicle delay.
+
+SANITY: the warm-start evaluation should yield a plausible time-averaged
+network waiting measure. Compare it with the two references above. A crash or >2000 s = problem; STOP.
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/run_init_ablation_warmstart.py
+    python src/qmix/run_init_ablation_warmstart.py
 """
 import os, sys, re, importlib.util
 import numpy as np
@@ -133,7 +138,7 @@ def evaluate_5seed():
     for s in SEEDS:
         wt = one_seed(s)
         waits.append(wt)
-        print(f"  warm-start seed {s}: {wt:.3f} s/veh")
+        print(f"  warm-start seed {s}: network waiting measure = {wt:.3f} s")
     return waits
 
 
@@ -171,7 +176,7 @@ def main():
         }]).to_csv(OUT_SUMMARY, index=False)
 
         print("\n========== INITIALIZATION ABLATION (WARM-START) RESULT ==========")
-        print(f"  Warm-start (A-init, train B): {mean_wt:.3f} +/- {std_wt:.3f} s/veh  "
+        print(f"  Warm-start (A-init, train B), network waiting measure: {mean_wt:.3f} +/- {std_wt:.3f} s  "
               f"(gap {gap:+.3f}%)  CI [{lo:.3f}, {hi:.3f}]")
         print("\n  Comparison:")
         print(f"    Transfer (A policy on B):   {TRANSFER_WT:.3f}  (gap 3.694%)")

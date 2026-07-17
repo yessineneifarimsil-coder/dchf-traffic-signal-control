@@ -1,81 +1,277 @@
 """
-W12 bonus: genuine 10-seed paired Wilcoxon for the Scenario B transfer effect.
+W12 bonus: genuine 10-seed paired Wilcoxon tests for the
+Scenario B transfer effect.
 
-Reads the per-seed raw log, aggregates to one mean-waiting-time value per
-(controller, seed), then runs paired Wilcoxon + bootstrap CI on:
-  - transferred vs direct-trained  (the curriculum effect)
-  - transferred vs optimized offset (the approximation gap)
+Reads the per-second Scenario B raw results, aggregates them to one
+mean network-waiting value per (controller, seed), and evaluates:
 
-At n=10 the two-sided Wilcoxon floor is p=0.002, so a real p<0.05 is attainable
-(unlike the n=5 boundary cases).
+1. Direct-trained QMIX versus transferred QMIX.
+2. Transferred QMIX versus the optimized fixed offset.
+
+The script saves both the paired seed-level values and the statistical
+test results used by the manuscript.
 """
+
+import os
+
 import numpy as np
 import pandas as pd
 from scipy.stats import wilcoxon
 
+
 RAW = "results/raw/multiseed_scenario_b_raw.csv"
+
+OUT_SEEDS = (
+    "results/tables/"
+    "scenario_b_paired_seed_mean_waiting.csv"
+)
+
+OUT_TESTS = (
+    "results/tables/"
+    "scenario_b_paired_wilcoxon_tests.csv"
+)
+
+BOOTSTRAP_REPLICATIONS = 10_000
+BOOTSTRAP_SEED = 42
+
+os.makedirs("results/tables", exist_ok=True)
 
 df = pd.read_csv(RAW)
 
-# Identify the waiting-time column robustly
-wait_candidates = [c for c in df.columns if "wait" in c.lower()]
-# The per-step total waiting is typically the 4th numeric col; inspect header:
 print("Columns:", list(df.columns))
 
-# Expected columns include controller, seed, and a per-step total waiting time.
-# We aggregate the per-step waiting to a per-run MEAN (matching the summary CSV).
-ctrl_col = [c for c in df.columns if "control" in c.lower()][0]
-seed_col = [c for c in df.columns if c.lower() == "seed"][0]
+# Identify required columns.
+ctrl_candidates = [
+    c for c in df.columns
+    if "control" in c.lower()
+]
 
-# pick the waiting column: prefer one literally named, else the column the
-# summary used (mean_total_waiting_time). Fall back to best guess.
-if wait_candidates:
-    wcol = wait_candidates[0]
-else:
-    # 4th column in your snippet was total waiting time
-    wcol = df.columns[3]
-print(f"Using controller='{ctrl_col}', seed='{seed_col}', waiting='{wcol}'")
+seed_candidates = [
+    c for c in df.columns
+    if c.lower() == "seed"
+]
 
-# Per (controller, seed) mean waiting time
-agg = df.groupby([ctrl_col, seed_col])[wcol].mean().reset_index()
+wait_candidates = [
+    c for c in df.columns
+    if "wait" in c.lower()
+]
 
-# Pivot: rows=seed, cols=controller
-pivot = agg.pivot(index=seed_col, columns=ctrl_col, values=wcol).sort_index()
+if not ctrl_candidates:
+    raise ValueError(
+        "No controller column found in the Scenario B raw file."
+    )
+
+if not seed_candidates:
+    raise ValueError(
+        "No seed column found in the Scenario B raw file."
+    )
+
+if not wait_candidates:
+    raise ValueError(
+        "No waiting-time column found in the Scenario B raw file."
+    )
+
+ctrl_col = ctrl_candidates[0]
+seed_col = seed_candidates[0]
+
+# Preserve the historical selection rule used by the original script:
+# use the first column whose name contains "wait".
+wcol = wait_candidates[0]
+
+print(
+    f"Using controller='{ctrl_col}', "
+    f"seed='{seed_col}', waiting='{wcol}'"
+)
+
+# Aggregate the per-second records to one mean value per
+# controller and traffic seed.
+agg = (
+    df.groupby(
+        [ctrl_col, seed_col],
+        as_index=False,
+    )[wcol]
+    .mean()
+)
+
+# Rows = seed, columns = controller.
+pivot = (
+    agg.pivot(
+        index=seed_col,
+        columns=ctrl_col,
+        values=wcol,
+    )
+    .sort_index()
+)
+
 print("\nPer-seed mean waiting time:")
-print(pivot.round(2))
+print(pivot.round(3))
 
-# Map the three controller names (robust to exact strings)
-cols = list(pivot.columns)
-def find(sub):
-    hits = [c for c in cols if sub.lower() in c.lower()]
-    return hits[0] if hits else None
+# Save the paired seed-level values.
+pivot.reset_index().to_csv(
+    OUT_SEEDS,
+    index=False,
+)
 
-offset_c   = find("offset")
-transfer_c = find("transfer")
-trained_c  = find("trained")
 
-def paired_test(a_name, b_name, label):
-    a = pivot[a_name].to_numpy(float)
-    b = pivot[b_name].to_numpy(float)
-    diff = a - b
-    n = len(diff)
+controller_names = list(pivot.columns)
+
+
+def find_controller(substring):
+    """Return the first controller name containing substring."""
+    matches = [
+        name
+        for name in controller_names
+        if substring.lower() in name.lower()
+    ]
+
+    if not matches:
+        return None
+
+    return matches[0]
+
+
+offset_controller = find_controller("offset")
+transfer_controller = find_controller("transfer")
+trained_controller = find_controller("trained")
+
+required_controllers = {
+    "optimized offset": offset_controller,
+    "transferred QMIX": transfer_controller,
+    "direct-trained QMIX": trained_controller,
+}
+
+missing_controllers = [
+    label
+    for label, name in required_controllers.items()
+    if name is None
+]
+
+if missing_controllers:
+    raise ValueError(
+        "Could not identify the following controllers: "
+        + ", ".join(missing_controllers)
+        + ". Available controllers: "
+        + ", ".join(map(str, controller_names))
+    )
+
+
+test_results = []
+
+
+def paired_test(
+    controller_a,
+    controller_b,
+    comparison_label,
+):
+    """
+    Test paired differences defined as controller A minus controller B.
+    """
+    values_a = pivot[controller_a].to_numpy(dtype=float)
+    values_b = pivot[controller_b].to_numpy(dtype=float)
+
+    if len(values_a) != len(values_b):
+        raise ValueError(
+            f"Unequal paired sample sizes for {comparison_label}."
+        )
+
+    differences = values_a - values_b
+    n_seeds = len(differences)
+
     try:
-        p = wilcoxon(diff).pvalue
+        p_value = float(
+            wilcoxon(
+                differences,
+                alternative="two-sided",
+            ).pvalue
+        )
     except ValueError:
-        p = float("nan")
-    # bootstrap CI on mean difference
-    rng = np.random.default_rng(42)
-    boot = [np.mean(rng.choice(diff, size=n, replace=True)) for _ in range(10000)]
-    lo, hi = np.percentile(boot, [2.5, 97.5])
-    print(f"\n=== {label} ===")
-    print(f"  n={n} paired seeds")
-    print(f"  mean diff ({a_name} - {b_name}) = {diff.mean():.3f} s/veh")
-    print(f"  95% bootstrap CI = [{lo:.3f}, {hi:.3f}]")
-    print(f"  Wilcoxon p = {p:.5f}  ({'SIGNIFICANT p<0.05' if p<0.05 else 'not <0.05'})")
+        p_value = float("nan")
 
-if trained_c and transfer_c:
-    paired_test(trained_c, transfer_c, "Direct-trained vs Transferred (curriculum effect)")
-if offset_c and transfer_c:
-    paired_test(transfer_c, offset_c, "Transferred vs Optimized offset (approximation gap)")
+    rng = np.random.default_rng(BOOTSTRAP_SEED)
 
-print("\n[NOTE] At n=10 the Wilcoxon floor is p=0.002, so p<0.05 is attainable.")
+    bootstrap_means = np.empty(
+        BOOTSTRAP_REPLICATIONS,
+        dtype=float,
+    )
+
+    for index in range(BOOTSTRAP_REPLICATIONS):
+        bootstrap_sample = rng.choice(
+            differences,
+            size=n_seeds,
+            replace=True,
+        )
+
+        bootstrap_means[index] = (
+            bootstrap_sample.mean()
+        )
+
+    ci_low, ci_high = np.percentile(
+        bootstrap_means,
+        [2.5, 97.5],
+    )
+
+    mean_difference = float(differences.mean())
+
+    result = {
+        "comparison": comparison_label,
+        "controller_a": controller_a,
+        "controller_b": controller_b,
+        "difference_definition": (
+            "controller_a_minus_controller_b"
+        ),
+        "n_paired_seeds": n_seeds,
+        "mean_difference_seconds": mean_difference,
+        "bootstrap_ci_low_seconds": float(ci_low),
+        "bootstrap_ci_high_seconds": float(ci_high),
+        "wilcoxon_p_value": p_value,
+        "wilcoxon_alternative": "two-sided",
+        "bootstrap_replications": BOOTSTRAP_REPLICATIONS,
+        "bootstrap_seed": BOOTSTRAP_SEED,
+    }
+
+    test_results.append(result)
+
+    print(f"\n=== {comparison_label} ===")
+    print(f"  n = {n_seeds} paired seeds")
+    print(
+        f"  mean difference "
+        f"({controller_a} - {controller_b}) "
+        f"= {mean_difference:.3f} s"
+    )
+    print(
+        f"  95% bootstrap CI "
+        f"= [{ci_low:.3f}, {ci_high:.3f}]"
+    )
+    print(
+        f"  Wilcoxon p = {p_value:.5f} "
+        f"({'SIGNIFICANT p<0.05' if p_value < 0.05 else 'not <0.05'})"
+    )
+
+
+paired_test(
+    trained_controller,
+    transfer_controller,
+    "Direct-trained versus transferred QMIX",
+)
+
+paired_test(
+    transfer_controller,
+    offset_controller,
+    "Transferred QMIX versus optimized offset",
+)
+
+test_df = pd.DataFrame(test_results)
+
+test_df.to_csv(
+    OUT_TESTS,
+    index=False,
+)
+
+print("\nSaved statistical evidence:")
+print(f"  {OUT_SEEDS}")
+print(f"  {OUT_TESTS}")
+
+print(
+    "\n[NOTE] At n=10, the minimum attainable "
+    "two-sided Wilcoxon p-value is approximately 0.002."
+)

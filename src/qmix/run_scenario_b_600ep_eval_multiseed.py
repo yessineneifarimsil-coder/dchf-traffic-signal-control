@@ -4,9 +4,14 @@ REVIEW ITEM 2.4 (multi-seed eval): 5-seed evaluation of the ALREADY-TRAINED
 
 The training-budget ablation trained one QMIX V2 model directly on Scenario B for
 600 episodes (saved as qmix_corridor_model_v2_turning_600ep.pth). The single-seed
-eval gave 269.7 s/veh. This script makes that result reviewer-proof by evaluating
+eval gave 269.7 s. This script makes that result reviewer-proof by evaluating
 the SAME saved model across 5 common SUMO seeds and reporting mean +/- std with a
 95% bootstrap CI. NO retraining -- it only loads the saved model and evaluates.
+
+METRIC DEFINITION:
+  Every waiting value reported here is the time average of the network-wide
+  sum of SUMO vehicle waiting-time states, expressed in seconds. It is not
+  a per-vehicle delay.
 
 It REUSES the repo's own proven evaluation helpers (normalize_global_state,
 split_observations, action_to_phase, run_yellow_with_logging,
@@ -16,10 +21,10 @@ byte-identical to the validated single-seed evaluator. Only the SUMO seed varies
 injected through TwoIntersectionEnv(sumo_seed=...), which the env already supports.
 
 Reference values (already in the paper):
-  Optimized offset (Scenario B, 10-seed):  172.097 s/veh
-  QMIX transferred from A (10-seed):        178.455 s/veh  (gap 3.694%, Effective)
-  QMIX direct 300-ep:                       258.964 s/veh  (gap 50.476%, Outside)
-  QMIX direct 600-ep (single seed):         269.734 s/veh  (gap 56.734%, Outside)
+  Optimized offset (Scenario B, 10-seed):  172.097 s
+  QMIX transferred from A (10-seed):        178.455 s  (gap 3.694%, Effective)
+  QMIX direct 300-ep:                       258.964 s  (gap 50.476%, Outside)
+  QMIX direct 600-ep (single seed):         269.734 s  (gap 56.734%, Outside)
 
 EXPECTED: the 5-seed mean should land near the single-seed 269.7 (say ~255-275),
 confirming the budget effect ruling holds across seeds. A value suddenly near ~180
@@ -27,7 +32,7 @@ would be surprising and worth a second look, but is not expected.
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/run_scenario_b_600ep_eval_multiseed.py
+    python src/qmix/run_scenario_b_600ep_eval_multiseed.py
 """
 import os, sys
 import numpy as np
@@ -54,7 +59,7 @@ OUT_SUMMARY = "results/tables/scenario_b_600ep_multiseed_summary.csv"
 
 def evaluate_one_seed(seed):
     """Run one greedy evaluation episode at a given SUMO seed, reusing the repo's
-    proven per-second eval loop. Returns the episode mean total waiting time."""
+    proven per-second evaluation loop. Returns the time-averaged network waiting measure for the episode."""
     env = TwoIntersectionEnv(
         sumo_binary="sumo",
         sumo_config=SUMO_CONFIG,
@@ -112,7 +117,7 @@ def main():
     for s in SEEDS:
         wt = evaluate_one_seed(s)
         waits.append(wt)
-        print(f"  seed {s}: mean waiting time = {wt:.3f} s/veh")
+        print(f"  seed {s}: network waiting measure = {wt:.3f} s")
 
     mean_wt = float(np.mean(waits))
     std_wt = float(np.std(waits, ddof=1)) if len(waits) > 1 else 0.0
@@ -130,7 +135,7 @@ def main():
     }]).to_csv(OUT_SUMMARY, index=False)
 
     print("\n========== SCENARIO B 600-EPISODE 5-SEED EVAL ==========")
-    print(f"  Mean waiting time: {mean_wt:.3f} +/- {std_wt:.3f} s/veh")
+    print(f"  Mean network waiting measure: {mean_wt:.3f} +/- {std_wt:.3f} s")
     print(f"  95% bootstrap CI:  [{lo:.3f}, {hi:.3f}]")
     print(f"  Gap vs optimized offset (172.097): {gap:+.3f}%")
     print("\n  Reference:")

@@ -20,13 +20,13 @@ at these conditions are:
   N=5, d=300 m medium:  offset 360.505,  QMIX 356.659  (QMIX gap -1.067%)
 These are printed alongside the MP results so the controller-family picture is clear.
 
-SANITY: MP mean waiting time should be a plausible corridor delay (tens to a few
-hundred s/veh), with zero/near-zero buffered ratio at medium demand. A value
+SANITY: MP mean waiting time should be a plausible time-averaged network waiting measure (tens to a few
+hundred seconds), with zero/near-zero buffered ratio at medium demand. A value
 >2000 or a crash would indicate a config/outlane problem; STOP and report.
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/run_max_pressure_scalability.py
+    python src/baselines/scalability/run_max_pressure_scalability.py
 """
 import os, sys, csv
 import numpy as np

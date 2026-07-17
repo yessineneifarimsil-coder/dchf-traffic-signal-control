@@ -2,6 +2,9 @@ import os
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 
 TABLE_DIR = "results/tables"
@@ -207,9 +210,203 @@ def plot_early_scalability():
     plt.grid(True, alpha=0.3)
     save_figure("dchf_gain_scalability")
 
+def plot_dispersion_cohesion_overlay():
+    """
+    Generate Supplementary Figure SF1 from the committed
+    two-intersection spatial-horizon table.
+
+    The visual structure of the existing figure is preserved:
+    gaps up to 10% use the original gold family, gaps above 10%
+    use red, and the cohesion proxy remains a blue line.
+    Only the overlapping legend and labels are repositioned.
+    """
+    df = read_csv(FILES["distance"])
+    df["distance_m"] = df["scenario"].apply(extract_distance_m)
+    df = df.sort_values("distance_m")
+
+    distances = df["distance_m"].to_numpy(dtype=float)
+    gaps = df[
+        "qmix_gap_vs_optimized_offset_percent"
+    ].to_numpy(dtype=float)
+
+    expected_distances = np.array(
+        [100, 200, 300, 500, 750, 1000],
+        dtype=float,
+    )
+
+    if not np.array_equal(distances, expected_distances):
+        raise ValueError(
+            "Unexpected spatial-horizon distances: "
+            f"{distances.tolist()}"
+        )
+
+    free_flow_speed_mps = 13.89
+    lambda_per_second = 0.02
+
+    travel_time_s = distances / free_flow_speed_mps
+    cohesion = np.exp(
+        -lambda_per_second * travel_time_s
+    )
+
+    fig, ax_gap = plt.subplots(figsize=(8.4, 5.2))
+    ax_cohesion = ax_gap.twinx()
+
+    # Empirical effective spatial region.
+  
+    # Preserve the original visual distinction:
+    # <= 10% gold; > 10% red.
+    bar_colors = [
+        "#F0B323" if gap <= 10 else "#E9534F"
+        for gap in gaps
+    ]
+
+    ax_gap.bar(
+        distances,
+        gaps,
+        width=40,
+        color=bar_colors,
+        edgecolor="none",
+        alpha=0.95,
+        zorder=2,
+    )
+    # Highlight only the tested effective points; do not imply that
+    # the full continuous interval between them was evaluated.
+    effective_mask = np.isin(
+        distances,
+        [200.0, 300.0],
+    )
+
+    ax_gap.scatter(
+        distances[effective_mask],
+        gaps[effective_mask],
+        s=75,
+        facecolors="none",
+        edgecolors="#009E73",
+        linewidths=1.7,
+        zorder=4,
+    )
+
+    ax_cohesion.plot(
+        distances,
+        cohesion,
+        color="#1565C0",
+        linewidth=2.2,
+        zorder=3,
+    )
+
+    ax_gap.axhline(
+        5,
+        color="#4CAF50",
+        linestyle="--",
+        linewidth=1.1,
+    )
+    ax_gap.axhline(
+        10,
+        color="#F44336",
+        linestyle="--",
+        linewidth=1.1,
+    )
+
+    ax_gap.set_xlim(50, 1050)
+    ax_gap.set_ylim(0, 95)
+    ax_cohesion.set_ylim(0, 1.02)
+
+    # Keep threshold labels safely inside the plotting area.
+    ax_gap.text(
+        620,
+        5.6,
+        "5% (effective)",
+        color="#2E7D32",
+        fontsize=8,
+        ha="left",
+        va="bottom",
+    )
+    ax_gap.text(
+        620,
+        10.6,
+        "10% (outside)",
+        color="#D32F2F",
+        fontsize=8,
+        ha="left",
+        va="bottom",
+    )
+
+    # Keep the band label visible below the legend.
+    ax_gap.text(
+    250,
+    92,
+    "Tested effective points\n200 and 300 m",
+        color="#2E7D32",
+        fontsize=8,
+        ha="center",
+        va="top",
+    )
+
+    ax_gap.set_xlabel(
+        r"Inter-intersection distance $d$ (m)"
+    )
+    ax_gap.set_ylabel(
+        r"QMIX approximation gap "
+        r"$G_{\mathrm{QMIX}}$ (%)"
+    )
+
+    ax_cohesion.set_ylabel(
+        r"Platoon cohesion $\Phi$",
+        color="#1565C0",
+    )
+    ax_cohesion.tick_params(
+        axis="y",
+        colors="#1565C0",
+    )
+
+    ax_gap.set_title(
+        "Spatial approximation gap vs. "
+        "platoon cohesion proxy",
+        pad=46,
+    )
+
+    legend_handles = [
+        Patch(
+            facecolor="#F0B323",
+            edgecolor="none",
+            label="QMIX approximation gap",
+        ),
+        Line2D(
+            [0],
+            [0],
+            color="#1565C0",
+            linewidth=2.2,
+            label=(
+                r"Platoon cohesion "
+                r"$\Phi=e^{-\lambda\tau}$ "
+                r"($\lambda=0.02$ s$^{-1}$)"
+            ),
+        ),
+    ]
+
+    # The legend is outside the plotting area and cannot
+    # cover the effective-horizon annotation.
+    ax_gap.legend(
+        handles=legend_handles,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        frameon=True,
+        fontsize=8,
+    )
+
+    ax_gap.grid(
+        axis="y",
+        alpha=0.18,
+        zorder=0,
+    )
+
+    # Candidate output first: do not overwrite official SF1 yet.
+    save_figure("dispersion_cohesion_overlay")
 
 def main():
     plot_distance_gap_and_gain()
+    plot_dispersion_cohesion_overlay()
     plot_demand_gap_and_gain()
     plot_d23_gap_and_gain()
     plot_threshold_sensitivity()

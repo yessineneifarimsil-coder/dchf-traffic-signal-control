@@ -16,7 +16,7 @@ Output: figures/qmix_training_convergence.pdf
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/plot_qmix_training_convergence.py
+    python src/qmix/plot_qmix_training_convergence.py
 """
 import os
 import pandas as pd
@@ -68,8 +68,8 @@ def main():
         ax1.plot(ep, r, color=colour, alpha=0.25, linewidth=0.8)
         ax1.plot(ep, rolling(r, ROLL), color=colour, linewidth=1.8, label=label)
     ax1.set_xlabel("Training episode")
-    ax1.set_ylabel("Episode reward")
-    ax1.set_title("(a) Reward convergence")
+    ax1.set_ylabel("Logged waiting-only episode reward")
+    ax1.set_title("(a) Common waiting-reward trace")
     ax1.legend(frameon=False, fontsize=9)
     ax1.grid(True, alpha=0.3)
 

@@ -589,6 +589,18 @@ def main():
         )
     )
 
+    counts = (
+        counts.set_index("final_integrated_dchf_code")
+        .reindex([1, 2, 3, 4, 5])
+        .reset_index()
+    )
+    counts["final_integrated_dchf_label"] = (
+        counts["final_integrated_dchf_code"].map(CLASS_LABELS)
+    )
+    counts["number_of_cases"] = (
+        counts["number_of_cases"].fillna(0).astype(int)
+    )
+
     counts.to_csv(
         OUT_COUNTS,
         index=False,

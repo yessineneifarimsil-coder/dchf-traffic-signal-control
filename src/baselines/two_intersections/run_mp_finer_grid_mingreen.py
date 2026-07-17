@@ -25,7 +25,7 @@ near the crossover. A gap >150% = broken; STOP.
 
 Run from repo root:
     conda activate traffic_rl
-    python scripts/run_mp_finer_grid_mingreen.py
+    python src/baselines/two_intersections/run_mp_finer_grid_mingreen.py
 """
 import os, sys
 import numpy as np

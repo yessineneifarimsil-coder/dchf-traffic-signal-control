@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import BoundaryNorm, ListedColormap
 
 
 TABLE_DIR = "results/tables"
@@ -44,6 +45,104 @@ def save_heatmap(matrix, title, cbar_label, filename, annotate=True):
 
     plt.savefig(pdf_path, bbox_inches="tight")
     plt.savefig(png_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    print(f"Saved: {pdf_path}")
+    print(f"Saved: {png_path}")
+
+
+def save_capacity_heatmap(matrix, title, filename):
+    """
+    Save the capacity-regime heatmap using the same viridis color family
+    as SF3-SF5, but discretized into four categorical regimes.
+    """
+    plt.figure(figsize=(8.8, 5.4))
+
+    # Same viridis family as the continuous SF3-SF5 heatmaps,
+    # sampled at four fixed categorical levels.
+    colors = plt.cm.viridis(np.linspace(0.0, 1.0, 4))
+    cmap = ListedColormap(colors)
+
+    boundaries = [0.5, 1.5, 2.5, 3.5, 4.5]
+    norm = BoundaryNorm(boundaries, cmap.N)
+
+    im = plt.imshow(
+        matrix,
+        aspect="auto",
+        cmap=cmap,
+        norm=norm,
+    )
+
+    plt.xticks(
+        range(len(DEMAND_ORDER)),
+        DEMAND_ORDER,
+        rotation=25,
+        ha="right",
+    )
+    plt.yticks(
+        range(len(DISTANCE_ORDER)),
+        [f"{d} m" for d in DISTANCE_ORDER],
+    )
+
+    plt.xlabel("Demand regime")
+    plt.ylabel("Inter-intersection distance")
+    plt.title(title)
+
+    # Discrete categorical colorbar rather than a continuous 1-4 scale.
+    cbar = plt.colorbar(
+        im,
+        ticks=[1, 2, 3, 4],
+        boundaries=boundaries,
+        spacing="uniform",
+    )
+    cbar.ax.set_yticklabels(["U", "M", "C", "O"])
+    cbar.set_label("QMIX capacity regime")
+
+    regime_letters = {
+        1: "U",
+        2: "M",
+        3: "C",
+        4: "O",
+    }
+
+    text_colors = {
+        1: "white",
+        2: "white",
+        3: "black",
+        4: "black",
+    }
+
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            value = matrix[i, j]
+
+            if np.isnan(value):
+                continue
+
+            code = int(value)
+
+            plt.text(
+                j,
+                i,
+                regime_letters[code],
+                ha="center",
+                va="center",
+                fontsize=10,
+                fontweight="bold",
+                color=text_colors[code],
+            )
+
+    plt.tight_layout()
+
+    pdf_path = f"{FIG_DIR}/{filename}.pdf"
+    png_path = f"{FIG_DIR}/{filename}.png"
+
+    plt.savefig(pdf_path, bbox_inches="tight")
+    plt.savefig(
+        png_path,
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.close()
 
     print(f"Saved: {pdf_path}")
@@ -163,12 +262,10 @@ def main():
         annotate=False,
     )
 
-    save_heatmap(
+    save_capacity_heatmap(
         build_capacity_matrix(df),
         "Distance × Demand DCHF: QMIX capacity regime",
-        "1=Unconstrained, 2=Mild, 3=Capacity-limited, 4=Oversaturated",
         "updated_heatmap_distance_demand_qmix_capacity_regime",
-        annotate=False,
     )
 
     save_heatmap(

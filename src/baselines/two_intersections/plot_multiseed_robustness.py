@@ -160,7 +160,7 @@ def main():
     # ---- formatting ----------------------------------------
     ax.set_xticks(x)
     ax.set_xticklabels(controllers, fontsize=10)
-    ax.set_ylabel("Mean total waiting time (s/vehicle)", fontsize=11)
+    ax.set_ylabel("Time-averaged network waiting measure (s)", fontsize=11)
     ax.set_xlabel("Controller", fontsize=11)
     ax.set_title(
         "Scenario A: Ten-Seed Controller Comparison\n"
