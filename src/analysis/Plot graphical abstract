@@ -1,0 +1,180 @@
+"""
+GRAPHICAL ABSTRACT (two panels).
+
+Left  : integrated DCHF classification over the 30 distance x demand conditions,
+        collapsed to four display categories:
+          code 1        -> Effective (G <= 5%)
+          code 4        -> Marginal (5-10%)
+          code 5        -> Outside horizon (> 10%)
+          codes 2 and 3 -> Capacity-constrained
+        Read from results/tables/final_distance_demand_integrated_dchf_classes.csv
+        (same data as the main-paper integrated heatmap).
+
+Right : Max Pressure approximation gap G_MP vs. the optimized fixed-offset
+        benchmark across the fully paired five-seed spatial sweep, read from
+        results/tables/fully_paired_sweeps_summary.csv (main-paper Table 12).
+        Reference-box numbers are recomputed from
+        results/tables/scenario_a_seed_level_metrics_with_max_pressure.csv
+        (ten-seed Scenario A, main-paper Table 9).
+
+Units: the network waiting measure is reported in seconds ("s"), consistent
+with the metric definition in Section 6 of the main paper (NOT "s/veh").
+
+No new simulation -- reads existing result tables only.
+
+Output: figures/dchf_graphical_abstract.pdf
+
+Run from repo root:
+    conda activate traffic_rl
+    python src/analysis/plot_graphical_abstract.py
+"""
+import os
+import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+
+CLASSES_CSV = "results/tables/final_distance_demand_integrated_dchf_classes.csv"
+PAIRED_CSV = "results/tables/fully_paired_sweeps_summary.csv"
+SCENARIO_A_CSV = "results/tables/scenario_a_seed_level_metrics_with_max_pressure.csv"
+OUT = "figures/dchf_graphical_abstract.pdf"
+
+DISTANCES = [100, 200, 300, 500, 750, 1000]
+DEMANDS = ["low", "medium", "high", "saturation", "oversaturation"]
+DEMAND_LABELS = ["0.5x", "1.0x", "1.5x", "2.0x", "2.5x"]
+
+# Display categories: integrated code -> (category index, color)
+COLORS = {
+    "effective": "#3a923a",   # code 1
+    "marginal": "#f0a63a",    # code 4
+    "outside": "#c94040",     # code 5
+    "capacity": "#7b3f9e",    # codes 2, 3
+}
+CODE_TO_CAT = {1: "effective", 4: "marginal", 5: "outside", 2: "capacity", 3: "capacity"}
+
+
+def left_panel(ax):
+    df = pd.read_csv(CLASSES_CSV)
+    for j, dist in enumerate(DISTANCES):
+        for i, dem in enumerate(DEMANDS):
+            row = df[(df["distance"] == dist) & (df["demand_name"] == dem)]
+            code = int(row["final_integrated_dchf_code"].iloc[0])
+            ax.add_patch(plt.Rectangle(
+                (j, i), 1, 1,
+                facecolor=COLORS[CODE_TO_CAT[code]],
+                edgecolor="white", linewidth=2.0))
+    # "effective pocket" annotation over the d=300 m effective run
+    ax.text(2.5, 2.5, "effective\npocket", ha="center", va="center",
+            fontsize=8, fontweight="bold", color="white")
+    ax.set_xlim(0, len(DISTANCES))
+    ax.set_ylim(0, len(DEMANDS))
+    ax.set_xticks(np.arange(len(DISTANCES)) + 0.5)
+    ax.set_xticklabels([str(d) for d in DISTANCES], fontsize=8)
+    ax.set_yticks(np.arange(len(DEMANDS)) + 0.5)
+    ax.set_yticklabels(DEMAND_LABELS, fontsize=8)
+    ax.set_xlabel("Inter-intersection spacing  $d$  (m)", fontsize=9)
+    ax.set_ylabel("Demand multiplier  $\\rho$", fontsize=9)
+    ax.set_title("Coordination usefulness is a surface, not a verdict",
+                 fontsize=9.5, fontweight="bold", loc="left")
+    ax.tick_params(length=0)
+    for s in ax.spines.values():
+        s.set_visible(False)
+    handles = [
+        Patch(facecolor=COLORS["effective"], label="Effective ($G \\leq 5\\%$)"),
+        Patch(facecolor=COLORS["marginal"], label="Marginal (5--10\\%)".replace("\\\\", "\\")),
+        Patch(facecolor=COLORS["outside"], label="Outside horizon ($> 10\\%$)"),
+        Patch(facecolor=COLORS["capacity"], label="Capacity-constrained"),
+    ]
+    handles[1].set_label("Marginal (5\u201310%)")
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.16),
+              ncol=2, frameon=False, fontsize=7.5, handlelength=1.2,
+              columnspacing=1.2)
+
+
+def right_panel(ax):
+    paired = pd.read_csv(PAIRED_CSV)
+    sp = paired[paired["sweep"] == "spatial"].copy()
+    sp["distance"] = sp["cell"].str.extract(r"d=(\d+)m").astype(int)
+    sp = sp.set_index("distance").loc[DISTANCES]
+    gmp = sp["G_MP_mean"].values
+
+    seeds = pd.read_csv(SCENARIO_A_CSV)
+    ref = seeds.groupby("controller")["mean_waiting"].mean()
+    off = ref["Best Offset Fixed-Time 45s"]
+    qmix = ref["QMIX V2"]
+    mp = ref["Max Pressure"]
+
+    xs = np.arange(len(DISTANCES))
+    for x, g in zip(xs, gmp):
+        color = "#e0662a" if g < 0 else "#2f6db3"
+        ax.bar(x, g, width=0.62, color=color, edgecolor="none")
+        if g < 0:
+            ax.text(x, g - 9, "MP", ha="center", va="top",
+                    fontsize=7, fontweight="bold", color="#e0662a")
+        else:
+            ax.text(x, g + 9, "Offset", ha="center", va="bottom",
+                    fontsize=7, fontweight="bold", color="#2f6db3")
+
+    ax.axhline(0, color="black", linewidth=0.8)
+    ax.axhline(5, color="grey", linestyle="--", linewidth=0.7, alpha=0.7)
+    ax.axhline(-5, color="grey", linestyle="--", linewidth=0.7, alpha=0.7)
+    ax.axvline(2.5 + 0.5, color="grey", linestyle=":", linewidth=1.0)
+    ax.text(2.5 + 0.42, 155, "controller-\nfamily\ntransition",
+            ha="right", va="center", fontsize=7, fontweight="bold",
+            color="dimgrey")
+
+    box = (f"Reference (300 m, 10 seeds):\n"
+           f"Offset {off:.1f} \u00b7 QMIX {qmix:.1f} \u00b7 "
+           f"Max Pressure {mp:.1f} s\n"
+           f"MP best at $d \\leq 300$ m  \u00b7  "
+           f"Offset best at $d \\geq 500$ m")
+    ax.text(0.53, 0.965, box, transform=ax.transAxes, ha="center", va="top",
+            fontsize=6.8, bbox=dict(boxstyle="round,pad=0.35",
+                                    facecolor="#f4f4f4", edgecolor="grey",
+                                    linewidth=0.6))
+
+    ax.set_xticks(xs)
+    ax.set_xticklabels([str(d) for d in DISTANCES], fontsize=8)
+    ax.set_xlabel("Inter-intersection spacing  $d$  (m)", fontsize=9)
+    ax.set_ylabel("Max Pressure gap vs. offset  $G_{\\mathrm{MP}}$  (%)",
+                  fontsize=9)
+    ax.set_ylim(-95, 262)
+    ax.set_title("Different controller families own different regimes",
+                 fontsize=9.5, fontweight="bold", loc="left")
+    ax.grid(True, axis="y", alpha=0.25)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+
+
+def main():
+    os.makedirs("figures", exist_ok=True)
+    for f in (CLASSES_CSV, PAIRED_CSV, SCENARIO_A_CSV):
+        if not os.path.exists(f):
+            print(f"[ERROR] missing {f}")
+            return
+
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(11.2, 4.4),
+                                   gridspec_kw={"width_ratios": [1.0, 1.15],
+                                                "wspace": 0.28})
+    fig.suptitle("Dynamic Coordination Horizon Framework (DCHF)",
+                 fontsize=13, fontweight="bold", x=0.02, ha="left", y=1.005)
+    fig.text(0.02, 0.925,
+             "A diagnostic that asks not whether cooperative MARL wins, "
+             "but $when$ and $where$ coordination is worth deploying",
+             fontsize=8.5, color="dimgrey", ha="left")
+
+    left_panel(axL)
+    right_panel(axR)
+
+    plt.subplots_adjust(top=0.80, bottom=0.24, left=0.06, right=0.985)
+    plt.savefig(OUT, bbox_inches="tight")
+    print(f"Saved graphical abstract to: {OUT}")
+    print("Reference box uses network waiting measure in seconds (s), "
+          "consistent with Section 6 of the main paper.")
+
+
+if __name__ == "__main__":
+    main()

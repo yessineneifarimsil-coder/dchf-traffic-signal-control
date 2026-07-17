@@ -1,5 +1,5 @@
 """
-THRESHOLD-CURVE FIGURE (addresses Perplexity 2.1).
+THRESHOLD-CURVE FIGURE.
 
 Plots the offset-sweep performance curve (mean total waiting time vs. offset) for
 the reference condition d=300 m, medium demand, read from the existing offset-sweep
