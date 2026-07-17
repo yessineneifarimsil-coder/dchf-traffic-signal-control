@@ -32,7 +32,7 @@ python -c "import traci, sumolib; print('TraCI and sumolib available')"
 
 ## Exact trained policies
 
-The exact policy checkpoints used in the article, together with the model manifest and SHA-256 hashes, are archived at https://doi.org/10.5281/zenodo.21417744. Evaluation scripts expect the checkpoints under `results/raw/` using the filenames listed in `MODEL_MANIFEST.csv`.
+The exact policy checkpoints used in the article will be deposited in an immutable archive after supervisor and coauthor approval. The archive will include the model manifest and SHA-256 hashes. Its DOI will be added after publication. Evaluation scripts expect the checkpoints under `results/raw/` using the filenames listed in `MODEL_MANIFEST.csv`.
 
 ## Regenerate the final integrated DCHF map
 
