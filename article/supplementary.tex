@@ -1,0 +1,1280 @@
+% =====================================================================
+% SUPPLEMENTARY MATERIAL
+
+% Authors: Mohamed Yessine Naifar, Nadir Farhi, Ahmed Frikha
+% Journal: Transportation Research Part C
+% =====================================================================
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5\baselineskip}
+\onehalfspacing
+\sloppy
+\hbadness=10000
+\vbadness=10000
+\hfuzz=140pt
+\vfuzz=120pt
+\renewcommand{\arraystretch}{1.15}
+
+% Supplementary numbering: tables S1.., figures SF1.., equations S1..
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{SF\arabic{figure}}
+\renewcommand{\theequation}{S\arabic{equation}}
+
+\newcommand{\suppsec}[1]{%
+  \bigskip\par\noindent{\large\bfseries #1}\par\medskip}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Supplementary Material}\\[4pt]
+{\large A Dynamic Coordination Horizon Framework for Traffic Signal Control: Diagnosing Controller Effectiveness Across Operating Regimes}\\[6pt]
+Mohamed Yessine Naifar, Nadir Farhi, Ahmed Frikha
+\end{center}
+
+\bigskip
+This document collects reproducibility detail and supporting analyses referenced
+from the main paper: threshold derivation (S-1), computational workload (S-2),
+pipeline, transfer, and cycle-length detail (S-3), policy-behavior fairness (S-4),
+threshold-sensitivity tables (S-5), the analytical horizon constructs (S-6), the
+full notation table (S-7), standard learning equations (S-8), QMIX hyperparameters
+(S-9), the single-seed exploratory horizon maps, targeted five-seed validation
+of selected joint-grid boundary-adjacent cells, and component heatmaps (S-10),
+and additional result tables (S-11).
+Section labels follow the main-paper pointers; tables are numbered S1, S2,~\ldots
+and figures SF1, SF2,~\ldots
+
+% =====================================================================
+\suppsec{S-1\quad Derivation of the effectiveness thresholds}
+% =====================================================================
+
+The regime classification of Eq.~(\ref{eq:reg}) uses a $5\%$ effective level and a
+$10\%$ outer bound. The $5\%$ and $10\%$ levels are pre-specified interpretation
+tolerances anchored by the benchmark's empirical flat-minimum region and evaluated
+through the explicit $\delta\in\{3\%,5\%,10\%\}$ sensitivity analysis. They are not
+universal or data-independent constants; the $10\%$ level provides a deliberately
+wider tolerance marking a clear departure from the benchmark.
+Complementary empirical and operational considerations support these levels.
+
+\textit{Anchor (a) --- the benchmark's own flat minimum.} Classical signal-timing
+analysis shows that delay is relatively insensitive to small offset and cycle
+perturbations: Webster's delay formulation, which underpins the delay models of the
+Highway Capacity Manual tradition, has a flat minimum in which timing deviations on
+the order of a few percent produce delay changes of similar magnitude. This is borne out directly by the offset sweep at the turning-movement horizon
+anchor ($d=300$~m, medium demand): the waiting-time-optimal offset is 45~s,
+and offsets within roughly $\pm5$~s of it (40--50~s) all remain within
+5\% of the optimum, whereas offsets outside this band degrade sharply
+(see the reference-condition offset-sweep figure in the main paper). A controller within
+$5\%$ of the optimum is therefore operating inside the range of offsets the benchmark
+itself treats as near-equivalent.
+
+\textit{Anchor (b) --- absolute-delay interpretation (illustrative).} A $5\%$ gap on
+a representative reference waiting time of roughly $170$~s corresponds to about
+$8.5$~s, small relative to typical cycle lengths. This anchor is illustrative and is
+not the basis on which the threshold was chosen.
+
+\textbf{Anchor (c)---the wider tolerance.}
+The $10\%$ outer bound provides a deliberately wider interpretation
+tolerance marking a clear departure from the optimized benchmark. It is
+used to distinguish marginal approximation from unequivocal
+outside-horizon behaviour rather than to represent a universal physical
+delay interval.
+
+\begin{equation}
+\mathcal{R}(x)=
+\begin{cases}
+\text{Effective},  & G_{\mathrm{QMIX}}(x)\leq 5\%,\\
+\text{Marginal},   & 5\% < G_{\mathrm{QMIX}}(x)\leq 10\%,\\
+\text{Outside horizon}, & G_{\mathrm{QMIX}}(x)>10\% .
+\end{cases}
+\label{eq:reg}
+\end{equation}
+
+The primary justification rests on the benchmark's empirical
+offset-insensitivity band together with the explicit
+$\delta\in\{3\%,5\%,10\%\}$ sensitivity analysis (S-5). The $10\%$
+level supplies a deliberately wider tolerance for identifying a clear
+departure from the benchmark; it is not treated as an independently
+validated physical constant.
+The thresholds are therefore predefined interpretation tolerances rather than
+data-independent constants, and the sensitivity analysis confirms that the qualitative
+horizon conclusions are stable across the plausible range rather than dependent on the
+exact reference value.
+
+\textit{Capacity boundary.} The $BR_C=0.25$ controller-specific oversaturation boundary
+(Eq.~(\ref{eq:brc})) is an operational threshold marking the point at which roughly a
+quarter of expected demand cannot enter the network within the simulation horizon, a
+level at which served demand differs enough across controllers that waiting-time
+comparisons are dominated by demand infeasibility rather than control quality. It is
+adopted as a deliberately conservative cut-off; boundary cases either sit far below it
+or are reported with their buffered ratio, so a reader can apply a stricter or looser
+cut-off without changing the qualitative conclusions.
+
+\begin{equation}
+\mathcal{C}_C(x)=
+\begin{cases}
+\text{Unconstrained},           & BR_C(x)<0.01,\\
+\text{Mild insertion pressure}, & 0.01\leq BR_C(x)<0.10,\\
+\text{Capacity-limited},        & 0.10\leq BR_C(x)<0.25,\\
+\text{Oversaturated},           & BR_C(x)\geq 0.25 .
+\end{cases}
+\label{eq:brc}
+\end{equation}
+Unless another controller is named explicitly,
+$BR(x)\equiv BR_{\mathrm{QMIX}}(x)$ and
+$\mathcal{C}(x)\equiv\mathcal{C}_{\mathrm{QMIX}}(x)$.
+
+% =====================================================================
+\suppsec{S-2\quad Computational workload}
+% =====================================================================
+
+All simulations and learning experiments were executed on CPU. Wall-clock duration was not instrumented consistently across campaigns, so unsupported machine-specific time estimates are not reported. Instead, computational cost is documented through exact simulator workload.
+
+A single controller evaluation consists of one 3600~s SUMO episode. A one-dimensional 19-point offset sweep therefore requires 19 episodes, equivalent to 68{,}400 simulated seconds. The six-distance exploratory spatial sweep contains $6\times19=114$ offset evaluations (410{,}400 simulated seconds), and the five-level demand sweep contains $5\times19=95$ evaluations (342{,}000 simulated seconds). The 30-cell joint distance--demand benchmark contains $30\times19=570$ offset evaluations, corresponding to 2{,}052{,}000 simulated seconds before the learned-controller evaluations are added. The three-intersection two-dimensional benchmark uses $19\times19=361$ offset combinations, or 1{,}299{,}600 simulated seconds. Additional workload comes from the 450~m boundary-infill evaluation and from the paired multi-seed validation runs.
+
+Training budgets are 300 episodes for the selected two-agent QMIX~V2 policy, 400 episodes for the three-agent model, and 500 episodes for the five-agent model. Multi-seed evaluations reuse frozen trained policies; they repeat traffic realizations but do not retrain the neural networks. Consequently, extending every exploratory grid cell to multiple training seeds would multiply both training and evaluation workloads, whereas the present design concentrates paired multi-seed evidence on the formal reference comparisons and regime-boundary conditions.
+
+% =====================================================================
+\suppsec{S-3\quad Pipeline validation, Scenario~B single seed, and cycle sensitivity}
+% =====================================================================
+
+\textit{Single-intersection pipeline.} Safe fixed-time control, queue-based adaptive
+control, and two DQN configurations were compared at an isolated intersection. The
+first DQN confirmed the learning loop is functional but was less stable at evaluation;
+the second (DQN~V2) improved stability through longer training and slower exploration
+decay, becoming competitive with the safe fixed-time baseline in mean waiting time and
+improving mean speed. Because offset coordination is undefined for an isolated signal,
+this phase uses fixed-time as its reference and is not interpreted as coordination
+evidence; it establishes that the binary phase-priority action space, queue-based
+observation, reward function, and TraCI loop are suitable for the multi-intersection
+experiments.
+
+\textit{Scenario~B single-seed comparison.} Table~\ref{tab:scenario_b_single}
+reports the single-seed controller comparison underlying the ten-seed transfer
+result (the ten-seed transfer table in the main paper). The transferred policy reduces mean waiting time
+from $270.563$ to $180.616$~s ($CG=33.244\%$, single-seed gap $7.136\%$, marginal
+for this realization; the ten-seed evaluation tightens this to an effective $3.694\%$
+gap), while the directly trained model reaches only $257.235$~s.
+
+\begin{table}[H]
+\centering
+\caption{Scenario~B single-seed controller comparison (turning movements).}
+\label{tab:scenario_b_single}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Controller} & \textbf{Mean waiting} & \textbf{Mean speed} &
+\textbf{Mean queue} & \textbf{CG (\%)} & \textbf{Gap vs.\ offset (\%)} \\
+\midrule
+Simultaneous fixed-time               & 270.563 & 7.452 & 17.334 &  0.000 & 60.492 \\
+Best offset (45~s)                    & 168.585 & 7.955 & 13.274 & 37.691 &  0.000 \\
+QMIX V2 transferred from Scenario~A   & 180.616 & 7.852 & 13.840 & 33.244 &  7.136 \\
+QMIX V2 trained on Scenario~B         & 257.235 & 7.663 & 15.887 &  4.926 & 52.584 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\textit{Scenario~B training-budget and initialization checks.}
+Two supporting ablations test whether the frozen-transfer result can be
+explained by an insufficient direct-training budget or by the Scenario~A
+weights alone. Each ablation trains one policy and evaluates that fixed policy
+over five SUMO traffic seeds. They therefore quantify robustness to evaluation
+traffic realizations, not variability across independent training runs.
+
+\begin{table}[H]
+\centering
+\caption*{\textbf{Table S1A:} Five-seed fixed-policy evaluations of the
+Scenario~B training-budget and initialization ablations. The waiting-time
+confidence intervals are percentile-bootstrap 95\% intervals over the five
+evaluation seeds. Gaps use the ten-seed Scenario~B optimized-offset mean
+of $172.097$~s as a fixed reference and are therefore not paired per-seed
+gap estimates.}
+\small
+\setlength{\tabcolsep}{3.5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{3.8cm}p{6.1cm}crrrl}
+\toprule
+\textbf{Ablation} &
+\textbf{Training protocol} &
+\textbf{Evaluation seeds} &
+\textbf{Mean WT $\pm$ std} &
+\textbf{95\% bootstrap CI} &
+\textbf{Gap (\%)} &
+\textbf{Regime} \\
+\midrule
+
+Direct Scenario~B,
+600 episodes &
+Random initialization; direct Scenario~B training extended from
+300 to 600 episodes &
+5 &
+$274.856\pm2.220$ &
+$[272.959,276.471]$ &
+59.710 &
+Outside horizon \\
+
+Scenario~A warm-start,
+then Scenario~B training &
+Initialize from the trained Scenario~A weights, reset exploration to
+$\epsilon=1.0$, and train on Scenario~B &
+5 &
+$295.090\pm4.760$ &
+$[291.446,298.534]$ &
+71.467 &
+Outside horizon \\
+
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Neither supporting ablation approaches the frozen transferred policy
+reported in the main paper ($178.455\pm1.548$~s over ten evaluation
+seeds). Within the tested training realizations, the transfer advantage is
+therefore not explained by the 300-episode direct-training budget or by
+weight initialization alone. Because the ablations are not replicated over
+independent training seeds, this evidence does not identify the optimization
+mechanism or establish that the same outcome must occur for every training
+initialization.
+
+\textit{Cycle-length sensitivity.} Because classical progression theory ties the
+useful coordination range to both spacing and cycle length, the spatial-boundary
+distances ($200$, $300$, $500$~m, medium demand) were re-evaluated at three cycles
+($60$, $90$, $120$~s) with the green split scaled accordingly ($27$, $42$, $57$~s).
+For each cycle the optimized offset is \emph{re-swept} to its best value, so the
+benchmark is genuinely re-optimized; QMIX is \emph{not} retrained but re-evaluated
+with its $90$~s-trained policy. This is therefore a robustness probe of the trained
+policy, reported with three seeds (Table~\ref{tab:cycle_sensitivity}).
+
+\begin{table}[H]
+\centering
+\caption{Exploratory cycle-length sensitivity of the spatial horizon (three seeds,
+medium demand). For each cycle the optimized offset is re-swept; QMIX is re-evaluated
+with its $90$~s-trained policy (not retrained). The $90$~s rows reproduce the
+canonical spatial horizon.}
+\label{tab:cycle_sensitivity}
+\small
+\setlength{\tabcolsep}{5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{rrrrrl}
+\toprule
+\textbf{Cycle (s)} & \textbf{Distance} & \textbf{Offset WT} & \textbf{QMIX WT} &
+\textbf{$G_{\mathrm{QMIX}}$ (\% , 95\% CI)} & \textbf{QMIX regime} \\
+\midrule
+60  & 200~m & $74.61\pm2.97$   & $116.26\pm8.60$  & $+56.07\;[39.87, 65.54]$   & Outside horizon \\
+60  & 300~m & $117.73\pm5.43$  & $132.19\pm3.29$  & $+12.51\;[4.02, 18.65]$    & Outside horizon \\
+60  & 500~m & $81.17\pm0.42$   & $268.17\pm4.11$  & $+230.42\;[224.26, 237.33]$& Outside horizon \\
+\midrule
+90  & 200~m & $192.31\pm3.14$  & $197.94\pm0.28$  & $+2.95\;[1.02, 4.59]$      & Effective       \\
+90  & 300~m & $173.57\pm2.03$  & $178.16\pm2.46$  & $+2.65\;[1.46, 3.54]$      & Effective       \\
+90  & 500~m & $224.76\pm4.37$  & $313.11\pm19.53$ & $+39.30\;[32.91, 48.25]$   & Outside horizon \\
+\midrule
+120 & 200~m & $365.12\pm2.36$  & $893.38\pm37.71$ & $+144.73\;[132.96, 156.77]$& Outside horizon \\
+120 & 300~m & $329.68\pm2.00$  & $419.71\pm16.26$ & $+27.32\;[22.27, 33.14]$   & Outside horizon \\
+120 & 500~m & $298.38\pm4.83$  & $517.58\pm6.46$  & $+73.52\;[68.29, 78.16]$   & Outside horizon \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The optimized offset adapts cleanly to each cycle (its own waiting time stays in a
+reasonable band), confirming the benchmark is re-optimized properly. QMIX is effective
+only at the $90$~s cycle it was trained on; at $60$~s and $120$~s its gap rises sharply
+because the learned policy is tied to its training green-hold. The honest conclusion is
+that the QMIX-derived horizon is \textbf{cycle-conditional}---a property of the trained
+policy at its training cycle---which reinforces the paper's central caution that the
+numerical horizons are controller- and training-conditional, and identifies per-cycle
+retraining as a concrete next step.
+
+% =====================================================================
+\suppsec{S-4\quad Policy behavior and fairness ($N=3$)}
+% =====================================================================
+
+The three-agent policy is analysed to confirm that delay reduction comes from
+interpretable coordination rather than movement starvation
+(Table~\ref{tab:supp_policy}). The two co-dominant joint actions, $[1,0,1]$ and $[0,1,0]$, each occur in
+$48.75\%$ of decisions ($97.5\%$ combined), consistent with the waiting-time-optimal
+offset pattern that places $J_1$ and $J_3$ similarly while shifting $J_2$. Per-agent
+action shares are balanced and internal-link mean queues are comparable
+($2.0$--$2.7$ vehicles), so QMIX does not reduce delay by starving any movement
+or intersection. The relative queue imbalance reported in
+Table~\ref{tab:supp_policy} is
+$(q_{\max}-q_{\min})/\bar{q}$ over the four internal links, giving
+$(2.688-2.003)/2.3475=0.292$; values near zero indicate an even split of
+residual queueing across the corridor.
+
+As a complementary normalized fairness measure, the four internal-link mean queues give
+\[
+J_q=
+\frac{\left(\sum_{\ell=1}^{4}\bar q_\ell\right)^2}
+{4\sum_{\ell=1}^{4}\bar q_\ell^2}
+=0.989.
+\]
+A value close to one indicates that the residual internal-link queues are distributed nearly evenly. This corroborates the relative queue imbalance of 0.292 while remaining scale-normalized.
+
+\begin{table}[H]
+\centering
+\caption{Three-intersection QMIX action distribution and link-queue fairness. Action
+shares are per agent over 80 decisions; link queues are means over the 3600~s episode.}
+\label{tab:supp_policy}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{llrr}
+\toprule
+\multicolumn{4}{l}{\textbf{(a) Action distribution per agent}} \\
+\midrule
+\textbf{Agent} & \textbf{Action} & \textbf{Decisions} & \textbf{Share (\%)} \\
+\midrule
+J1 & Side priority & 41 & 51.25 \\
+J1 & Main priority & 39 & 48.75 \\
+J2 & Side priority & 41 & 51.25 \\
+J2 & Main priority & 39 & 48.75 \\
+J3 & Side priority & 40 & 50.00 \\
+J3 & Main priority & 40 & 50.00 \\
+\midrule
+\multicolumn{4}{l}{\textbf{(b) Link-queue fairness}} \\
+\midrule
+\textbf{Link} & & \textbf{Mean queue} & \textbf{Zero-queue (\%)} \\
+\midrule
+$J_1\!\to\!J_2$ & & 2.402 & 71.11 \\
+$J_2\!\to\!J_1$ & & 2.297 & 73.11 \\
+$J_2\!\to\!J_3$ & & 2.688 & 69.89 \\
+$J_3\!\to\!J_2$ & & 2.003 & 72.42 \\
+\midrule
+\multicolumn{2}{l}{Co-dominant patterns 1-0-1 / 0-1-0} & \multicolumn{2}{r}{48.75\% each (97.5\% combined)} \\ \\
+\multicolumn{2}{l}{Relative queue imbalance} & \multicolumn{2}{r}{0.292} \\
+\multicolumn{2}{l}{Normalized internal-link queue fairness $J_q$} & \multicolumn{2}{r}{0.989} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Five-seed multi-seed comparison at the three-intersection reference
+condition ($d_{12}=d_{23}=300$~m, medium demand). Values are means $\pm$ std
+across five SUMO seeds; the gap is the QMIX approximation gap against the
+waiting-time-optimal offset pattern.}
+\label{tab:multiseed_three_int}
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Controller} & \textbf{Mean waiting} & \textbf{Gap vs.\ offset (\%)} \\
+\midrule
+Simultaneous fixed-time  & $419.461 \pm 1.572$ & --- \\
+Optimized offset pattern & $228.497 \pm 2.787$ & $0.000$ \\
+QMIX three agents        & $235.298 \pm 1.626$ & $2.976$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\suppsec{S-5\quad Threshold sensitivity of the DCHF classification}
+% =====================================================================
+
+The classification is recomputed under strict $3\%$, reference $5\%$, and relaxed
+$10\%$ approximation-gap thresholds; a conclusion is robust when stable across these
+tolerances (Table~\ref{tab:supp_threshold}). The core spatial finding is robust: the
+tested 200 and 300~m points remain effective under both the $3\%$ and $5\%$
+thresholds, with $100$~m entering only at $10\%$. The demand horizon is more threshold-sensitive
+(medium and saturation hold at $3\%$; high enters at $5\%$; oversaturation only at
+$10\%$), confirming oversaturation as marginal and capacity-constrained. The
+three-intersection and third-light cases produce no effective classification at $3\%$,
+entering only from $5\%$, but the main conclusion---pairwise spacing does not
+automatically generalize---is unchanged. Negative gaps are treated as effective under
+all thresholds.
+
+\begin{table}[H]
+\centering
+\caption{Effective conditions per horizon under three approximation-gap thresholds.}
+\label{tab:supp_threshold}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{p{5.0cm}p{2.0cm}p{6.0cm}}
+\toprule
+\textbf{Horizon} & \textbf{Threshold} & \textbf{Effective conditions} \\
+\midrule
+Two-intersection spatial   & $3\%$  & 200, 300~m \\
+                           & $5\%$  & 200, 300~m \\
+                           & $10\%$ & 100, 200, 300~m \\
+\midrule
+Two-intersection demand    & $3\%$  & medium, saturation \\
+                           & $5\%$  & medium, high, saturation \\
+                           & $10\%$ & medium, high, saturation, oversaturation \\
+\midrule
+Three-intersection         & $3\%$  & none \\
+reference scalability      & $5\%$  & $d_{23}=300$~m \\
+                           & $10\%$ & $d_{23}=300$~m \\
+\midrule
+Three-intersection         & $3\%$  & none \\
+third-light spatial        & $5\%$  & $d_{23}=300, 500$~m \\
+                           & $10\%$ & $d_{23}=300, 500, 750$~m \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\suppsec{S-6\quad Analytical constructs for the expected horizons}
+% =====================================================================
+
+The horizon predictions are grounded in classical coordination relationships.
+Free-flow travel time between consecutive intersections is
+$\tau_{ij}=d_{ij}/\bar{v}_{ij}$, giving a first-order progression-offset estimate
+$O_{ij}^{\mathrm{prog}}=\tau_{ij}\bmod C$; the optimal offset departs from this estimate
+under queue formation, side-road flows, and stochastic arrivals, which is why an
+exhaustive sweep is used. Platoon cohesion decays with travel time, captured by
+$\Phi_{ij}=e^{-\lambda\tau_{ij}}$, and the relevance of upstream state is described by
+the information-freshness construct $F(\Delta t)=e^{-\beta\Delta t}$. The exponential
+cohesion proxy is a compact summary of the Robertson platoon-dispersion model, in which
+the downstream arrival profile follows $q_d(t)=F\,q_u(t-T)+(1-F)\,q_d(t-1)$ with
+smoothing factor $F=1/(1+\alpha T)$: as travel time grows, an upstream platoon disperses
+and its arrival profile flattens, so the benefit of holding a fixed offset declines with
+distance.
+
+To test whether the dispersion proxy is consistent with the observed spatial horizon,
+we examine $\Phi_{ij}$ against the QMIX approximation gap across the six primary tested distances
+(at $\bar{v}=13.89$~m/s). The gap is non-monotonic overall---elevated at $100$~m
+(storage interference), minimal at $200$--$300$~m, and rising at $\geq500$~m. On the
+dispersion-dominated branch ($d\geq200$~m), the gap exhibits a strong but non-perfect
+positive rank association with distance ($\rho = 0.90$); the gap decreases from $750$ to
+$1000$~m rather than increasing monotonically. Given that only five spacing values
+($d \in \{200,300,500,750,1000\}$~m) were evaluated on this branch, this observation is
+treated as a qualitative consistency check rather than as an inferential statistical test.
+For any decay rate $\lambda\in[0.01,0.03]$~s$^{-1}$, the cohesion proxy cleanly separates
+the tested effective points (200 and 300~m, high cohesion) from the outside-horizon region
+($\geq500$~m, low cohesion): the minimum cohesion among effective distances exceeds the
+maximum cohesion among outside-horizon distances (Figure~\ref{fig:dispersion_overlay}).
+We do not report a single fitted $\lambda$, because six distances with a non-monotonic gap
+profile do not support a statistically robust regression; the constructs are therefore
+qualitatively consistent with the observed long-distance decay rather than calibrated
+predictive laws.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{figures/dispersion_cohesion_overlay.pdf}
+\caption{Spatial approximation gap overlaid with the
+platoon-cohesion proxy $\Phi=\exp(-\lambda\tau)$
+(illustrative $\lambda=0.02$~s$^{-1}$). The tested 200 and
+300~m points are effective, whereas the tested distances from
+500 to 1000~m are outside the horizon. The proxy is a qualitative
+consistency check rather than a calibrated predictive law.}
+\label{fig:dispersion_overlay}
+\end{figure}
+
+% =====================================================================
+\suppsec{S-7\quad Notation}
+% =====================================================================
+
+\begin{table}[H]
+\centering
+\caption{Unified notation used throughout the paper.}
+\label{tab:notation}
+\small
+\begin{tabular}{p{3.8cm}p{11.4cm}}
+\toprule
+\textbf{Symbol} & \textbf{Definition} \\
+\midrule
+$x\mapsto\mathcal{D}_{\mathrm{DCHF}}(x)$ & Diagnostic mapping from the controlled condition $x=(d,\rho,N)$ to the approximation gap, Coordination Gain, and controller-specific capacity state. \\
+$\mathcal{D}_{\mathrm{DCHF}}(x)$ & Diagnostic tuple $(G_{\mathrm{QMIX}}(x), CG_{\mathrm{QMIX}}(x), \mathcal{C}_{\mathrm{QMIX}}(x))$, with the gap listed first as the primary diagnostic. \\
+$x$ & Controlled operating condition $(d,\rho,N)$. \\
+$d$ & Inter-intersection spacing (m). \\
+$\rho$ & Demand multiplier relative to medium reference flow. \\
+$N$ & Number of controlled intersections (agents). \\
+$J_C(x)$ & Time-averaged network waiting measure (s) of controller $C$ under condition $x$ (defined in the Performance Metrics subsection of the main paper). \\
+$J_{\mathrm{off}}^{\star}(x)$ & Network waiting measure of the optimized fixed-offset benchmark (best swept offset); primary reference in gap computation. \\
+$J_{\mathrm{sim}}(x)$ & Network waiting measure of simultaneous fixed-time control (zero offset). \\
+$CG_C(x)$ & Coordination Gain of controller $C$: $(1-J_C/J_{\mathrm{sim}})\times100\%$. \\
+$G_{\mathrm{QMIX}}(x)$ & MARL approximation gap (primary diagnostic): $(J_{\mathrm{QMIX}}-J_{\mathrm{off}}^{\star})/J_{\mathrm{off}}^{\star}\times100\%$. \\
+$G_{\mathrm{MP}}(x)$ & Max Pressure approximation gap, defined analogously. \\
+$\delta$ & Gap threshold; effective $G\leq\delta$. Baseline $\delta=5\%$; marginal $5\%<G\leq10\%$; outside $G>10\%$. \\
+$\mathcal{R}(x)$ & Coordination regime: Effective, Marginal, or Outside. \\
+$BR_C(x)$ & Controller-specific buffered ratio: $N_{\mathrm{buffered},C}(x)/N_{\mathrm{expected}}(x)$. \\
+$N_{\mathrm{buffered}}$ & Number of route-file vehicles not inserted into the network by the end of the $3600$~s simulation horizon (SUMO insertion backlog at simulation end). \\
+$N_{\mathrm{expected}}$ & Total route-file demand (number of vehicles scheduled to enter the network). \\
+$b_{\mathrm{crit}}=0.25$ & Buffered-ratio threshold defining the controller-specific capacity-feasible boundary. \\
+$\mathcal{C}_C(x)$ & Controller-specific capacity regime: unconstrained, mild insertion pressure, capacity-limited, or oversaturated. \\
+$H_S,H_D,H_N$ & Gap-based benchmark-approximation horizons over spacing, demand, and network size. \\
+$H_B^C$ & Controller-specific capacity-feasible set defined by $BR_C(x)<0.25$. \\
+$P_i(p,t)$ & Phase pressure at intersection $i$ for phase $p$: sum of incoming-minus-outgoing lane vehicle-count differences over the movements served by phase $p$. \\
+$\mathcal{G}=(\mathcal{V},\mathcal{E})$ & Directed network of signalised intersections. \\
+$o_i(t)$ & Local observation of agent $i$ at time $t$. \\
+$a_i(t)$ & Binary action of agent $i$ (phase priority). \\
+$Q_i$ & Per-agent action-value function. \\
+$Q_{\mathrm{tot}}$ & Global joint value, mixed by the QMIX hypernetwork. \\
+$\lambda$ & Platoon dispersion rate in the Robertson model. \\
+$F(\Delta t)$ & Information-freshness function $e^{-\beta\Delta t}$. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\suppsec{S-8\quad Cooperative MARL formulation and standard learning equations}
+% =====================================================================
+
+\textit{Environment formulation.} The signalized corridor is modelled as a
+Decentralised Partially Observable Markov Decision Process with one agent per
+intersection, so the number of agents equals $N$; the experiments consider
+$N\in\{2,3,5\}$. At decision time $t$, agent $i$ observes
+$\mathbf{o}_i(t)=[q_i^{s}(t),q_i^{m}(t),p_i(t)]$ (side-road queue, main-corridor
+queue, phase indicator); the global state used in centralized training
+concatenates all local observations, $\mathbf{s}(t)=[\mathbf{o}_1(t),\ldots,\mathbf{o}_N(t)]$,
+of dimension $3N$. Each agent chooses one of two phase-priority actions, so the
+joint action $\mathbf{a}(t)\in\{0,1\}^{N}$ has size $2^N$. For the reference QMIX~V2 configuration, the reward associated with decision
+$t$ is the negative sum of the network-wide waiting-time state over the
+applied green interval, scaled by $10^{4}$:
+$\tilde r_t=-\tfrac{1}{10{,}000}\sum_{s\in\mathcal{I}_t} W_s$,
+where $W_s$ is the sum of the current per-vehicle waiting-time values over all
+vehicles present in the network at simulation second $s$, and $\mathcal{I}_t$
+is the set of simulation seconds in the applied green interval.
+Yellow-transition seconds are simulated but are not directly accumulated in
+the immediate reward; their effects may nevertheless influence waiting during
+subsequent green intervals. The reference QMIX~V2 objective is therefore waiting-only, corresponding
+to $\alpha_W=1$ and $\alpha_Q=0$. QMIX~V3 is treated separately as a
+richer-state, differently tuned variant: it augments the local observation
+with density and mean-speed information and adds queue and phase-switching
+penalties to the training reward.
+
+\textit{QMIX value decomposition.} QMIX is retained because a monotonic mixing
+network combines per-agent action-values into a joint value while preserving
+consistency between local and global optima:
+\begin{equation}
+Q_{\mathrm{tot}}(\mathbf{s},\mathbf{a})=
+f_{\mathrm{mix}}\!\bigl(Q_1(\mathbf{o}_1,a_1),\ldots,Q_N(\mathbf{o}_N,a_N);\,\mathbf{s}\bigr),
+\qquad
+\frac{\partial Q_{\mathrm{tot}}}{\partial Q_i}\geq 0\;\;\forall i .
+\label{eq:qmix_total_value}
+\end{equation}
+The monotonicity constraint guarantees that maximizing each local $Q_i$ is
+consistent with maximizing $Q_{\mathrm{tot}}$, so agents act from local
+observations alone at execution while training exploits the global
+state---matching traffic control, where network-wide information is available
+in simulation but deployment is intersection-local. The DCHF does not depend on
+this choice: QMIX supplies $J_{\mathrm{QMIX}}(x)$, which is compared against
+simultaneous fixed-time control (Coordination Gain) and the optimized
+fixed-offset benchmark (approximation gap) to yield the regime classification.
+
+The standard DQN and QMIX training objectives, the Independent DQN baseline,
+and the centralized-training/decentralized-execution procedure follow
+\cite{Mnih2015,Rashid2018} and are given below for completeness.
+
+\textit{Single-agent DQN (pipeline validation).} The agent observes $\mathbf{o}(t)$,
+selects $a(t)\in\{0,1\}$, and minimizes the temporal-difference error with target
+\begin{equation}
+y_t=\tilde{r}_t+\gamma\max_{a'}Q_{\mathrm{target}}\bigl(\mathbf{o}(t+1),a'\bigr),
+\qquad
+\mathcal{L}_{\mathrm{DQN}}=\bigl[y_t-Q(\mathbf{o}(t),a(t))\bigr]^2 .
+\label{eq:dqn}
+\end{equation}
+
+\textit{Independent DQN baseline.} Each intersection $i$ learns a separate
+$Q_i(\mathbf{o}_i,a_i)$ from its local observation, with no shared value function, and
+therefore cannot represent the joint value of coordinated actions.
+
+\textit{QMIX training objective.} With the joint value $Q_{\mathrm{tot}}$,
+\begin{equation}
+y_t=\tilde{r}_t+\gamma\max_{\mathbf{a}'}
+Q_{\mathrm{tot}}^{\mathrm{target}}\bigl(\mathbf{s}(t+1),\mathbf{a}'\bigr),
+\qquad
+\mathcal{L}_{\mathrm{QMIX}}=\bigl[y_t-Q_{\mathrm{tot}}(\mathbf{s}(t),\mathbf{a}(t))\bigr]^2 .
+\label{eq:qmixloss}
+\end{equation}
+
+\textit{Centralized training, decentralized execution.} Training uses the global state
+and joint transition $(\mathbf{s}(t),\mathbf{o}_{1:N}(t),\mathbf{a}(t),\tilde{r}_t)$,
+whereas execution selects each action from the local observation only,
+$\mathbf{o}_i(t)\rightarrow a_i(t)$. Evaluation is performed with exploration disabled.
+
+% =====================================================================
+\suppsec{S-9\quad QMIX hyperparameters and training configuration}
+% =====================================================================
+
+The two-intersection variants use the same two-hidden-layer local-network
+template and the same monotonic QMIX mixer family, but they do not share
+identical input representations or training configurations. QMIX~V1 and
+V2 use three-dimensional local observations and six-dimensional global
+states, whereas QMIX~V3 uses seven-dimensional local observations and a
+14-dimensional global state. The variants also differ in training budget,
+optimization, exploration, replay settings, and reward specification.
+
+The scalability models retain the QMIX~V2 three-variable observation and
+network template but are not exact hyperparameter copies. The
+three-agent model uses a nine-dimensional state, 400 training episodes,
+and a queue normalizer of 200; the five-agent model uses a
+15-dimensional state, 500 episodes, a 150{,}000-transition replay buffer,
+and a queue normalizer of 300. Both are trained from scratch at their
+tested network sizes. The resulting training-convergence behaviour for
+the two-intersection variants is shown in
+Figure~\ref{fig:qmix_training_convergence_supp}.
+
+\begin{table}[H]
+\centering
+\caption{Training configurations of the two-intersection QMIX variants.
+All three variants use the same two-hidden-layer local-network template
+and monotonic QMIX mixer family, but they differ in input representation
+and multiple training settings. QMIX~V2 is the reference configuration
+retained for the main DCHF experiments.}
+\label{tab:hyperparameters}
+\small
+\setlength{\tabcolsep}{3.5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{4.2cm}p{3.5cm}p{3.5cm}p{5.8cm}}
+\toprule
+\textbf{Component / Hyperparameter} &
+\textbf{QMIX V1} &
+\textbf{QMIX V2} &
+\textbf{QMIX V3} \\
+\midrule
+
+Local observation &
+3: side queue, main queue, phase &
+3: side queue, main queue, phase &
+7: side/main queues, densities, mean speeds, and phase \\
+
+Global-state dimension &
+6 &
+6 &
+14 \\
+
+Local Q-network template &
+$\mathrm{obs}\!\rightarrow\!64\!\rightarrow\!64\!\rightarrow2$ &
+$\mathrm{obs}\!\rightarrow\!64\!\rightarrow\!64\!\rightarrow2$ &
+$\mathrm{obs}\!\rightarrow\!64\!\rightarrow\!64\!\rightarrow2$ \\
+
+Mixing network &
+\multicolumn{3}{c}{Monotonic QMIX mixer; mixing hidden dimension 32;
+hypernetwork hidden dimension 64} \\
+
+Action dimension &
+\multicolumn{3}{c}{2 (binary phase priority)} \\
+
+Discount factor $\gamma$ &
+\multicolumn{3}{c}{0.99} \\
+
+Optimizer &
+\multicolumn{3}{c}{Adam} \\
+
+Training episodes &
+100 &
+300 &
+500 \\
+
+Learning rate &
+$1\times10^{-3}$ &
+$5\times10^{-4}$ &
+$3\times10^{-4}$ \\
+
+Replay-buffer capacity &
+50{,}000 &
+100{,}000 &
+150{,}000 \\
+
+Batch size &
+64 &
+128 &
+128 \\
+
+Target-network update frequency &
+100 learning updates &
+200 learning updates &
+200 learning updates \\
+
+Exploration $\epsilon$
+(start / minimum / decay) &
+$1.0/0.10/0.999$ &
+$1.0/0.05/0.9995$ &
+$1.0/0.05/0.9997$ \\
+
+Maximum decisions per episode &
+\multicolumn{3}{c}{200} \\
+
+Training reward &
+Waiting-time reward, divided by $10{,}000$ &
+Waiting-time reward, divided by $10{,}000$ &
+Waiting-time reward minus
+$5.0\times$ total queue and
+$100\times$ phase-switch count,
+then divided by $10{,}000$ \\
+
+\bottomrule
+\end{tabular}%
+}
+
+\vspace{4pt}
+\begin{minipage}{0.98\textwidth}
+\footnotesize
+\emph{Notes:}
+Learning and exploration decay begin after the replay buffer contains one
+variant-specific batch: 64 transitions for V1 and 128 for V2/V3.
+Figure~\ref{fig:qmix_training_convergence_supp} plots the common
+unshaped waiting-time reward stored in the training logs; V3 is nevertheless
+trained using the shaped reward shown above.
+
+The $N=3$ and $N=5$ models use the V2 observation type, local-network
+template, learning rate, exploration schedule, batch size, target-update
+frequency, and waiting-only reward. The $N=3$ model uses a
+nine-dimensional global state, 400 episodes, a 100{,}000-transition replay
+buffer, and queue normalization by 200. The $N=5$ model uses a
+15-dimensional global state, 500 episodes, a 150{,}000-transition replay
+buffer, and queue normalization by 300.
+\end{minipage}
+\end{table}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/qmix_training_convergence.pdf}
+\caption{Training traces for the three separately configured QMIX
+variants: (a) the common unshaped waiting-time episode reward stored in
+the logs and (b) final total waiting time over training episodes. Light
+lines show raw per-episode values and bold lines show rolling means. The
+common horizontal axis extends to 500 episodes because V1, V2, and V3
+were trained for 100, 300, and 500 episodes, respectively; each curve
+terminates at its actual training budget. V2 reaches the strongest
+waiting-time result among the tested configurations. Because V3 also
+changes the observation/state representation and several optimization
+settings, the comparison supports variant selection rather than a
+controlled reward-shaping ablation.}
+\label{fig:qmix_training_convergence_supp}
+\end{figure}
+% =====================================================================
+\suppsec{S-10\quad Single-seed exploratory horizon maps and component heatmaps}
+% =====================================================================
+
+This section collects the single-seed exploratory maps that the fully paired five-seed
+tables in the main paper supersede, together with the capacity indicators, the
+best-offset structure, the three-intersection multi-objective sweep, the
+five-seed validation of the joint-grid boundary-adjacent cells, and the
+per-diagnostic component heatmaps of the joint distance--demand grid.
+
+\textit{Single-seed spatial horizon.} Table~\ref{tab:supp_spatial} gives the
+exploratory spatial map for the generated 70\%--15\%--15\%
+turning-movement horizon variants, evaluated using the frozen
+Scenario~A-trained QMIX~V2 policy. This is not the through-movement
+Scenario~A reference campaign. Its regime classifications are confirmed
+under the fully paired five-seed spatial sweep in the main paper.
+\begin{table}[H]
+\centering
+\caption{Single-seed two-intersection spatial coordination horizon for the
+generated 70\%--15\%--15\% turning-movement variants
+(exploratory map; frozen Scenario~A-trained QMIX~V2 policy).}
+\label{tab:supp_spatial}
+\small
+\begin{tabular}{rrrrrl}
+\toprule
+\textbf{Distance} & \textbf{Sim.\ WT} & \textbf{Offset WT} & \textbf{QMIX WT} &
+\textbf{Gap (\%)} & \textbf{DCHF regime} \\
+\midrule
+100~m  & 986.371 & 217.763 & 235.912 &  8.334 & Marginal        \\
+200~m  & 321.064 & 195.628 & 197.619 &  1.018 & Effective       \\
+300~m  & 274.231 & 175.672 & 180.821 &  2.931 & Effective       \\
+500~m  & 291.246 & 226.379 & 335.613 & 48.253 & Outside horizon \\
+750~m  & 197.676 & 197.676 & 360.508 & 82.373 & Outside horizon \\
+1000~m & 185.130 & 185.000 & 294.072 & 58.958 & Outside horizon \\
+\bottomrule
+\end{tabular}
+\end{table}
+The $d=300$~m row of Table~\ref{tab:supp_spatial} is not numerically
+interchangeable with the Scenario~A screening in
+Table~\ref{tab:scenario_a_full_comparison_supp}. Table~\ref{tab:supp_spatial}
+uses the generated turning-movement horizon variant
+($CG_{\mathrm{off}}=35.940\%$ from $274.231\rightarrow175.672$~s),
+whereas Table~\ref{tab:scenario_a_full_comparison_supp} uses the
+through-movement Scenario~A corridor
+($CG_{\mathrm{off}}=22.713\%$ from $221.901\rightarrow171.501$~s).
+
+\textit{Single-seed demand slice of the joint grid and capacity indicators.}
+Table~\ref{tab:supp_demand} reports the $d=300$~m slice of the generated
+70\%--15\%--15\% turning-movement joint distance--demand grid that
+underlies Figures~\ref{fig:hm_gap}--\ref{fig:hm_cap}. The frozen
+Scenario~A-trained QMIX~V2 policy is evaluated without retraining in this
+grid. This exploratory slice is neither the through-movement Scenario~A
+reference campaign nor the fully paired five-seed demand sweep of the
+main paper. Because five-seed paired evidence exists for
+every cell of this slice, the integrated DCHF map combines the five-seed
+approximation gaps with the buffered ratios reported here. Exactly one
+classification changes: the oversaturation cell is gap-effective in the
+single-seed slice ($G_{\mathrm{QMIX}}=0.314\%$) but marginal under the five-seed
+gap ($G_{\mathrm{QMIX}}=7.12\%$), and the integrated map adopts the five-seed
+classification. The saturation cell is approximation-effective under both
+protocols and is reported as capacity-constrained because
+$BR_{\mathrm{QMIX}}=0.201$ lies in the capacity-limited regime; the high-demand
+cell has only mild insertion pressure ($BR_{\mathrm{QMIX}}=0.065$) and therefore
+retains its useful-effective classification. Table~\ref{tab:supp_capacity}
+reports the spillback indicators: the $80\%$ central-link occupancy threshold is
+never exceeded, so the dominant high-demand failure mode is capacity pressure and
+queue accumulation rather than full blockage.
+
+\begin{table}[H]
+\centering
+\caption{Single-seed $d=300$~m demand slice from the generated
+70\%--15\%--15\% turning-movement joint distance--demand grid,
+evaluated with the frozen Scenario~A-trained QMIX~V2 policy. Values are
+the exploratory single-seed data used in Figures~SF3--SF6 and in the
+integrated DCHF map of the main paper.}
+\label{tab:supp_demand}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrll}
+\toprule
+\textbf{Demand} &
+\textbf{Sim.\ WT} &
+\textbf{Offset WT} &
+\textbf{QMIX WT} &
+\textbf{Gap (\%)} &
+\textbf{BR} &
+\textbf{Single-seed gap regime} &
+\textbf{Capacity regime} \\
+\midrule
+Low ($0.5\times$)            & 90.362   & 82.233   & 167.802  & 104.056 & 0.0000 & Outside horizon & Unconstrained \\
+Medium ($1.0\times$)         & 274.231  & 175.672  & 180.821  & 2.931   & 0.0021 & Effective       & Unconstrained \\
+High ($1.5\times$)           & 1284.135 & 881.743  & 922.181  & 4.586   & 0.0648 & Effective       & Mild insertion pressure \\
+Saturation ($2.0\times$)     & 1432.412 & 1261.463 & 1267.017 & 0.440   & 0.2013 & Effective       & Capacity-limited \\
+Oversaturation ($2.5\times$) & 2587.158 & 2235.634 & 2242.664 & 0.314   & 0.2956 & Effective       & Oversaturated \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+\textit{Cross-campaign reconciliation at the turning-movement anchor.}
+The Scenario~B single-seed result in
+Table~\ref{tab:scenario_b_single} and the $d=300$~m, medium-demand
+rows in Tables~\ref{tab:supp_spatial} and \ref{tab:supp_demand}
+represent the same turning-movement network and the same frozen
+Scenario~A-trained QMIX~V2 policy, but they were produced by different
+stochastic realizations and evaluation workflows. Their single-seed
+waiting values are therefore not expected to coincide. The corresponding
+multi-seed campaigns agree closely: Scenario~B gives
+$172.097\pm2.080$~s for the optimized offset and
+$178.455\pm1.548$~s for QMIX over ten seeds, while the paired horizon
+campaign gives $172.848\pm1.796$~s and
+$177.476\pm2.218$~s over five seeds. This agreement is treated as a
+cross-implementation consistency check rather than an independent
+replication because the five-seed set overlaps the ten-seed set.
+By contrast, Table~\ref{tab:scenario_a_full_comparison_supp} reports the
+distinct through-movement Scenario~A screening and is not numerically
+interchangeable with these turning-movement results.
+\begin{table}[H]
+\centering
+\caption{Spillback-risk indicators across demand levels from the dedicated
+70\%--15\%--15\% turning-movement two-intersection demand-horizon
+campaign. The $80\%$ central-link occupancy
+threshold is never exceeded under any controller or demand level. Buffered ratios
+for the integrated DCHF diagnosis are those of Table~\ref{tab:supp_demand}.}
+\label{tab:supp_capacity}
+\small
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Controller} & \textbf{Demand} & \textbf{Max queue} &
+\textbf{Max central occ.} & \textbf{Spillback freq.\ ($\geq80\%$)} \\
+\midrule
+Best offset & Low            &  22 & 0.134 & 0.000 \\
+QMIX V2     & Low            &  27 & 0.188 & 0.000 \\
+Best offset & Medium         &  34 & 0.255 & 0.000 \\
+QMIX V2     & Medium         &  36 & 0.255 & 0.000 \\
+Best offset & High           &  92 & 0.309 & 0.000 \\
+QMIX V2     & High           & 106 & 0.322 & 0.000 \\
+Best offset & Saturation     & 108 & 0.336 & 0.000 \\
+QMIX V2     & Saturation     & 115 & 0.322 & 0.000 \\
+Best offset & Oversaturation & 196 & 0.376 & 0.000 \\
+QMIX V2     & Oversaturation & 213 & 0.470 & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textit{Best-offset structure by distance.} Table~\ref{tab:supp_offset} reports the
+optimized fixed-offset structure recovered by the per-distance sweep. The
+waiting-time-optimal and speed-optimal offsets coincide only at $d=300$~m (both $45$~s),
+confirming that offset selection is multi-objective.
+
+\begin{table}[H]
+\centering
+\caption{Best-offset structure by distance for the generated
+70\%--15\%--15\% turning-movement spatial-horizon variants. WT, speed,
+and queue columns give the offset (s) that optimizes each objective and
+the corresponding value. All cases are capacity-unconstrained.}
+\label{tab:supp_offset}
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{rrrrrrrr}
+\toprule
+\textbf{$d$ (m)} & \textbf{WT offset} & \textbf{Best WT} & \textbf{Speed offset} &
+\textbf{Best speed} & \textbf{Queue offset} & \textbf{Best queue} & \textbf{Max queue} \\
+\midrule
+100  & 25 & 217.763 & 20 & 7.238 & 20 & 15.231 & 32 \\
+200  & 45 & 195.628 & 20 & 7.458 & 40 & 15.443 & 36 \\
+300  & 45 & 175.672 & 45 & 7.871 & 45 & 13.616 & 34 \\
+500  & 70 & 226.379 & 25 & 8.055 & 25 & 15.823 & 41 \\
+750  &  0 & 197.676 & 65 & 8.529 & 85 & 15.434 & 51 \\
+1000 & 85 & 185.000 & 85 & 9.132 & 85 & 13.309 & 38 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\textit{Three-intersection multi-objective offset sweep.} The $19\times19$ sweep over
+$J_2,J_3$ ($361$ combinations) shows that the waiting-time-optimal pattern differs from
+the speed- and queue-optimal patterns (Table~\ref{tab:supp_multiobj}), so
+three-intersection coordination cannot be reduced to a single offset rule.
+
+\begin{table}[H]
+\centering
+\caption{Three-intersection multi-objective offset patterns from the $19\times19$ sweep.}
+\label{tab:supp_multiobj}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccrrrr}
+\toprule
+\textbf{Controller / Objective} & \textbf{$\Delta J_2$ (s)} & \textbf{$\Delta J_3$ (s)} &
+\textbf{Mean WT} & \textbf{Mean speed} & \textbf{Mean queue} & \textbf{Max queue} \\
+\midrule
+Simultaneous fixed-time       & 0  & 0  & 418.791 & 7.513 & 26.347 & 62 \\
+Best offset --- min.\ waiting & 45 & 0  & 227.171 & 7.671 & 21.192 & 54 \\
+Best offset --- max.\ speed   & 30 & 35 & 283.633 & 8.327 & 19.030 & 42 \\
+Best offset --- min.\ queue   & 35 & 40 & 273.669 & 8.289 & 18.531 & 42 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+\textit{Five-seed validation of joint-grid boundary-adjacent cells.}
+Six cells whose exploratory gaps were close enough to the 5\% or 10\%
+thresholds to permit a regime change were re-evaluated using the same five
+SUMO seeds for the optimized fixed offset and the frozen QMIX~V2 policy.
+Table~S11A reports the seed-averaged gaps, paired bootstrap confidence
+intervals, and regime stability. Together with the fully paired spatial and
+demand sweeps of the main paper, 15 of the 30 joint-grid cells---half the
+grid, and all three useful-effective cells---therefore carry five-seed paired
+gap evidence; the remaining 15 interior cells retain single-seed exploratory
+status.
+
+\begin{table}[H]
+\centering
+\caption*{\textbf{Table S11A:} Five-seed paired validation of selected
+boundary-adjacent cells in the exploratory joint distance--demand grid.
+Offset and QMIX waiting values are five-seed means. The confidence interval
+is the paired bootstrap 95\% interval for the QMIX approximation gap.
+Regime stability is the percentage of seeds reproducing the regime assigned
+from the five-seed mean gap.}
+\small
+\setlength{\tabcolsep}{3.5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrlc}
+\toprule
+\textbf{Cell} &
+\textbf{Offset WT} &
+\textbf{QMIX WT} &
+\textbf{Single-seed $G$ (\%)} &
+\textbf{Five-seed $G$ (\%, 95\% CI)} &
+\textbf{Mean regime} &
+\textbf{Stability (\%)} \\
+\midrule
+$d=100$ m, medium
+  & 217.298 & 235.920 & 8.334
+  & 8.573 [8.114, 9.351] & Marginal & 80 \\
+$d=500$ m, saturation
+  & 1352.086 & 1451.493 & 12.453
+  & 7.406 [4.415, 10.645] & Marginal & 40 \\
+$d=500$ m, oversaturation
+  & 2343.845 & 2484.405 & 6.014
+  & 6.031 [3.232, 10.107] & Marginal & 20 \\
+$d=750$ m, oversaturation
+  & 2220.272 & 2493.432 & 9.930
+  & 12.333 [9.093, 16.657] & Outside horizon & 60 \\
+$d=1000$ m, saturation
+  & 1376.913 & 1400.344 & 4.130
+  & 1.768 [$-0.776$, 3.735] & Effective & 100 \\
+$d=1000$ m, oversaturation
+  & 2330.843 & 2371.947 & 0.583
+  & 1.794 [0.108, 3.853] & Effective & 80 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The reruns change two gap-based classifications:
+$d=500$~m under saturation moves from Outside to Marginal, whereas
+$d=750$~m under oversaturation moves from Marginal to Outside.
+The $d=100$~m medium and $d=500$~m oversaturation cells remain
+Marginal. The two $d=1000$~m cells remain gap-effective, but their
+joint-grid buffered ratios place them in the capacity-constrained
+integrated class rather than the useful-effective class. Consequently,
+the reruns preserve the final integrated count of three useful-effective,
+three capacity-constrained, four marginal, and twenty outside-horizon
+conditions.
+
+\textit{Coordination-opportunity score.}
+Table~S11B reports $CG_{\mathrm{off}}=(1-J_{\mathrm{off}}^\star/J_{\mathrm{sim}})\times100$ for the single-seed exploratory spatial map and the corresponding $d=300$~m joint-grid demand slice. Because this score compares two fixed-time plans, it diagnoses the available progression opportunity independently of QMIX.
+
+\begin{table}[H]
+\centering
+\caption*{\textbf{Table S11B:} Exploratory coordination-opportunity
+score of the optimized fixed-offset benchmark relative to simultaneous
+fixed-time control. Values are single-seed campaign diagnostics and are
+not substitutes for the paired controller comparisons in the main paper.}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Slice} & \textbf{Condition} &
+\textbf{$J_{\mathrm{sim}}$} &
+\textbf{$J_{\mathrm{off}}^\star$} &
+\textbf{$CG_{\mathrm{off}}$ (\%)} \\
+\midrule
+Spatial & 100~m  & 986.371 & 217.763 & 77.923 \\
+Spatial & 200~m  & 321.064 & 195.628 & 39.069 \\
+Spatial & 300~m  & 274.231 & 175.672 & 35.940 \\
+Spatial & 500~m  & 291.246 & 226.379 & 22.272 \\
+Spatial & 750~m  & 197.676 & 197.676 & 0.000 \\
+Spatial & 1000~m & 185.130 & 185.000 & 0.070 \\
+\midrule
+Demand at $d=300$~m & Low            & 90.362   & 82.233   & 8.996 \\
+Demand at $d=300$~m & Medium         & 274.231  & 175.672  & 35.940 \\
+Demand at $d=300$~m & High           & 1284.135 & 881.743  & 31.336 \\
+Demand at $d=300$~m & Saturation     & 1432.412 & 1261.463 & 11.934 \\
+Demand at $d=300$~m & Oversaturation & 2587.158 & 2235.634 & 13.587 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\textit{Per-diagnostic component heatmaps.}
+Figures~\ref{fig:hm_gap}--\ref{fig:hm_cap} decompose the integrated
+DCHF surface of the generated 70\%--15\%--15\% turning-movement
+joint distance--demand grid into its component diagnostics: the QMIX
+approximation gap, Coordination Gain, buffered ratio, and capacity regime
+across the 30 conditions.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/updated_heatmap_distance_demand_qmix_gap.pdf}
+\caption{Joint distance--demand heatmap of the QMIX approximation gap relative to the
+optimized fixed-offset benchmark.}
+\label{fig:hm_gap}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/updated_heatmap_distance_demand_coordination_gain.pdf}
+\caption{Joint distance--demand heatmap of QMIX Coordination Gain relative to
+simultaneous fixed-time control.}
+\label{fig:hm_cg}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/updated_heatmap_distance_demand_qmix_buffered_ratio.pdf}
+\caption{Joint distance--demand heatmap of the QMIX buffered ratio.}
+\label{fig:hm_br}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/updated_heatmap_distance_demand_qmix_capacity_regime.pdf}
+\caption{Joint distance--demand heatmap of the QMIX capacity regime.}
+\label{fig:hm_cap}
+\end{figure}
+
+
+% =====================================================================
+\suppsec{S-11\quad Additional result tables and figures}
+
+This section collects supporting tables and figures referenced from the main text: the conventional metric definitions, the single-seed Scenario~A controller screening (Table~\ref{tab:scenario_a_full_comparison_supp}), the per-seed five-intersection robustness summary at the reference condition (Table~\ref{tab:n5_scalability_by_seed}, Figure~\ref{fig:n5_multiseed_waiting_time}), the multi-seed validation of the spatial and demand horizon boundary cases, and the expected-versus-observed DCHF comparison.
+
+\begin{table}[H]
+\centering
+\caption{Conventional traffic performance indicators.}
+\label{tab:conventional_metrics}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{4.2cm}p{9.6cm}}
+\toprule
+\textbf{Metric} & \textbf{Interpretation} \\
+\midrule
+Mean total waiting time &
+Primary cost for controller comparison and DCHF classification; lower is better. \\
+Maximum total waiting time & Worst-case delay over the simulation horizon. \\
+Mean speed & Flow smoothness; higher generally indicates smoother progression. \\
+Mean / maximum total queue &
+Average and worst halted-vehicle counts across the network. \\
+Vehicle count / throughput & Vehicles present, departed, or completed. \\
+Buffered ratio &
+Fraction of expected vehicles unable to enter the network; diagnoses capacity
+pressure and oversaturation. \\
+Teleports & Vehicles removed by the simulator under severe blockage. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Single-seed controller screening in the two-intersection Scenario~A corridor
+($d=300$~m, medium demand). The optimized fixed-offset benchmark is the
+waiting-time-minimizing 45~s offset from the exhaustive sweep. This screening identifies
+which controllers proceed to the ten-seed reference comparison in the main paper.}
+\label{tab:scenario_a_full_comparison_supp}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Controller} &
+\textbf{Mean waiting} &
+\textbf{Mean speed} &
+\textbf{Mean queue} &
+\textbf{Mean vehicles} &
+\textbf{CG (\%)} &
+\textbf{Gap vs.\ offset (\%)} \\
+\midrule
+Simultaneous fixed-time & 221.901 & 8.136 & 14.470 & 61.872 &  0.000 & 29.388 \\
+Best offset (45~s)      & 171.501 & 7.954 & 14.526 & 64.620 & 22.713 &  0.000 \\
+Queue-based adaptive    & 232.037 & 8.032 & 14.932 & 62.369 & -4.568 & 35.297 \\
+Independent DQN         & 226.279 & 8.080 & 14.682 & 62.114 & -1.973 & 31.941 \\
+QMIX V1                 & 226.941 & 8.072 & 14.705 & 62.159 & -2.271 & 32.327 \\
+QMIX V2                 & 175.814 & 7.948 & 14.658 & 64.720 & 20.774 &  2.515 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Five-intersection corridor: multi-seed robustness summary. Values are mean $\pm$ standard deviation across five SUMO seeds; regime stability is the percentage of seeds for which QMIX remains inside the effective zone.}
+\label{tab:n5_scalability_by_seed}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Metric} & \textbf{Mean} & \textbf{Std} \\
+\midrule
+QMIX approximation gap (\%)    & $-1.536$ & $0.815$     \\
+Coordination Gain (\%)         & $52.965$ & $0.161$     \\
+Buffered ratio                 & $0.003$  & $\approx 0$ \\
+Teleports                      & $0$      & $0$         \\
+Effective-regime stability (\%)& $100$    & ---         \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[H]
+\centering
+\caption*{\textbf{Table S15A:} Complete five-intersection
+distance--demand stress test of the from-scratch $N=5$ policy
+evaluated without retraining. The 16 conditions comprise
+3 effective, 1 marginal, and 12 outside-horizon cases.}
+\small
+\setlength{\tabcolsep}{3.5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrl}
+\toprule
+\textbf{$d$ (m)} &
+\textbf{Demand} &
+\textbf{Best offset WT} &
+\textbf{QMIX WT} &
+\textbf{QMIX CG (\%)} &
+\textbf{Gap (\%)} &
+\textbf{DCHF regime} \\
+\midrule
+200 & Low        & 152.014  & 425.279  & -79.964 & 179.763 & Outside \\
+200 & Medium     & 366.630  & 511.378  &   8.351 &  39.481 & Outside \\
+200 & High       & 796.492  & 970.199  &   4.050 &  21.809 & Outside \\
+200 & Saturation & 1060.335 & 1144.769 &  24.060 &   7.963 & Marginal \\
+\midrule
+300 & Low        & 191.324  & 215.322  &  45.087 &  12.543 & Outside \\
+300 & Medium     & 362.068  & 326.803  &  53.358 &  -9.740 & Effective \\
+300 & High       & 515.301  & 909.433  &  16.099 &  76.486 & Outside \\
+300 & Saturation & 673.879  & 1722.719 &   0.315 & 155.642 & Outside \\
+\midrule
+500 & Low        & 82.248   & 596.192  & -24.254 & 624.871 & Outside \\
+500 & Medium     & 212.672  & 689.846  &  39.633 & 224.371 & Outside \\
+500 & High       & 373.255  & 1031.402 &  41.670 & 176.326 & Outside \\
+500 & Saturation & 552.567  & 1409.688 &  40.700 & 155.116 & Outside \\
+\midrule
+750 & Low        & 195.964  & 387.431  & -33.404 &  97.705 & Outside \\
+750 & Medium     & 468.542  & 478.192  &  16.950 &   2.060 & Effective \\
+750 & High       & 797.972  & 696.350  &  12.735 & -12.735 & Effective \\
+750 & Saturation & 1031.999 & 1144.273 & -10.879 &  10.879 & Outside \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+\begin{table}[H]
+\centering
+\caption{Multi-seed validation of boundary cases from the generated
+70\%--15\%--15\% turning-movement spatial and demand horizon variants.
+Values are five-seed means for the optimized offset and QMIX~V2; the gap
+column gives the five-seed mean QMIX approximation gap with its $95\%$
+bootstrap confidence interval. Regime stability is the percentage of seeds
+reproducing the seed-averaged DCHF regime.}
+\label{tab:multiseed_horizon_boundaries}
+\small
+\setlength{\tabcolsep}{5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrl r}
+\toprule
+\textbf{Dim.} & \textbf{Case} &
+\textbf{Offset WT} & \textbf{QMIX WT} &
+\textbf{Gap \% [95\% CI]} & \textbf{Regime} & \textbf{Stab.\ (\%)} \\
+\midrule
+Spatial & $d=200$~m & $191.263$ & $198.435$ & $3.769$ $[2.37, 4.99]$  & Effective       & 80  \\
+Spatial & $d=300$~m & $172.848$ & $177.476$ & $2.678$ $[1.97, 3.28]$  & Effective       & 100 \\
+Spatial & $d=500$~m & $230.173$ & $288.943$ & $25.487$ $[14.69, 37.10]$ & Outside horizon & 100 \\
+\midrule
+Demand & Low            & $80.808$   & $142.873$  & $76.864$ $[68.17, 85.33]$ & Outside horizon & 100 \\
+Demand & Medium         & $172.848$  & $177.476$  & $2.678$ $[1.97, 3.28]$    & Effective       & 100 \\
+Demand & High           & $947.483$  & $973.104$  & $2.740$ $[-0.02, 5.26]$   & Effective       & 60  \\
+Demand & Saturation     & $1252.372$ & $1264.683$ & $0.985$ $[0.33, 1.83]$    & Effective       & 100 \\
+Demand & Oversaturation & $2206.851$ & $2363.725$ & $7.123$ $[4.17, 9.77]$    & Marginal        & 60  \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Expected versus observed DCHF horizons.}
+\label{tab:theory_observed_dchf_interpretation}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{2.6cm}p{5.6cm}p{5.6cm}}
+\toprule
+\textbf{Horizon} & \textbf{Theory-based expectation} & \textbf{Observed result} \\
+\midrule
+Spatial $H_S$ &
+Short spacing $\rightarrow$ storage interference; long spacing $\rightarrow$ platoon dispersion; effective only at intermediate spacing. &
+Tested effective points: 200 and 300~m; 100~m marginal ($8.6\%$); tested 500, 750, and 1000~m points outside. \\
+\midrule
+Demand $H_D$ &
+Bounded below by weak interaction and above by capacity pressure. &
+Low demand outside; medium and saturation effective; high demand at the $5\%$ boundary; oversaturation marginal. \\
+\midrule
+Capacity $H_B$ &
+Congestion can mask control quality and must be diagnosed separately. &
+The $80\%$ central-link occupancy threshold is never exceeded; high-demand
+limitations are identified through the buffered ratio. \\
+\midrule
+Scalability $H_N$ &
+Coordination may remain effective as $N$ increases, but the result is conditional because the uncoordinated baseline and network interactions also change with corridor size. &
+Effective at the tested $N=5$ reference condition (mean gap $-1.5\%$) but only in 3 of 16 stress-test cells; scalability evidence remains conditional. \\
+\midrule
+Transfer &
+Policies trained on simpler tasks may transfer better than those trained directly on complex tasks. &
+Scenario~A$\rightarrow$B transfer outperforms direct training by $29.79\%$ (single-seed) and $31.09\%$ (ten-seed means). \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/n5_multiseed_waiting_time_by_controller.pdf}
+\caption{Five-intersection multi-seed comparison of mean total waiting time. QMIX remains consistently close to the best progression-offset controller and well below the simultaneous fixed-time baseline across five seeds.}
+\label{fig:n5_multiseed_waiting_time}
+\end{figure}
+\bibliographystyle{elsarticle-num}
+\bibliography{References}
+\end{document}
