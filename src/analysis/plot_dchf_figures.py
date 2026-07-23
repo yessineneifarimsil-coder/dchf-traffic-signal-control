@@ -15,6 +15,7 @@ os.makedirs(FIG_DIR, exist_ok=True)
 
 FILES = {
     "distance": f"{TABLE_DIR}/dchf_two_intersection_distance_horizon.csv",
+    "paired": f"{TABLE_DIR}/fully_paired_sweeps_summary.csv",
     "demand": f"{TABLE_DIR}/dchf_two_intersection_demand_horizon.csv",
     "d23": f"{TABLE_DIR}/dchf_three_intersection_d23_horizon.csv",
     "threshold": f"{TABLE_DIR}/dchf_horizon_summary_by_threshold.csv",
@@ -220,14 +221,15 @@ def plot_dispersion_cohesion_overlay():
     use red, and the cohesion proxy remains a blue line.
     Only the overlapping legend and labels are repositioned.
     """
-    df = read_csv(FILES["distance"])
-    df["distance_m"] = df["scenario"].apply(extract_distance_m)
+    df = read_csv(FILES["paired"])
+    df = df[df["sweep"] == "spatial"].copy()
+    df["distance_m"] = (
+        df["cell"].str.extract(r"d=(\d+)m")[0].astype(float)
+    )
     df = df.sort_values("distance_m")
 
     distances = df["distance_m"].to_numpy(dtype=float)
-    gaps = df[
-        "qmix_gap_vs_optimized_offset_percent"
-    ].to_numpy(dtype=float)
+    gaps = df["G_QMIX_mean"].to_numpy(dtype=float)
 
     expected_distances = np.array(
         [100, 200, 300, 500, 750, 1000],

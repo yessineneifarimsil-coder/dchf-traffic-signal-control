@@ -1,3 +1,6 @@
+# NOTE: the integrated DCHF classification (Figure 4) is produced ONLY by
+# plot_final_integrated_dchf_distance_demand.py. This script generates the
+# per-diagnostic component heatmaps of Supplementary Section S-10.
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -190,46 +193,6 @@ def build_capacity_matrix(df):
     return pivot.values
 
 
-def build_integrated_dchf_matrix(df):
-    """
-    1 = Useful effective coordination:
-        gap <= 5%, CG > 0, qmix_buffered_ratio < 0.25
-    2 = Algorithmically effective but capacity-limited:
-        gap <= 5%, qmix_buffered_ratio >= 0.25
-    3 = Marginal:
-        5% < gap <= 10%
-    4 = Outside:
-        gap > 10%
-    """
-    codes = []
-
-    for _, row in df.iterrows():
-        gap = row["qmix_gap_vs_optimized_offset_percent"]
-        cg = row["qmix_coordination_gain_percent"]
-        br = row["qmix_buffered_ratio"]
-
-        if pd.isna(gap):
-            code = np.nan
-        elif gap <= 5 and cg > 0 and br < 0.25:
-            code = 1
-        elif gap <= 5 and br >= 0.25:
-            code = 2
-        elif gap <= 10:
-            code = 3
-        else:
-            code = 4
-
-        codes.append(code)
-
-    df = df.copy()
-    df["integrated_dchf_code"] = codes
-
-    pivot = df.pivot(index="distance", columns="demand_name", values="integrated_dchf_code")
-    pivot = pivot.reindex(index=DISTANCE_ORDER, columns=DEMAND_ORDER)
-
-    return pivot.values
-
-
 def main():
     df = pd.read_csv(INPUT_FILE)
 
@@ -266,14 +229,6 @@ def main():
         build_capacity_matrix(df),
         "Distance × Demand DCHF: QMIX capacity regime",
         "updated_heatmap_distance_demand_qmix_capacity_regime",
-    )
-
-    save_heatmap(
-        build_integrated_dchf_matrix(df),
-        "Distance × Demand DCHF: integrated coordination-capacity diagnosis",
-        "1=Useful, 2=Effective/capacity-limited, 3=Marginal, 4=Outside",
-        "updated_heatmap_distance_demand_integrated_dchf",
-        annotate=False,
     )
 
     print("\nUpdated distance × demand heatmaps generated.")
