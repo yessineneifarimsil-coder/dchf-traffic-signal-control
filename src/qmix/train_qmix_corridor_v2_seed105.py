@@ -15,13 +15,13 @@ from qmix_agent import QMIXAgent
 import random
 import torch
 
-SEED = 101
+SEED = 105
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
-OUTPUT_CSV = "results/raw/qmix_corridor_training_v2_seed101.csv"
-MODEL_PATH = "results/raw/qmix_corridor_model_v2_seed101.pth"
+OUTPUT_CSV = "results/raw/qmix_corridor_training_v2_seed105.csv"
+MODEL_PATH = "results/raw/qmix_corridor_model_v2_seed105.pth"
 
 NUM_EPISODES = 300
 MAX_DECISIONS_PER_EPISODE = 200

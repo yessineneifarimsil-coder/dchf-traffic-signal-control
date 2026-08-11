@@ -1,0 +1,6 @@
+demand_scenario,demand_multiplier,seeds_run,max_occupancy_worst_seed,max_occupancy_mean,max_occupancy_std,spillback_freq_80_mean,max_total_queue_worst_seed,buffered_ratio_mean,buffered_ratio_std,buffered_ratio_expected
+low,0.5,5,0.0806,0.0806,0.0,0.0,16,0.0,0.0,0.0
+medium,1.0,5,0.1477,0.1397,0.0073,0.0,25,0.0,0.0,0.0
+high,1.5,5,0.188,0.1826,0.0073,0.0,37,0.0361,0.0003,0.0361
+saturation,2.0,5,0.2149,0.2015,0.0095,0.0,50,0.144,0.0005,0.144
+oversaturation,2.5,5,0.2418,0.2203,0.0153,0.0,156,0.2323,0.0021,0.2323

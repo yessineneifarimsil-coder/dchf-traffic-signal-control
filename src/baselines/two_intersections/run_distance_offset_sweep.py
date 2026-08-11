@@ -67,7 +67,7 @@ def get_total_queue():
     return total_queue
 
 
-def run_distance_offset(distance, offset, sumo_seed=0, sumo_config_override=None, scenario_label=None):
+def run_distance_offset(distance, offset, sumo_seed=0, sumo_config_override=None, scenario_label=None, extra_args=None):
     if sumo_config_override is None:
         sumo_config = (
             f"sumo_scenarios/two_intersections/"
@@ -86,6 +86,9 @@ def run_distance_offset(distance, offset, sumo_seed=0, sumo_config_override=None
         "--seed",
         str(sumo_seed),
     ]
+
+    if extra_args:
+        sumo_cmd += list(extra_args)
 
     rows = []
 

@@ -1,7 +1,6 @@
 import os
 import sys
 import csv
-import time
 import numpy as np
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,13 +14,13 @@ from qmix_agent import QMIXAgent
 import random
 import torch
 
-SEED = 101
+SEED = 104
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
-OUTPUT_CSV = "results/raw/qmix_corridor_training_v2_seed101.csv"
-MODEL_PATH = "results/raw/qmix_corridor_model_v2_seed101.pth"
+OUTPUT_CSV = "results/raw/vdn_corridor_training_v2_seed104.csv"
+MODEL_PATH = "results/raw/vdn_corridor_model_v2_seed104.pth"
 
 NUM_EPISODES = 300
 MAX_DECISIONS_PER_EPISODE = 200
@@ -65,7 +64,6 @@ def split_observations(global_state):
 
 
 def main():
-    t0 = time.time()
     env = TwoIntersectionEnv(
         sumo_binary="sumo",
         simulation_steps=3600,
@@ -73,11 +71,12 @@ def main():
         yellow_duration=3,
     )
 
-    qmix = QMIXAgent(
+    vdn = QMIXAgent(
         n_agents=2,
         obs_dim=3,
         state_dim=6,
         action_dim=2,
+       mixer_type="vdn",
        learning_rate=5e-4,
        epsilon_start=1.0,
        epsilon_min=0.05,
@@ -101,7 +100,7 @@ def main():
         last_info = None
 
         while not done and decision < MAX_DECISIONS_PER_EPISODE:
-            actions = qmix.select_actions(observations)
+            actions = vdn.select_actions(observations)
 
             raw_next_state, reward, done, info = env.step(actions)
 
@@ -111,7 +110,7 @@ def main():
             # Reward scaling because SUMO waiting-time rewards are large
             scaled_reward = reward / 10000.0
 
-            qmix.store_transition(
+            vdn.store_transition(
                 global_state=global_state,
                 observations=observations,
                 actions=actions,
@@ -121,7 +120,7 @@ def main():
                 done=done,
             )
 
-            loss = qmix.learn()
+            loss = vdn.learn()
             if loss is not None:
                 losses.append(loss)
 
@@ -139,7 +138,7 @@ def main():
             "decisions": decision,
             "episode_reward": episode_reward,
             "avg_loss": avg_loss,
-            "epsilon": qmix.epsilon,
+            "epsilon": vdn.epsilon,
             "final_vehicle_count": last_info["vehicle_count"],
             "final_total_waiting_time": last_info["total_waiting_time"],
             "final_mean_speed": last_info["mean_speed"],
@@ -148,24 +147,11 @@ def main():
 
         rows.append(row)
 
-        # Incremental persistence: append the log every episode and checkpoint
-        # every 50 episodes, so an interrupted run is recoverable.
-        first = (episode == 1)
-        with open(OUTPUT_CSV, "w" if first else "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=row.keys())
-            if first:
-                writer.writeheader()
-            writer.writerow(row)
-
-        if episode % 50 == 0:
-            qmix.save(MODEL_PATH)
-            print(f"  [checkpoint] episode {episode} -> {MODEL_PATH}")
-
         print(
             f"Episode {episode}/{NUM_EPISODES} | "
             f"Reward: {episode_reward:.2f} | "
             f"Avg loss: {avg_loss:.4f} | "
-            f"Epsilon: {qmix.epsilon:.3f} | "
+            f"Epsilon: {vdn.epsilon:.3f} | "
             f"Waiting: {last_info['total_waiting_time']:.2f} | "
             f"Speed: {last_info['mean_speed']:.2f} | "
             f"Queue: {last_info['total_queue']}"
@@ -178,13 +164,11 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    qmix.save(MODEL_PATH)
+    vdn.save(MODEL_PATH)
 
-    print("\nQMIX corridor training finished.")
-    print(f"Elapsed wall-clock: {time.time() - t0:.1f} s "
-          f"({(time.time() - t0) / NUM_EPISODES:.2f} s/episode)")
+    print("\nVDN corridor training finished.")
     print(f"Training log saved to: {OUTPUT_CSV}")
-    print(f"QMIX model saved to: {MODEL_PATH}")
+    print(f"VDN model saved to: {MODEL_PATH}")
 
 
 if __name__ == "__main__":

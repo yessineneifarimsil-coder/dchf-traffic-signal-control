@@ -2,6 +2,13 @@ import traci
 
 
 class TwoIntersectionEnv:
+
+    # Extra SUMO command-line arguments injected by callers that cannot reach
+    # the constructor (e.g. evaluate_qmix_for_distance, which builds the env
+    # internally). Output-only flags such as --summary-output / --tripinfo-output
+    # do not perturb the simulation. Reset to [] after use.
+    DEFAULT_EXTRA_ARGS = []
+
     """
     SUMO-TraCI environment for a two-intersection corridor.
 
@@ -78,6 +85,8 @@ class TwoIntersectionEnv:
 
         if self.sumo_seed is not None:
             sumo_cmd += ["--seed", str(self.sumo_seed)]
+
+        sumo_cmd += list(getattr(type(self), "DEFAULT_EXTRA_ARGS", []))
 
         traci.start(sumo_cmd)
 
