@@ -1,0 +1,11 @@
+algorithm,train_seed,n_traffic_seeds,mean_wt,std_wt,mean_gap_pct,gap_ci_low,gap_ci_high,regime
+QMIX,101,10,177.291,1.04,4.428,3.847,4.994,Effective
+QMIX,102,10,177.291,1.04,4.428,3.847,4.994,Effective
+QMIX,103,10,177.291,1.04,4.428,3.847,4.994,Effective
+QMIX,104,10,228.164,3.519,34.394,33.103,35.833,Outside horizon
+QMIX,105,10,241.235,3.306,42.096,40.699,43.604,Outside horizon
+VDN,101,10,239.253,2.192,40.928,39.904,42.055,Outside horizon
+VDN,102,10,236.786,2.616,39.472,38.396,40.526,Outside horizon
+VDN,103,10,177.884,0.635,4.777,4.332,5.209,Effective
+VDN,104,10,229.412,3.596,35.129,33.845,36.614,Outside horizon
+VDN,105,10,228.164,3.519,34.394,33.103,35.833,Outside horizon

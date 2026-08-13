@@ -1,0 +1,3 @@
+algorithm,n_training_seeds,mean_wt_across_training_seeds,std_wt_across_training_seeds,mean_gap_across_training_seeds,std_gap_across_training_seeds,min_gap,max_gap,gap_ci_low,gap_ci_high,n_seeds_effective,effective_stability_pct,published_single_checkpoint_gap
+QMIX,5,200.254,31.782,17.955,18.721,4.428,42.096,4.428,33.022,3,60.0,4.42
+VDN,5,222.3,25.273,30.94,14.887,4.777,40.928,17.639,39.186,1,20.0,42.09

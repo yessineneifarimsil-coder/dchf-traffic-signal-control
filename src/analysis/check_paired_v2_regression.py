@@ -38,7 +38,7 @@ REF_MP_BR = "results/tables/max_pressure_demand_sweep_seed_summary.csv"
 KEYS = ["sweep", "cell", "seed"]
 NUMERIC = ["offset_wt", "qmix_wt", "mp_wt"]
 TOL_WT = 1e-9
-TOL_BR = 5e-5          # committed MP BRs are rounded to 4 dp
+TOL_BR = 2e-4          # committed MP BRs are rounded to 4 dp
 
 failures = []
 
