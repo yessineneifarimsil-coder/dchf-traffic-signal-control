@@ -1,6 +1,7 @@
 import os
 import sys
 import csv
+import time
 import numpy as np
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -64,6 +65,7 @@ def split_observations(global_state):
 
 
 def main():
+    t0 = time.time()
     env = TwoIntersectionEnv(
         sumo_binary="sumo",
         simulation_steps=3600,
@@ -147,6 +149,19 @@ def main():
 
         rows.append(row)
 
+        # Incremental persistence: append the log every episode and checkpoint
+        # every 50 episodes, so an interrupted run is recoverable.
+        first = (episode == 1)
+        with open(OUTPUT_CSV, "w" if first else "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=row.keys())
+            if first:
+                writer.writeheader()
+            writer.writerow(row)
+
+        if episode % 50 == 0:
+            vdn.save(MODEL_PATH)
+            print(f"  [checkpoint] episode {episode} -> {MODEL_PATH}")
+
         print(
             f"Episode {episode}/{NUM_EPISODES} | "
             f"Reward: {episode_reward:.2f} | "
@@ -167,6 +182,8 @@ def main():
     vdn.save(MODEL_PATH)
 
     print("\nVDN corridor training finished.")
+    print(f"Elapsed wall-clock: {time.time() - t0:.1f} s "
+          f"({(time.time() - t0) / NUM_EPISODES:.2f} s/episode)")
     print(f"Training log saved to: {OUTPUT_CSV}")
     print(f"VDN model saved to: {MODEL_PATH}")
 
