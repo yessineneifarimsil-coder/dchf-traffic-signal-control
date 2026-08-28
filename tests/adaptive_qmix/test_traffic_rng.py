@@ -51,6 +51,16 @@ class TrafficAndRngTests(unittest.TestCase):
             [row["depart"] for row in other_seed],
         )
 
+    def test_compute_and_development_family_is_not_training_or_final(self):
+        # The training runner maps all non-official engineering runs to this family.
+        config = config_copy()
+        development = generate_manifest_records(config, "development", 101, 0)
+        training = generate_manifest_records(config, "training", 101, 0)
+        final_test = generate_manifest_records(config, "final_test", 101, 0)
+        departures = lambda rows: [row["depart"] for row in rows]
+        self.assertNotEqual(departures(development), departures(training))
+        self.assertNotEqual(departures(development), departures(final_test))
+
     def test_epsilon_streams_are_agent_independent_and_consumption_stable(self):
         first = IndependentEpsilonStreams(101)
         second = IndependentEpsilonStreams(101)
@@ -76,4 +86,3 @@ class TrafficAndRngTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

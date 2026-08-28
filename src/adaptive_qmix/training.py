@@ -24,17 +24,18 @@ from .traffic import generate_manifest_records, write_manifest
 RUN_KINDS = ("development", "compute_feasibility", "official_training")
 
 
-def _manifest_for_episode(config, output_directory, training_seed, episode_index):
+def _manifest_for_episode(config, output_directory, training_seed, episode_index,
+                          family):
     records = generate_manifest_records(
-        config, "training", training_seed, manifest_index=episode_index
+        config, family, training_seed, manifest_index=episode_index
     )
     prefix = os.path.join(
-        output_directory, "manifests", "train_{:03d}_episode_{:05d}".format(
-            int(training_seed), int(episode_index)
+        output_directory, "manifests", "{}_{:03d}_episode_{:05d}".format(
+            family, int(training_seed), int(episode_index)
         )
     )
     metadata = write_manifest(
-        records, config, prefix, "training", training_seed, episode_index
+        records, config, prefix, family, training_seed, episode_index
     )
     return prefix + ".csv", prefix + ".rou.xml", metadata
 
@@ -64,12 +65,13 @@ def train_learned_controller(
             raise ValueError(
                 "Compute feasibility must use exactly {} transitions.".format(expected)
             )
+    manifest_family = "training" if run_kind == "official_training" else "development"
 
     output_directory = os.path.abspath(output_directory)
     if not os.path.isdir(output_directory):
         os.makedirs(output_directory)
     manifest_csv, route_xml, traffic_metadata = _manifest_for_episode(
-        config, output_directory, training_seed, 0
+        config, output_directory, training_seed, 0, manifest_family
     )
     initial_sumo_seed = int(traffic_metadata["sumo_seed"])
     run_manifest = build_run_manifest(
@@ -111,7 +113,8 @@ def train_learned_controller(
             while transition_index < budget:
                 if episode_index > 0:
                     manifest_csv, route_xml, traffic_metadata = _manifest_for_episode(
-                        config, output_directory, training_seed, episode_index
+                        config, output_directory, training_seed, episode_index,
+                        manifest_family,
                     )
                 tripinfo_path = os.path.join(
                     output_directory, "tripinfo_episode_{:05d}.xml".format(episode_index)
