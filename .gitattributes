@@ -1,0 +1,13 @@
+# Cross-platform provenance for hash-pinned scientific inputs.
+#
+# src/adaptive_qmix/provenance.py hashes the checked-out bytes of the frozen
+# qualification network and refuses to run when they differ from the SHA-256
+# recorded in config/adaptive_qmix/qualification_300m_medium.json. Under
+# core.autocrlf=true a Windows checkout rewrites all 341 line endings to CRLF,
+# which changes those bytes and therefore the digest, even though the file
+# content and its Git blob identity are unchanged. Pinning the checkout to LF
+# keeps the working-tree bytes identical on every platform.
+#
+# This affects the byte representation only. Do not change the network
+# contents, its Git blob, or the frozen SHA-256 in the configuration.
+sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml text eol=lf
