@@ -88,10 +88,24 @@ class VehicleLedger(object):
         terminal = set(self.completed_at) | set(self.exceptional)
         return set(self.inserted_at) - terminal
 
+    def in_transit_teleport_ids(self):
+        """Vehicles SUMO has removed for a teleport that has not yet ended.
+
+        SUMO reports both ends of a teleport explicitly, so such a vehicle is
+        accounted for rather than silently missing; it is absent from the
+        active list only while the teleport is in progress. Clearance is
+        unaffected: an in-transit vehicle is neither completed nor
+        exceptional, so is_reconciled_clear still refuses to declare the
+        episode clear.
+        """
+        return self.teleport_started - self.teleport_ended
+
     def assert_active_consistency(self, sumo_active_ids):
         ledger_active = self.active_ids_from_ledger()
         sumo_active = set(sumo_active_ids)
-        silently_missing = ledger_active - sumo_active
+        silently_missing = (
+            ledger_active - sumo_active - self.in_transit_teleport_ids()
+        )
         unknown_active = sumo_active - set(self.scheduled)
         if silently_missing:
             raise LedgerError(

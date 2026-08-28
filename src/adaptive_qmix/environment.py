@@ -103,6 +103,9 @@ class AdaptiveTrafficEnvironment(object):
             self.traci, ["E1_0", "E1_1"], detector_position
         )
         self.previous_actual_phase = {"J1": "H", "J2": "H"}
+        # Last actually-served green state, used to attribute red time during
+        # the yellow seconds, when previous_actual_phase is itself "Y".
+        self.last_green_phase = {"J1": "H", "J2": "H"}
         self.red_elapsed = {
             "J1": {"H": 0, "V": 0},
             "J2": {"H": 0, "V": 0},
@@ -185,20 +188,30 @@ class AdaptiveTrafficEnvironment(object):
                 )
                 crossing["approach"] = "H_WESTBOUND_TO_EASTBOUND"
                 self.logger.write("vehicle_crossings", crossing)
-            for intersection, actual in phase_states.items():
-                previous = self.previous_actual_phase[intersection]
-                green_start = actual in ("H", "V") and actual != previous
-                green_end = previous in ("H", "V") and actual != previous
-                if actual == "H":
-                    self.red_elapsed[intersection]["H"] = 0
-                    self.red_elapsed[intersection]["V"] += 1
-                elif actual == "V":
-                    self.red_elapsed[intersection]["V"] = 0
-                    self.red_elapsed[intersection]["H"] += 1
-                elif previous == "H":
-                    self.red_elapsed[intersection]["V"] += 1
-                elif previous == "V":
-                    self.red_elapsed[intersection]["H"] += 1
+        # Phase and red-duration bookkeeping is state, not logging: it must
+        # advance on every simulated second whether or not a logger is
+        # attached, otherwise the starvation counters depend on log settings.
+        for intersection, actual in sorted(phase_states.items()):
+            previous = self.previous_actual_phase[intersection]
+            green_start = actual in ("H", "V") and actual != previous
+            green_end = previous in ("H", "V") and actual != previous
+            if actual == "H":
+                self.red_elapsed[intersection]["H"] = 0
+                self.red_elapsed[intersection]["V"] += 1
+                self.last_green_phase[intersection] = "H"
+            elif actual == "V":
+                self.red_elapsed[intersection]["V"] = 0
+                self.red_elapsed[intersection]["H"] += 1
+                self.last_green_phase[intersection] = "V"
+            elif self.last_green_phase[intersection] == "H":
+                # Amber terminating H: the opposite approach is still red.
+                # Keyed on the last green rather than on previous_actual_phase,
+                # which is already "Y" from the second yellow second onward and
+                # previously left both counters frozen for those seconds.
+                self.red_elapsed[intersection]["V"] += 1
+            else:
+                self.red_elapsed[intersection]["H"] += 1
+            if self.logger is not None:
                 self.logger.write(
                     "signal_phases",
                     {
@@ -214,7 +227,7 @@ class AdaptiveTrafficEnvironment(object):
                         "V_red_elapsed_s": self.red_elapsed[intersection]["V"],
                     },
                 )
-                self.previous_actual_phase[intersection] = actual
+            self.previous_actual_phase[intersection] = actual
         return {
             "time": simulation_time,
             "departed": departed,

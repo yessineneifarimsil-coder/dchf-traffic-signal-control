@@ -11,6 +11,8 @@ import numpy as np
 
 from .rng import EXPERIMENT_NAMESPACE, MASTER_ENTROPY, NAMESPACE_CODES
 
+SUMO_MAX_SEED = 2 ** 31 - 1
+
 FAMILY_CODES = {
     "training": 10,
     "development": 20,
@@ -46,6 +48,14 @@ def _stream_generator(family, seed_value, manifest_index, stream_rank):
 
 
 def derive_sumo_seed(family, seed_value, manifest_index):
+    """Derive the per-episode SUMO seed inside SUMO's admissible range.
+
+    SUMO parses --seed as a signed 32-bit integer and aborts with
+    "'<value>' is not a valid integer" for any value above 2**31-1, so the
+    32-bit SeedSequence draw is folded into [0, 2**31-1]. Roughly half of the
+    unmasked draws exceed that limit, which would abort the episode before
+    SUMO starts.
+    """
     entropy = [
         MASTER_ENTROPY,
         EXPERIMENT_NAMESPACE,
@@ -55,7 +65,8 @@ def derive_sumo_seed(family, seed_value, manifest_index):
         int(manifest_index),
         999,
     ]
-    return int(np.random.SeedSequence(entropy).generate_state(1)[0])
+    state = int(np.random.SeedSequence(entropy).generate_state(1)[0])
+    return state & SUMO_MAX_SEED
 
 
 def generate_manifest_records(config, family, seed_value, manifest_index=0):
