@@ -28,6 +28,13 @@ def main():
         default="development_evaluation"
     )
     parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--lane-state-logging", choices=("decision", "full"), default="full"
+    )
+    parser.add_argument(
+        "--traci-access-mode", choices=("subscription", "getter"),
+        default="subscription"
+    )
     parser.add_argument("--config", default=os.path.join(
         REPOSITORY_ROOT, "config", "adaptive_qmix", "qualification_300m_medium.json"
     ))
@@ -38,6 +45,7 @@ def main():
         traci, config, REPOSITORY_ROOT, args.checkpoint, args.manifest_csv,
         args.route_xml, args.traffic_seed, args.sumo_seed,
         args.output_directory, args.run_kind, args.device,
+        args.traci_access_mode, args.lane_state_logging,
     )
     print(json.dumps(metrics, indent=2, sort_keys=True))
 

@@ -117,8 +117,8 @@ def phase_cross_correlation(j1_phase_h, j2_phase_h, max_lag_s=120):
 class VirtualDetectorTracker(object):
     """Track physical 50-m crossings, downstream stops and stop-line exits."""
 
-    def __init__(self, traci_module, lane_ids, detector_position_m):
-        self.traci = traci_module
+    def __init__(self, data_source, lane_ids, detector_position_m):
+        self.source = data_source
         self.lane_ids = set(lane_ids)
         self.detector_position_m = float(detector_position_m)
         self.previous = {}
@@ -129,12 +129,12 @@ class VirtualDetectorTracker(object):
     def sample(self, simulation_time, signal_state, release_signal_state=None):
         current = {}
         events = []
-        for vehicle_id in self.traci.vehicle.getIDList():
-            lane_id = self.traci.vehicle.getLaneID(vehicle_id)
+        for vehicle_id in self.source.vehicle_ids():
+            lane_id = self.source.vehicle_lane_id(vehicle_id)
             if lane_id not in self.lane_ids:
                 continue
-            position = float(self.traci.vehicle.getLanePosition(vehicle_id))
-            speed = float(self.traci.vehicle.getSpeed(vehicle_id))
+            position = float(self.source.vehicle_lane_position(vehicle_id))
+            speed = float(self.source.vehicle_speed(vehicle_id))
             current[vehicle_id] = (lane_id, position, speed)
             prior = self.previous.get(vehicle_id)
             if prior is None and vehicle_id not in self.release_seen:

@@ -6,6 +6,7 @@ from .common import ledger_records
 
 from adaptive_qmix.ledger import LedgerError, VehicleLedger, reconcile_scheduled_outcomes
 from adaptive_qmix.reward import NetworkDelayReward, is_stopped
+from adaptive_qmix.traci_access import GetterDataSource
 
 
 class FakeVehicleAPI(object):
@@ -36,7 +37,7 @@ class RewardAndLedgerTests(unittest.TestCase):
         ledger = VehicleLedger(records)
         ledger.mark_departed([records[1]["vehicle_id"]], 10)
         traci = FakeTraci({records[1]["vehicle_id"]: 0.1})
-        reward = NetworkDelayReward(traci, ledger)
+        reward = NetworkDelayReward(GetterDataSource(traci), ledger)
         row = reward.sample_second(10)
         # vehicle 0 is future; vehicle 1 is inserted; remaining 2798 are due pending.
         self.assertEqual(row["stopped_active_count"], 1)
@@ -49,7 +50,7 @@ class RewardAndLedgerTests(unittest.TestCase):
         ids = [record["vehicle_id"] for record in records]
         ledger.mark_departed(ids, 0)
         traci = FakeTraci({ids[0]: 0.1, ids[1]: 0.2})
-        reward = NetworkDelayReward(traci, ledger)
+        reward = NetworkDelayReward(GetterDataSource(traci), ledger)
         row = reward.sample_second(1)
         self.assertEqual(row["pending_due_count"], 0)
         self.assertEqual(row["incremental_delay_vehicle_seconds"], 1)

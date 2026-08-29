@@ -8,9 +8,11 @@ import numpy as np
 
 from .coordination import VirtualDetectorTracker
 from .ledger import VehicleLedger, reconcile_scheduled_outcomes
+from .logging import LANE_LOG_DECISION, LANE_LOG_FULL, LANE_LOG_MODES
 from .observation import SymmetricObservationBuilder
 from .reward import NetworkDelayReward, legacy_waiting_state
 from .signal_executor import SynchronousSignalExecutor
+from .traci_access import DEFAULT_MODE, MODES, create_data_source
 from .traffic import read_manifest_csv
 
 
@@ -53,7 +55,23 @@ class AdaptiveTrafficEnvironment(object):
         sumo_seed,
         gui=False,
         logger=None,
+        traci_access_mode=DEFAULT_MODE,
+        lane_state_logging=LANE_LOG_FULL,
     ):
+        if traci_access_mode not in MODES:
+            raise ValueError(
+                "Unknown TraCI access mode {!r}; expected one of {}.".format(
+                    traci_access_mode, MODES
+                )
+            )
+        if lane_state_logging not in LANE_LOG_MODES:
+            raise ValueError(
+                "Unknown lane-state logging mode {!r}; expected one of {}.".format(
+                    lane_state_logging, LANE_LOG_MODES
+                )
+            )
+        self.traci_access_mode = traci_access_mode
+        self.lane_state_logging = lane_state_logging
         self.traci = traci_module
         self.config = config
         self.repository_root = os.path.abspath(repository_root)
@@ -86,11 +104,22 @@ class AdaptiveTrafficEnvironment(object):
         self.connection_open = True
         self.episode_index = int(episode_index)
 
+        # A new episode is a new SUMO process and a new TraCI connection, so the
+        # data source is rebuilt and its subscriptions re-established here; no
+        # subscription state can survive from the previous episode.
+        self.lane_log_ids = sorted(
+            self.config["observation"]["expected_lane_lengths_m"]
+        )
+        self.source = create_data_source(self.traci, self.traci_access_mode)
+        self.source.begin_episode(self.lane_log_ids)
+
         records = read_manifest_csv(self.manifest_csv_path)
         self.ledger = VehicleLedger(records)
         self.executor = SynchronousSignalExecutor(self.traci, self.config)
-        self.observations = SymmetricObservationBuilder(self.traci, self.config)
-        self.reward = NetworkDelayReward(self.traci, self.ledger)
+        self.observations = SymmetricObservationBuilder(
+            self.traci, self.config, self.source
+        )
+        self.reward = NetworkDelayReward(self.source, self.ledger)
         self.executor.initialize()
         self.observations.validate_runtime_schema()
         self.observations.reset_history()
@@ -100,7 +129,7 @@ class AdaptiveTrafficEnvironment(object):
         )
         # E1 lanes are the eastbound J1 -> J2 central approach.
         self.detector = VirtualDetectorTracker(
-            self.traci, ["E1_0", "E1_1"], detector_position
+            self.source, ["E1_0", "E1_1"], detector_position
         )
         self.previous_actual_phase = {"J1": "H", "J2": "H"}
         # Last actually-served green state, used to attribute red time during
@@ -130,23 +159,34 @@ class AdaptiveTrafficEnvironment(object):
         method = getattr(simulation, method_name, None)
         return [] if method is None else list(method())
 
+    def _lane_log_due(self, second_offset):
+        """True on the seconds whose lane state is written to the log.
+
+        Decision cadence writes the last second of each joint-decision block,
+        which is exactly the instant the next observation is built, so the
+        reduced log is a strict timestamp subset of the full one.
+        """
+        if self.lane_state_logging == LANE_LOG_FULL:
+            return True
+        interval = int(self.config["executor"]["control_interval_s"])
+        return int(second_offset) == interval - 1
+
     def _lane_rows(self, simulation_time):
         rows = []
-        lane_ids = sorted(self.config["observation"]["expected_lane_lengths_m"])
-        for lane_id in lane_ids:
+        for lane_id in self.lane_log_ids:
             rows.append(
                 {
                     "time": float(simulation_time),
                     "lane": lane_id,
-                    "queue": int(self.traci.lane.getLastStepHaltingNumber(lane_id)),
+                    "queue": int(self.source.lane_halting_number(lane_id)),
                     "vehicle_count": int(
-                        self.traci.lane.getLastStepVehicleNumber(lane_id)
+                        self.source.lane_vehicle_number(lane_id)
                     ),
                     "occupancy": float(
-                        self.traci.lane.getLastStepOccupancy(lane_id)
+                        self.source.lane_occupancy(lane_id)
                     ) / 100.0,
                     "mean_speed": float(
-                        self.traci.lane.getLastStepMeanSpeed(lane_id)
+                        self.source.lane_mean_speed(lane_id)
                     ),
                 }
             )
@@ -155,6 +195,12 @@ class AdaptiveTrafficEnvironment(object):
     def _after_second(self, second_offset, phase_states, actual_green_elapsed):
         simulation_time = self.time
         departed = list(self.traci.simulation.getDepartedIDList())
+        # Subscribe newly inserted vehicles before refreshing the per-second
+        # view, so a vehicle inserted this second contributes its first second
+        # of reward, waiting, arrival and detector state exactly as the getter
+        # path does.
+        self.source.note_departures(departed)
+        self.source.refresh()
         arrived = list(self.traci.simulation.getArrivedIDList())
         self.ledger.mark_departed(departed, simulation_time)
         self.ledger.mark_arrived(arrived, simulation_time)
@@ -164,19 +210,23 @@ class AdaptiveTrafficEnvironment(object):
         self.ledger.mark_teleport_end(
             self._teleport_ids("getEndingTeleportIDList")
         )
-        active_ids = list(self.traci.vehicle.getIDList())
+        active_ids = list(self.source.vehicle_ids())
         self.ledger.assert_active_consistency(active_ids)
 
         arrival_events = self.observations.update_arrivals_one_second()
         reward_row = self.reward.sample_second(simulation_time)
         if simulation_time <= float(self.config["demand"]["generation_end_s"]):
-            self.legacy_waiting_integral += float(legacy_waiting_state(self.traci))
+            self.legacy_waiting_integral += float(legacy_waiting_state(self.source))
             self.legacy_waiting_samples += 1
 
         detector_events = self.detector.sample(
             simulation_time, phase_states["J2"], phase_states["J1"]
         )
-        lane_rows = self._lane_rows(simulation_time)
+        lane_rows = (
+            self._lane_rows(simulation_time)
+            if self.logger is not None and self._lane_log_due(second_offset)
+            else []
+        )
         if self.logger is not None:
             self.logger.write("reward_seconds", reward_row)
             for lane_row in lane_rows:

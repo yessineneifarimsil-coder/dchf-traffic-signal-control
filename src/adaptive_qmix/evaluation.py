@@ -10,9 +10,10 @@ import torch
 from .config import require_scientific_run_allowed
 from .environment import AdaptiveTrafficEnvironment
 from .learner import MultiAgentLearner
-from .logging import RunLogger
+from .logging import LANE_LOG_FULL, RunLogger
 from .metrics import parse_tripinfo, scheduled_demand_metrics
 from .provenance import build_run_manifest
+from .traci_access import DEFAULT_MODE
 
 
 def load_frozen_policy(checkpoint_path, config, device="cpu"):
@@ -44,6 +45,8 @@ def evaluate_checkpoint(
     output_directory,
     run_kind="development_evaluation",
     device="cpu",
+    traci_access_mode=DEFAULT_MODE,
+    lane_state_logging=LANE_LOG_FULL,
 ):
     if run_kind == "official_evaluation":
         require_scientific_run_allowed(config)
@@ -69,6 +72,8 @@ def evaluate_checkpoint(
         traffic_seed,
         device,
         run_kind,
+        traci_access_mode,
+        lane_state_logging,
     )
     manifest["sumo_seed"] = int(sumo_seed)
     manifest["checkpoint_transition_index"] = int(payload["transition_index"])
@@ -83,6 +88,8 @@ def evaluate_checkpoint(
             tripinfo_path,
             sumo_seed,
             logger=logger,
+            traci_access_mode=traci_access_mode,
+            lane_state_logging=lane_state_logging,
         )
         try:
             observations, state, _info = environment.reset(episode_index=0)

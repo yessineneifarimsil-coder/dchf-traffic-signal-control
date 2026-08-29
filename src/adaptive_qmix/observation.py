@@ -12,8 +12,9 @@ class NetworkSchemaError(RuntimeError):
 
 
 class SymmetricObservationBuilder(object):
-    def __init__(self, traci_module, config):
+    def __init__(self, traci_module, config, data_source=None):
         self.traci = traci_module
+        self.source = data_source
         self.config = config
         self.spec = config["observation"]
         self.tl_ids = list(config["network"]["traffic_lights"])
@@ -62,7 +63,7 @@ class SymmetricObservationBuilder(object):
     def _vehicle_members(self, lane_ids):
         members = set()
         for lane_id in lane_ids:
-            members.update(self.traci.lane.getLastStepVehicleIDs(lane_id))
+            members.update(self.source.lane_vehicle_ids(lane_id))
         return members
 
     def update_arrivals_one_second(self):
@@ -80,7 +81,7 @@ class SymmetricObservationBuilder(object):
 
     def _queue(self, lane_ids):
         return sum(
-            int(self.traci.lane.getLastStepHaltingNumber(lane_id))
+            int(self.source.lane_halting_number(lane_id))
             for lane_id in lane_ids
         )
 
@@ -92,7 +93,7 @@ class SymmetricObservationBuilder(object):
             max(
                 0.0,
                 max(
-                    float(self.traci.lane.getLastStepOccupancy(lane_id)) / 100.0
+                    float(self.source.lane_occupancy(lane_id)) / 100.0
                     for lane_id in lane_ids
                 ),
             ),

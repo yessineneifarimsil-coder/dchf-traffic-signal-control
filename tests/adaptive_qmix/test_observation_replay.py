@@ -8,6 +8,7 @@ from .common import config_copy
 
 from adaptive_qmix.observation import NetworkSchemaError, SymmetricObservationBuilder
 from adaptive_qmix.replay import JointReplayBuffer
+from adaptive_qmix.traci_access import GetterDataSource
 
 
 class FakeLaneAPI(object):
@@ -51,7 +52,7 @@ class ObservationAndReplayTests(unittest.TestCase):
     def test_symmetric_observation_exact_features(self):
         config = config_copy()
         traci = FakeTraci(config)
-        builder = SymmetricObservationBuilder(traci, config)
+        builder = SymmetricObservationBuilder(traci, config, GetterDataSource(traci))
         builder.validate_runtime_schema()
         j1 = config["observation"]["lanes"]["J1"]
         for lane_id in j1["H_in"]:
@@ -80,7 +81,9 @@ class ObservationAndReplayTests(unittest.TestCase):
         first_lane = next(iter(traci.lane.lengths))
         traci.lane.lengths[first_lane] += 1.0
         with self.assertRaises(NetworkSchemaError):
-            SymmetricObservationBuilder(traci, config).validate_runtime_schema()
+            SymmetricObservationBuilder(
+                traci, config, GetterDataSource(traci)
+            ).validate_runtime_schema()
 
     def test_replay_keeps_elapsed_and_truncation_separate_from_terminal(self):
         replay = JointReplayBuffer(capacity=4)

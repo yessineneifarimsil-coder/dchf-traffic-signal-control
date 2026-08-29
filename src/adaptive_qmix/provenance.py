@@ -86,6 +86,8 @@ def build_run_manifest(
     traffic_seed,
     device,
     run_kind,
+    traci_access_mode=None,
+    lane_state_logging=None,
 ):
     clean_config = {
         key: value for key, value in config.items() if not key.startswith("_")
@@ -95,6 +97,11 @@ def build_run_manifest(
         "schema_version": "1.3a",
         "run_kind": str(run_kind),
         "method": str(method),
+        # Engineering transport and evidence-cadence settings. Neither is a
+        # scientific parameter; both are recorded so any run can be reproduced
+        # and audited exactly as it was executed.
+        "traci_access_mode": traci_access_mode,
+        "lane_state_logging": lane_state_logging,
         "git_commit": _git_value(repository_root, ["rev-parse", "HEAD"]),
         "git_branch": _git_value(
             repository_root, ["branch", "--show-current"]

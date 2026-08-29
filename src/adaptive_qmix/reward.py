@@ -11,8 +11,8 @@ def is_stopped(speed_m_s):
 
 
 class NetworkDelayReward(object):
-    def __init__(self, traci_module, ledger):
-        self.traci = traci_module
+    def __init__(self, data_source, ledger):
+        self.source = data_source
         self.ledger = ledger
         self.reset_block()
 
@@ -22,10 +22,10 @@ class NetworkDelayReward(object):
         self.second_rows = []
 
     def sample_second(self, simulation_time):
-        vehicle_ids = list(self.traci.vehicle.getIDList())
+        vehicle_ids = list(self.source.vehicle_ids())
         stopped = sum(
             1 for vehicle_id in vehicle_ids
-            if is_stopped(self.traci.vehicle.getSpeed(vehicle_id))
+            if is_stopped(self.source.vehicle_speed(vehicle_id))
         )
         pending = len(self.ledger.pending_due_ids(simulation_time))
         self.active_stopped_vehicle_seconds += stopped
@@ -51,9 +51,9 @@ class NetworkDelayReward(object):
         }
 
 
-def legacy_waiting_state(traci_module):
+def legacy_waiting_state(data_source):
     return sum(
-        traci_module.vehicle.getWaitingTime(vehicle_id)
-        for vehicle_id in traci_module.vehicle.getIDList()
+        data_source.vehicle_waiting_time(vehicle_id)
+        for vehicle_id in data_source.vehicle_ids()
     )
 

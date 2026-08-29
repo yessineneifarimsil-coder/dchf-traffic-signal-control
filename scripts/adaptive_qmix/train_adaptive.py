@@ -25,6 +25,18 @@ def main():
     )
     parser.add_argument("--transition-limit", type=int)
     parser.add_argument("--device", default="cpu")
+    # Evidence cadence: training and the compute-feasibility gate log lane
+    # state once per joint decision; frozen-policy evaluation logs every
+    # second. Neither setting affects control, observations or reward.
+    parser.add_argument(
+        "--lane-state-logging", choices=("decision", "full"), default="decision"
+    )
+    # Engineering transport switch. It exists for the A/B equivalence harness
+    # and is not a scientific configuration.
+    parser.add_argument(
+        "--traci-access-mode", choices=("subscription", "getter"),
+        default="subscription"
+    )
     parser.add_argument("--output-directory", required=True)
     parser.add_argument("--config", default=os.path.join(
         REPOSITORY_ROOT, "config", "adaptive_qmix", "qualification_300m_medium.json"
@@ -44,6 +56,8 @@ def main():
         args.run_kind,
         args.transition_limit,
         args.device,
+        args.traci_access_mode,
+        args.lane_state_logging,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
 

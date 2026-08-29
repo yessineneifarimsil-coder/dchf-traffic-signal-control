@@ -9,6 +9,17 @@ import os
 from .provenance import write_run_manifest
 
 
+# Lane-state logging cadence. "full" logs every simulated second; "decision"
+# logs only the last second of each joint-decision block, which is the instant
+# the next observation is built. A decision-cadence log is therefore a strict
+# timestamp subset of the corresponding full log. Cadence affects stored
+# evidence only: no table consumed by scientific evaluation reads lane_states,
+# and no control quantity depends on it.
+LANE_LOG_FULL = "full"
+LANE_LOG_DECISION = "decision"
+LANE_LOG_MODES = (LANE_LOG_FULL, LANE_LOG_DECISION)
+
+
 SCHEMAS = {
     "episode_summary": [
         "episode_index", "status", "start_time", "end_time", "elapsed_s",

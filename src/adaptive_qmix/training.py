@@ -9,7 +9,7 @@ from .config import require_scientific_run_allowed
 from .environment import AdaptiveTrafficEnvironment
 from .feasibility import FeasibilityMeter, write_feasibility_report
 from .learner import MultiAgentLearner, epsilon_at_transition
-from .logging import RunLogger
+from .logging import LANE_LOG_DECISION, RunLogger
 from .provenance import build_run_manifest
 from .replay import JointReplayBuffer
 from .rng import (
@@ -18,6 +18,7 @@ from .rng import (
     namespace_manifest,
     numpy_rng,
 )
+from .traci_access import DEFAULT_MODE
 from .traffic import generate_manifest_records, write_manifest
 
 
@@ -50,6 +51,8 @@ def train_learned_controller(
     run_kind="development",
     transition_limit=None,
     device="cpu",
+    traci_access_mode=DEFAULT_MODE,
+    lane_state_logging=LANE_LOG_DECISION,
 ):
     if run_kind not in RUN_KINDS:
         raise ValueError("Unknown run kind: {}".format(run_kind))
@@ -84,6 +87,8 @@ def train_learned_controller(
         training_seed,
         device,
         run_kind,
+        traci_access_mode,
+        lane_state_logging,
     )
     run_manifest["initial_sumo_seed"] = initial_sumo_seed
     run_manifest["traffic_manifest_metadata"] = traffic_metadata
@@ -129,6 +134,8 @@ def train_learned_controller(
                     tripinfo_path,
                     sumo_seed,
                     logger=logger,
+                    traci_access_mode=traci_access_mode,
+                    lane_state_logging=lane_state_logging,
                 )
                 observations, state, _reset_info = environment.reset(episode_index)
                 episode_finished = False
@@ -265,6 +272,8 @@ def train_learned_controller(
         "learner_events": learner.learner_events,
         "episodes": episode_index,
         "output_directory": output_directory,
+        "traci_access_mode": traci_access_mode,
+        "lane_state_logging": lane_state_logging,
     }
     if budget == int(config["training"]["interaction_budget"]):
         expected_updates = int(config["training"]["learner_events"])
