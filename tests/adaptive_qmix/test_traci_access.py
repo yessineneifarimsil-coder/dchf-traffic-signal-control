@@ -254,27 +254,59 @@ class TransportMappingTests(unittest.TestCase):
 
 
 class SubscriptionTimingTests(unittest.TestCase):
+    """Starts from an empty network, as reset() does at t = 0."""
+
     def setUp(self):
         self.config = config_copy()
-        self.world, self.lane_ids = build_world(self.config)
+        lane_ids = sorted(self.config["observation"]["expected_lane_lengths_m"])
+        self.lane_ids = lane_ids
+        self.world = FakeWorld(lane_ids)
         self.traci = FakeTraci(self.world)
         self.source = SubscriptionDataSource(self.traci)
         self.source.begin_episode(self.lane_ids)
 
     def test_vehicle_inserted_this_second_is_readable_this_second(self):
-        """No missing departure-second contribution."""
+        """No missing departure-second contribution, and no healing needed."""
         self.world.add_vehicle("v_new", 0.0, 0.0, "E1_0", 5.0)
         self.source.note_departures(["v_new"])
         self.source.refresh()
         self.assertEqual(self.source.vehicle_speed("v_new"), 0.0)
         self.assertEqual(self.source.vehicle_lane_id("v_new"), "E1_0")
         self.assertIn("v_new", self.source.vehicle_ids())
+        self.assertEqual(self.source.healed_subscriptions, 0)
 
-    def test_unsubscribed_vehicle_raises_rather_than_reading_wrong_state(self):
-        self.world.add_vehicle("v_missed", 1.0, 0.0, "E1_0", 5.0)
+    def test_healing_does_not_trigger_in_normal_operation(self):
+        for index in range(4):
+            name = "v_{}".format(index)
+            self.world.add_vehicle(name, 5.0, 0.0, "E1_0", 10.0 * index)
+            self.source.note_departures([name])
+            self.source.refresh()
+        self.assertEqual(self.source.healed_subscriptions, 0)
+
+    def test_an_active_vehicle_without_a_subscription_is_healed(self):
+        """Reachable if SUMO reinserts a vehicle without a departure event."""
+        self.world.add_vehicle("v_orphan", 4.25, 1.0, "E1_1", 60.0)
+        self.source.refresh()
+        self.assertEqual(self.source.healed_subscriptions, 1)
+        self.assertEqual(self.source.vehicle_speed("v_orphan"), 4.25)
+        self.assertEqual(self.source.vehicle_waiting_time("v_orphan"), 1.0)
+
+    def test_a_vehicle_whose_subscription_vanished_is_healed(self):
+        """A teleported vehicle re-enters without a second departure event."""
+        self.world.add_vehicle("v_tele", 3.0, 0.0, "E1_0", 50.0)
+        self.source.note_departures(["v_tele"])
+        self.source.refresh()
+        self.assertEqual(self.source.healed_subscriptions, 0)
+        del self.traci.vehicle.subscriptions["v_tele"]
+        self.source.refresh()
+        self.assertEqual(self.source.vehicle_speed("v_tele"), 3.0)
+        self.assertEqual(self.source.healed_subscriptions, 1)
+
+    def test_reading_a_vehicle_that_is_not_active_still_raises(self):
+        """Healing must not mask a genuinely absent vehicle."""
         self.source.refresh()
         with self.assertRaises(TraciAccessError):
-            self.source.vehicle_speed("v_missed")
+            self.source.vehicle_speed("never_existed")
 
     def test_note_departures_is_idempotent(self):
         self.world.add_vehicle("v_new", 1.0, 0.0, "E1_0", 5.0)

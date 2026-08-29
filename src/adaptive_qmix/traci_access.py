@@ -142,6 +142,7 @@ class SubscriptionDataSource(_BaseDataSource):
         self._vehicle_view = {}
         self._lane_view = {}
         self.subscribed_vehicles = set()
+        self.healed_subscriptions = 0
 
     def begin_episode(self, lane_ids):
         # A new episode is a new SUMO process and a new TraCI connection, so
@@ -150,6 +151,7 @@ class SubscriptionDataSource(_BaseDataSource):
         self._vehicle_view = {}
         self._lane_view = {}
         self.subscribed_vehicles = set()
+        self.healed_subscriptions = 0
         for lane_id in self.lane_ids:
             self.traci.lane.subscribe(lane_id, list(self.lane_variables))
         self.refresh()
@@ -165,6 +167,31 @@ class SubscriptionDataSource(_BaseDataSource):
         super(SubscriptionDataSource, self).refresh()
         self._vehicle_view = self.traci.vehicle.getAllSubscriptionResults()
         self._lane_view = self.traci.lane.getAllSubscriptionResults()
+        self._resubscribe_active_vehicles_without_a_view()
+
+    def _resubscribe_active_vehicles_without_a_view(self):
+        """Re-subscribe any active vehicle whose subscription SUMO dropped.
+
+        A vehicle that SUMO removes and reinserts -- a teleport -- is not
+        reported by getDepartedIDList a second time, so its subscription can be
+        gone while the vehicle is active again. Reading it would then raise
+        where the getter path would have succeeded, which is a difference in
+        transport rather than in science. Healing here keeps the two
+        transports equivalent under teleporting. In normal operation the set is
+        empty and this costs nothing; the count is kept so a run that needed
+        healing is auditable rather than silent.
+        """
+        missing = [
+            vehicle_id for vehicle_id in self.vehicle_ids()
+            if vehicle_id not in self._vehicle_view
+        ]
+        if not missing:
+            return
+        for vehicle_id in missing:
+            self.traci.vehicle.subscribe(vehicle_id, list(self.vehicle_variables))
+            self.subscribed_vehicles.add(vehicle_id)
+        self._vehicle_view = self.traci.vehicle.getAllSubscriptionResults()
+        self.healed_subscriptions += len(missing)
 
     def _vehicle(self, vehicle_id, variable, name):
         row = self._vehicle_view.get(vehicle_id)
