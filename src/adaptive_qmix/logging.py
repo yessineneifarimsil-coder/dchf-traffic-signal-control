@@ -29,6 +29,7 @@ SCHEMAS = {
         "active_stopped_vehicle_seconds", "pending_due_vehicle_seconds",
         "legacy_waiting_state_integral", "legacy_waiting_state_time_average",
         "budget_truncated", "timeout_truncated", "clearance_failure",
+        "transport_healed_subscriptions",
     ],
     "signal_actions": [
         "decision_time", "decision_index", "intersection", "observation_json",

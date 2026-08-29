@@ -9,6 +9,21 @@ Discrete quantities must match exactly. Floating-point quantities are compared
 through repr(), which is exact for IEEE doubles in Python 3 and distinguishes
 0.0 from -0.0, so this is a bit-identity check and not a tolerance check.
 
+Scope. This harness compares exactly ONE episode, run to its natural end
+(clearance or the 7200 s timeout). It does NOT call learner.update(), sample
+replay, or train, and --max-transitions is an upper bound only: the loop stops
+at the first episode termination, which on the qualification scenario is about
+753 transitions, so raising it does not extend the comparison past one
+episode and does not reach the 5000-transition replay warm-up. That is
+sufficient for accepting a TRANSPORT change: the learner consumes only the
+transition tuple, and every field of that tuple is compared here bit-for-bit.
+It is not, and must not be described as, a training-loop equivalence gate.
+
+Transport diagnostics such as transport_healed_subscriptions are reported
+separately and excluded from the scientific comparison. A synthetic teleport
+may legitimately require subscription healing in one transport and not the
+other; what must be identical is the science, not the repair counter.
+
 Usage on the target stack:
 
     python scripts\\adaptive_qmix\\ab_equivalence.py ^
@@ -40,12 +55,24 @@ from adaptive_qmix.traffic import (  # noqa: E402
 )
 
 
+# Recorded for engineering visibility, deliberately not part of the
+# scientific comparison.
+TRANSPORT_DIAGNOSTIC_FIELDS = ("transport_healed_subscriptions",)
+
 CAPTURED_TABLES = (
     "lane_states",
     "reward_seconds",
     "signal_phases",
     "vehicle_crossings",
 )
+
+
+def scientific_only(summary):
+    """Drop transport diagnostics before comparing episode summaries."""
+    return dict(
+        (key, value) for key, value in summary.items()
+        if key not in TRANSPORT_DIAGNOSTIC_FIELDS
+    )
 
 
 def canon(value):
@@ -244,11 +271,13 @@ def compare(getter, subscription):
             "logged table '{}'".format(table),
             getter["logged"][table], subscription["logged"][table], failures,
         )
-    if getter["summary"] != subscription["summary"]:
+    left_summary = scientific_only(getter["summary"])
+    right_summary = scientific_only(subscription["summary"])
+    if left_summary != right_summary:
         failures.append("episode summary differs:\n  getter       = {}\n"
                         "  subscription = {}".format(
-                            json.dumps(getter["summary"], sort_keys=True),
-                            json.dumps(subscription["summary"], sort_keys=True)))
+                            json.dumps(left_summary, sort_keys=True),
+                            json.dumps(right_summary, sort_keys=True)))
     if getter["residual"] != subscription["residual"]:
         failures.append("residual clearance state differs")
     left, right = getter["tripinfo"], subscription["tripinfo"]
@@ -268,9 +297,11 @@ def compare(getter, subscription):
 
 
 def digest(result):
+    """SHA-256 of the scientific content only, excluding transport diagnostics."""
     payload = json.dumps(
         {"trace": result["trace"], "logged": result["logged"],
-         "summary": result["summary"], "tripinfo": result["tripinfo"]},
+         "summary": scientific_only(result["summary"]),
+         "tripinfo": result["tripinfo"]},
         sort_keys=True,
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
@@ -284,8 +315,12 @@ def main():
     parser.add_argument("--training-seed", type=int, default=101)
     parser.add_argument("--family", default="development")
     parser.add_argument("--manifest-index", type=int, default=0)
-    parser.add_argument("--max-transitions", type=int, default=800,
-                        help="800 covers a full clearing episode at this demand")
+    parser.add_argument(
+        "--max-transitions", type=int, default=800,
+        help="upper bound only; the harness stops at the first episode "
+             "termination, about 753 transitions at this demand. Raising it "
+             "does not extend the comparison beyond one episode and does not "
+             "reach the replay warm-up.")
     parser.add_argument("--output-directory", required=True)
     args = parser.parse_args()
 
@@ -308,7 +343,9 @@ def main():
     print("  manifest          : {} index {}".format(args.family, args.manifest_index))
     print("  SUMO seed         : {}".format(sumo_seed))
     print("  route sha256      : {}".format(metadata["route_xml_sha256"]))
-    print("  max transitions   : {}".format(args.max_transitions))
+    print("  max transitions   : {} (upper bound; stops at episode end)".format(
+        args.max_transitions))
+    print("  scope             : one full episode, no learner updates, no replay")
     print("")
 
     results = {}
@@ -339,6 +376,17 @@ def main():
         "subscription_digest": digest(results[SUBSCRIPTION]),
         "identical": bool(same_digest and not failures),
         "failures": failures,
+        "scope": (
+            "one episode run to natural termination; no learner.update(), no "
+            "replay sampling, no training. Not a training-loop gate."
+        ),
+        "transport_diagnostics": dict(
+            (mode, dict(
+                (field, results[mode]["summary"].get(field))
+                for field in TRANSPORT_DIAGNOSTIC_FIELDS
+            ))
+            for mode in (GETTER, SUBSCRIPTION)
+        ),
     }
     path = os.path.join(output_directory, "ab_equivalence_report.json")
     with open(path, "w") as handle:
@@ -349,6 +397,10 @@ def main():
     print("simulated seconds    : {}".format(report["seconds_compared"]))
     print("lane rows compared   : {}".format(report["lane_rows_compared"]))
     print("vehicles compared    : {}".format(report["vehicles_compared"]))
+    print("transport diagnostics: getter={} subscription={} (excluded from "
+          "the comparison)".format(
+              report["transport_diagnostics"][GETTER],
+              report["transport_diagnostics"][SUBSCRIPTION]))
     print("report               : {}".format(path))
     print("")
     if report["identical"]:

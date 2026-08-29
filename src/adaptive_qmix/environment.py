@@ -356,6 +356,13 @@ class AdaptiveTrafficEnvironment(object):
                 "budget_truncated": bool(budget_truncated),
                 "timeout_truncated": bool(timeout_truncated),
                 "clearance_failure": status == "CLEARANCE_FAILURE",
+                # Engineering transport diagnostic, normally zero. It records
+                # how many active vehicles needed their TraCI subscription
+                # re-established (see traci_access). It is not a scientific
+                # quantity and never influences control, reward or metrics.
+                "transport_healed_subscriptions": int(
+                    getattr(self.source, "healed_subscriptions", 0)
+                ),
                 "missing_vehicle_ids": reconciliation["missing_ids"],
                 "overlapping_vehicle_ids": reconciliation["overlap_ids"],
             }

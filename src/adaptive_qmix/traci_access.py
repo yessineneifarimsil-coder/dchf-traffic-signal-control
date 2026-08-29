@@ -54,10 +54,15 @@ class _BaseDataSource(object):
         self.traci = traci_module
         self.lane_ids = ()
         self._vehicle_ids = None
+        # Transport diagnostic, exposed by both modes so the episode summary
+        # carries the same field whichever transport ran. Getter mode never
+        # subscribes and therefore never heals, so it stays zero.
+        self.healed_subscriptions = 0
 
     def begin_episode(self, lane_ids):
         self.lane_ids = tuple(lane_ids)
         self._vehicle_ids = None
+        self.healed_subscriptions = 0
 
     def note_departures(self, vehicle_ids):
         pass
