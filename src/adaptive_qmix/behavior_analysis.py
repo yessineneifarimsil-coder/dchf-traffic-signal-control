@@ -28,6 +28,14 @@ Definitions used throughout.
 Two analysis windows are reported. The demand-active window
 [0, generation_end_s] is the primary starvation and service window; the full
 episode [0, clearance] is secondary information.
+
+Naming a window is not the same as filling it. Every summary therefore carries
+the completeness verdict from adaptive_qmix.completeness, and the two ideas are
+kept apart in the keys: '..._sampling_is_full_1s' describes the sampling
+cadence and gates the utilisation computation, while '..._are_official'
+additionally requires that the episode is a complete preregistered
+observation. A truncated episode still reports correct values for the seconds
+it has, labelled diagnostic rather than scientific.
 """
 
 from __future__ import absolute_import
@@ -37,6 +45,7 @@ import os
 
 import numpy as np
 
+from .completeness import assess_episode
 from .raw_logs import (
     available_episodes,
     derived_output_directory,
@@ -184,7 +193,19 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
     clearance_time = max(all_times)
 
     cadence = lane_state_cadence(lane_rows, control_interval)
-    official_queue_metrics = cadence == CADENCE_FULL_1S
+    completeness = assess_episode(
+        run_directory, config, chosen, phase_rows, traffic_lights
+    )
+    # A SAMPLING descriptor: the logged seconds are at 1 s resolution. It is
+    # what green-demand utilisation needs, and it is deliberately the only
+    # thing gating that computation, so a truncated episode still reports the
+    # correct utilisation for the seconds it has.
+    sampling_is_full_1s = cadence == CADENCE_FULL_1S
+    # The OFFICIALNESS claim, which additionally requires that the episode is
+    # a complete preregistered observation. It labels, and gates nothing.
+    queue_metrics_are_official = bool(
+        sampling_is_full_1s and completeness["scientific_analysis_permitted"]
+    )
 
     window_bounds = {
         WINDOW_DEMAND_ACTIVE: (0.0, min(generation_end, clearance_time)),
@@ -260,7 +281,7 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
 
                 utilisation = float("nan")
                 utilisation_green_seconds = 0
-                if official_queue_metrics:
+                if sampling_is_full_1s:
                     counts = _summed_lane_series(
                         lane_rows, incoming, "vehicle_count"
                     )
@@ -317,13 +338,17 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
                     "queue_max": queue_stats["max_s"],
                     "queue_sample_count": queue_stats["count"],
                     "queue_sampling_cadence": cadence,
-                    "queue_metrics_are_official_1s": official_queue_metrics,
+                    "queue_metrics_sampling_is_full_1s": sampling_is_full_1s,
+                    "queue_metrics_are_official": queue_metrics_are_official,
                     "green_demand_utilisation": utilisation,
                     "green_demand_utilisation_green_seconds": (
                         utilisation_green_seconds
                     ),
-                    "green_demand_utilisation_is_official_1s": (
-                        official_queue_metrics
+                    "green_demand_utilisation_sampling_is_full_1s": (
+                        sampling_is_full_1s
+                    ),
+                    "green_demand_utilisation_is_official": (
+                        queue_metrics_are_official
                     ),
                 })
 
@@ -386,12 +411,26 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
         "clearance_time_s": clearance_time,
         "demand_generation_end_s": generation_end,
         "primary_window": WINDOW_DEMAND_ACTIVE,
+        "primary_window_complete": completeness["demand_active_window_complete"],
+        # The demand-active window is clipped to the observed trace, so a
+        # truncated episode reports [0, 1235] under the name "demand_active".
+        # The bounds are stated rather than left implicit in the label.
+        "window_bounds_s": dict(
+            (window, list(window_bounds[window])) for window in WINDOWS
+        ),
         "lane_state_sampling_cadence": cadence,
-        "queue_metrics_are_official_1s": official_queue_metrics,
+        "queue_metrics_sampling_is_full_1s": sampling_is_full_1s,
+        "queue_metrics_are_official": queue_metrics_are_official,
         "queue_metrics_note": (
-            "Queue and green-demand-utilisation metrics are official only from "
-            "a full 1 s lane-state log. This source is sampled at '{}'."
-            .format(cadence)
+            "Queue and green-demand-utilisation metrics are official only when "
+            "the lane-state log is a full 1 s log AND the episode is a "
+            "complete preregistered observation. This source is sampled at "
+            "'{}' and its demand-active window is {}."
+            .format(
+                cadence,
+                "complete" if completeness["demand_active_window_complete"]
+                else "INCOMPLETE",
+            )
         ),
         "non_green_definition": (
             "service deprivation: contiguous seconds with actual_phase != "
@@ -403,6 +442,7 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
         ),
         "by_intersection": by_intersection,
     }
+    summary.update(completeness)
 
     write_rows(
         os.path.join(destination, "green_spell_distribution.csv"),

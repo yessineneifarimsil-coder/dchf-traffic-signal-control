@@ -9,6 +9,22 @@ Sign convention, identical in both directions:
     positive lag means the DOWNSTREAM signal follows the UPSTREAM signal
 
 so the correlation is oriented J1 -> J2 for WE and J2 -> J1 for EW.
+
+INDEPENDENCE. With two signals there is only ONE J1-J2 phase relationship, and
+the two directional phase cross-correlations are reciprocal views of it:
+
+    C_WE(lag) = C_EW(-lag)
+
+as an algebraic identity, because both are computed from the same pair of
+binary phase series with the roles of upstream and downstream exchanged. (The
+two computed values agree to floating-point rounding, of order 1e-16, since
+corrcoef accumulates the swapped arguments in a different order.) They are
+reported per
+direction because the sign convention only means something with a stated
+orientation, not because they are two findings. The direction-specific VEHICLE
+outcomes are a different matter: GAD50, the projected AOG proxy, the downstream
+stop rate and detector-to-stop-line travel time depend on each direction's own
+traffic, and those do carry independent directional information.
 """
 
 from __future__ import absolute_import
@@ -27,6 +43,7 @@ from .coordination import (
     projected_aog_percentage,
     projected_stop_line_arrival_events,
 )
+from .completeness import assess_episode
 from .raw_logs import (
     available_episodes,
     derived_output_directory,
@@ -38,6 +55,38 @@ from .raw_logs import (
 
 SIGN_CONVENTION = (
     "positive lag means the downstream signal follows the upstream signal"
+)
+
+PHASE_CORRELATION_RECIPROCITY = "C_WE(lag) = C_EW(-lag)"
+
+PHASE_CORRELATION_INDEPENDENCE_NOTE = (
+    "With N = 2 signals there is only one J1-J2 phase relationship. The WE and "
+    "EW phase cross-correlations are reciprocal, mirrored views of that single "
+    "relationship -- C_WE(lag) = C_EW(-lag) as an algebraic identity, the two "
+    "computed values agreeing to floating-point rounding -- because both are "
+    "computed from the same two binary phase series with upstream and "
+    "downstream exchanged. They must not be treated as two statistically "
+    "independent coordination effects, counted as two findings, pooled, or "
+    "tested as if they were separate samples. Direction-specific VEHICLE "
+    "outcomes are genuinely direction-specific, because they depend on each "
+    "direction's own traffic."
+)
+
+# Reported so the note names its own scope rather than leaving a reader to
+# guess which quantities it does and does not cover.
+DIRECTION_SPECIFIC_VEHICLE_METRICS = (
+    "GAD50_percent",
+    "AOG_SL_projected_proxy_percent",
+    "actual_stop_line_crossing_on_H_percent",
+    "downstream_stop_rate_percent",
+    "mean_detector_to_stop_line_s",
+    "median_detector_to_stop_line_s",
+)
+
+MIRRORED_PHASE_METRICS = (
+    "dominant_cross_correlation_lag_s",
+    "dominant_cross_correlation",
+    "phase_cross_correlation_distribution.csv",
 )
 
 REQUIRED_TABLES = ("signal_phases", "vehicle_crossings")
@@ -250,8 +299,21 @@ def derive_coordination_metrics(run_directory, config, episode_index=None,
         "episodes_in_source": episodes,
         "output_directory": destination,
         "sign_convention": SIGN_CONVENTION,
+        "phase_correlation_reciprocity": PHASE_CORRELATION_RECIPROCITY,
+        "phase_correlation_independence_note": (
+            PHASE_CORRELATION_INDEPENDENCE_NOTE
+        ),
+        "independent_phase_relationship_count": 1,
+        "mirrored_phase_metrics": list(MIRRORED_PHASE_METRICS),
+        "direction_specific_vehicle_metrics": list(
+            DIRECTION_SPECIFIC_VEHICLE_METRICS
+        ),
         "directions": summary_directions,
     }
+    summary.update(assess_episode(
+        run_directory, config, chosen, phase_rows,
+        list(config["network"]["traffic_lights"]),
+    ))
 
     write_rows(
         os.path.join(destination, "phase_lag_green_start_distribution.csv"),

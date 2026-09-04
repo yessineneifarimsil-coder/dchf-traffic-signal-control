@@ -31,6 +31,7 @@ from adaptive_qmix.coordination import (
     VirtualDetectorTracker,
     derive_central_directions,
 )
+from adaptive_qmix.completeness import CompletenessError
 from adaptive_qmix.coordination_analysis import derive_coordination_metrics
 from adaptive_qmix.logging import SCHEMAS
 from adaptive_qmix.raw_logs import (
@@ -313,9 +314,9 @@ class BehaviorDerivationTests(unittest.TestCase):
         self.assertEqual(
             summary["lane_state_sampling_cadence"], CADENCE_FULL_1S
         )
-        self.assertTrue(summary["queue_metrics_are_official_1s"])
+        self.assertTrue(summary["queue_metrics_sampling_is_full_1s"])
         row = self._movement_row("J1", "H")
-        self.assertEqual(row["queue_metrics_are_official_1s"], "True")
+        self.assertEqual(row["queue_metrics_sampling_is_full_1s"], "True")
         # H_in carries two vehicles per lane on every green second.
         self.assertAlmostEqual(float(row["green_demand_utilisation"]), 1.0)
         # V_in is empty, so its green seconds are unused demand.
@@ -329,16 +330,16 @@ class BehaviorDerivationTests(unittest.TestCase):
         self.assertEqual(
             summary["lane_state_sampling_cadence"], CADENCE_DECISION
         )
-        self.assertFalse(summary["queue_metrics_are_official_1s"])
+        self.assertFalse(summary["queue_metrics_sampling_is_full_1s"])
         row = self._movement_row("J1", "H")
         self.assertEqual(row["queue_sampling_cadence"], CADENCE_DECISION)
-        self.assertEqual(row["queue_metrics_are_official_1s"], "False")
+        self.assertEqual(row["queue_metrics_sampling_is_full_1s"], "False")
         self.assertTrue(
             math.isnan(float(row["green_demand_utilisation"])),
             "utilisation must be NaN when the source is not 1 s sampled",
         )
         self.assertEqual(
-            row["green_demand_utilisation_is_official_1s"], "False"
+            row["green_demand_utilisation_sampling_is_full_1s"], "False"
         )
 
     def test_cadence_classifier(self):
@@ -808,6 +809,339 @@ class DerivedOutputIsolationTests(unittest.TestCase):
         multiple = derived_output_directory(self.directory, 2, 7)
         self.assertEqual(multiple, self._episode_directory(7))
         self.assertTrue(os.path.isdir(multiple))
+
+
+class EpisodeCompletenessTests(unittest.TestCase):
+    """A cadence label must never stand in for a complete window.
+
+    The failure this guards against is concrete: a smoke episode stopped by
+    the interaction budget at 1235 s was logged at a full 1 s cadence, so the
+    summary said primary_window = demand_active and full_1s together, which
+    reads as a complete 0-3600 s demand-active result. It was a correct
+    1235 s prefix. These tests keep the two facts apart.
+
+    The demand horizon is shortened to 20 s here so the fixtures stay
+    hand-computable; the code reads it from the config either way.
+    """
+
+    HORIZON = 20.0
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = config_copy()
+        self.config["demand"]["generation_end_s"] = self.HORIZON
+        self.lanes = self.config["observation"]["lanes"]
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _write_episode(self, status, seconds=len(HAND_TRACE),
+                       episode_index=0, write_summary=True):
+        """One episode whose logs stop after `seconds` seconds."""
+        trace = HAND_TRACE[:seconds]
+        phases, actions, lane_rows = [], [], []
+        for intersection in ("J1", "J2"):
+            phases.extend(phase_rows(trace, intersection, episode_index))
+        for index in range(len(trace) // 5):
+            for intersection in ("J1", "J2"):
+                actions.append({
+                    "episode_index": episode_index,
+                    "decision_time": float(index * 5),
+                    "decision_index": index,
+                    "intersection": intersection,
+                    "action": "EXTEND",
+                })
+        for time_value in range(1, len(trace) + 1):
+            for intersection in ("J1", "J2"):
+                for movement, queue, count in (("H", 1, 2), ("V", 10, 0)):
+                    for lane in self.lanes[intersection][
+                        "{}_in".format(movement)
+                    ]:
+                        lane_rows.append({
+                            "episode_index": episode_index,
+                            "time": float(time_value),
+                            "lane": lane,
+                            "queue": queue,
+                            "vehicle_count": count,
+                            "occupancy": 0.0,
+                            "mean_speed": 0.0,
+                        })
+        write_table(self.directory, "signal_phases", phases)
+        write_table(self.directory, "signal_actions", actions)
+        write_table(self.directory, "lane_states", lane_rows)
+        write_table(self.directory, "vehicle_crossings", [])
+        if write_summary:
+            write_table(self.directory, "episode_summary", [{
+                "episode_index": episode_index,
+                "status": status,
+                "start_time": 0.0,
+                "end_time": float(len(trace)),
+                "elapsed_s": float(len(trace)),
+                "scheduled": 2800,
+                "completed": 2800 if status == "CLEARED" else 1000,
+                "budget_truncated": status == "BUDGET_TRUNCATED",
+                "timeout_truncated": False,
+                "clearance_failure": status == "CLEARANCE_FAILURE",
+                "transport_healed_subscriptions": 0,
+            }])
+
+    def _both_summaries(self):
+        return (
+            derive_behavior_metrics(self.directory, self.config),
+            derive_coordination_metrics(self.directory, self.config),
+        )
+
+    def test_a_cleared_episode_covering_the_horizon_is_permitted(self):
+        self._write_episode("CLEARED")
+        for summary in self._both_summaries():
+            self.assertEqual(summary["episode_status"], "CLEARED")
+            self.assertTrue(summary["episode_is_cleared"])
+            self.assertTrue(summary["demand_active_window_complete"])
+            self.assertTrue(summary["full_clearance_complete"])
+            self.assertTrue(summary["scientific_analysis_permitted"])
+            self.assertEqual(summary["analysis_class"], "scientific")
+            self.assertNotIn("DIAGNOSTIC ONLY", summary["completeness_note"])
+
+    def test_a_truncated_episode_is_diagnostic_not_scientific(self):
+        # Logs stop at 12 s, well short of the 20 s demand horizon.
+        self._write_episode("BUDGET_TRUNCATED", seconds=12)
+        for summary in self._both_summaries():
+            self.assertEqual(summary["episode_status"], "BUDGET_TRUNCATED")
+            self.assertFalse(summary["episode_is_cleared"])
+            self.assertFalse(summary["demand_active_window_complete"])
+            self.assertFalse(summary["full_clearance_complete"])
+            self.assertFalse(summary["scientific_analysis_permitted"])
+            self.assertEqual(summary["analysis_class"], "diagnostic_partial")
+            self.assertIn("DIAGNOSTIC ONLY", summary["completeness_note"])
+            self.assertIn("12 of the 20 seconds", summary["completeness_note"])
+
+    def test_full_1s_sampling_does_not_imply_a_complete_window(self):
+        """The exact pairing that caused this hardening."""
+        self._write_episode("BUDGET_TRUNCATED", seconds=12)
+        summary = derive_behavior_metrics(self.directory, self.config)
+        # The cadence claim stays true: every logged second is 1 s resolution.
+        self.assertEqual(summary["lane_state_sampling_cadence"], CADENCE_FULL_1S)
+        self.assertTrue(summary["queue_metrics_sampling_is_full_1s"])
+        # The officialness claim does not.
+        self.assertFalse(summary["queue_metrics_are_official"])
+        self.assertEqual(summary["primary_window"], WINDOW_DEMAND_ACTIVE)
+        self.assertFalse(summary["primary_window_complete"])
+        # The window under that name really is [0, 12], not [0, 20]: the
+        # bounds are stated so the label cannot stand in for the horizon.
+        self.assertEqual(
+            summary["window_bounds_s"][WINDOW_DEMAND_ACTIVE], [0.0, 12.0]
+        )
+        self.assertEqual(
+            summary["demand_active_window_required_end_s"], self.HORIZON
+        )
+
+    def test_truncation_labels_the_values_without_changing_them(self):
+        """A partial episode still reports correct numbers for its seconds."""
+        self._write_episode("BUDGET_TRUNCATED", seconds=12)
+        truncated = derive_behavior_metrics(self.directory, self.config)
+        path = os.path.join(
+            self.directory, "behavior_metrics_by_intersection_movement.csv"
+        )
+        with open(path, "r") as handle:
+            row = [
+                item for item in csv.DictReader(handle)
+                if item["intersection"] == "J1" and item["movement"] == "H"
+                and item["window"] == WINDOW_FULL_EPISODE
+            ][0]
+        # H_in carries two vehicles per lane on every green second, so
+        # utilisation is still 1.0 and emphatically not NaN: completeness
+        # labels the result, it does not blank or reweight it.
+        self.assertAlmostEqual(float(row["green_demand_utilisation"]), 1.0)
+        self.assertEqual(row["queue_metrics_sampling_is_full_1s"], "True")
+        self.assertEqual(row["queue_metrics_are_official"], "False")
+        self.assertAlmostEqual(float(row["queue_mean"]), 4.0)
+        self.assertFalse(truncated["scientific_analysis_permitted"])
+
+    def test_a_clearance_failure_can_cover_the_window_yet_stay_impermitted(self):
+        """The flags are separate facts, not synonyms for one another."""
+        self._write_episode("CLEARANCE_FAILURE")
+        for summary in self._both_summaries():
+            # Every demand-active second is present, so that flag is true ...
+            self.assertTrue(summary["demand_active_window_complete"])
+            # ... but the episode never cleared, so inference is refused.
+            self.assertFalse(summary["episode_is_cleared"])
+            self.assertFalse(summary["full_clearance_complete"])
+            self.assertFalse(summary["scientific_analysis_permitted"])
+
+    def test_a_cleared_status_cannot_rescue_a_short_log(self):
+        """Coverage is checked against the rows, not taken on the status."""
+        self._write_episode("CLEARED", seconds=12)
+        summary = derive_behavior_metrics(self.directory, self.config)
+        self.assertTrue(summary["episode_is_cleared"])
+        self.assertFalse(summary["demand_active_window_complete"])
+        self.assertFalse(summary["scientific_analysis_permitted"])
+
+    def test_a_missing_episode_summary_fails_closed(self):
+        self._write_episode("CLEARED", write_summary=False)
+        for summary in self._both_summaries():
+            self.assertEqual(summary["episode_status"], "UNKNOWN")
+            self.assertFalse(summary["scientific_analysis_permitted"])
+            self.assertIn("episode_summary.csv",
+                          summary["episode_status_reason"])
+
+    def test_a_summary_without_the_selected_episode_fails_closed(self):
+        self._write_episode("CLEARED", episode_index=0)
+        write_table(self.directory, "episode_summary", [{
+            "episode_index": 5, "status": "CLEARED",
+        }])
+        summary = derive_behavior_metrics(self.directory, self.config)
+        self.assertEqual(summary["episode_status"], "UNKNOWN")
+        self.assertFalse(summary["scientific_analysis_permitted"])
+
+    def test_duplicate_summary_rows_for_one_episode_are_refused(self):
+        self._write_episode("CLEARED")
+        write_table(self.directory, "episode_summary", [
+            {"episode_index": 0, "status": "CLEARED"},
+            {"episode_index": 0, "status": "BUDGET_TRUNCATED"},
+        ])
+        with self.assertRaises(CompletenessError):
+            derive_behavior_metrics(self.directory, self.config)
+
+    def test_a_log_gap_inside_the_window_is_not_complete_coverage(self):
+        """Reaching the horizon is not the same as covering it."""
+        self._write_episode("CLEARED")
+        path = os.path.join(self.directory, "signal_phases.csv")
+        with open(path, "r") as handle:
+            rows = list(csv.DictReader(handle))
+        kept = [row for row in rows if float(row["time"]) != 7.0]
+        with open(path, "w", newline="") as handle:
+            writer = csv.DictWriter(
+                handle, fieldnames=SCHEMAS["signal_phases"],
+                extrasaction="ignore",
+            )
+            writer.writeheader()
+            writer.writerows(kept)
+        summary = derive_behavior_metrics(self.directory, self.config)
+        self.assertGreater(summary["observed_log_end_s"], self.HORIZON)
+        self.assertFalse(summary["demand_active_window_complete"])
+        self.assertEqual(summary["demand_active_seconds_logged"], 19)
+        self.assertFalse(summary["scientific_analysis_permitted"])
+
+    def test_completeness_travels_into_the_per_episode_directories(self):
+        """Multi-episode sources keep each episode's verdict with its files."""
+        for episode, status, seconds in ((0, "CLEARED", len(HAND_TRACE)),
+                                         (1, "BUDGET_TRUNCATED", 12)):
+            self._write_episode(status, seconds, episode_index=episode)
+            # _write_episode rewrites the tables, so accumulate by appending.
+            for name in ("signal_phases", "signal_actions", "lane_states",
+                         "episode_summary", "vehicle_crossings"):
+                path = os.path.join(self.directory, name + ".csv")
+                store = os.path.join(self.directory, name + ".accum")
+                with open(path, "r") as handle:
+                    rows = list(csv.DictReader(handle))
+                previous = []
+                if os.path.isfile(store):
+                    with open(store, "r") as handle:
+                        previous = list(csv.DictReader(handle))
+                with open(store, "w", newline="") as handle:
+                    writer = csv.DictWriter(
+                        handle, fieldnames=SCHEMAS[name], extrasaction="ignore"
+                    )
+                    writer.writeheader()
+                    writer.writerows(previous + rows)
+        for name in ("signal_phases", "signal_actions", "lane_states",
+                     "episode_summary", "vehicle_crossings"):
+            shutil.copyfile(
+                os.path.join(self.directory, name + ".accum"),
+                os.path.join(self.directory, name + ".csv"),
+            )
+        first = derive_behavior_metrics(self.directory, self.config, 0)
+        second = derive_behavior_metrics(self.directory, self.config, 1)
+        self.assertTrue(first["scientific_analysis_permitted"])
+        self.assertFalse(second["scientific_analysis_permitted"])
+        self.assertNotEqual(first["output_directory"],
+                            second["output_directory"])
+        for episode, permitted in ((0, True), (1, False)):
+            path = os.path.join(
+                self.directory, "derived",
+                "episode_{:05d}".format(episode), "behavior_summary.json",
+            )
+            with open(path, "r") as handle:
+                written = json.load(handle)
+            self.assertEqual(written["scientific_analysis_permitted"], permitted)
+
+
+class PhaseCorrelationIndependenceTests(unittest.TestCase):
+    """M8 interpretation: two signals give one phase relationship, not two."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = config_copy()
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _write_offset_corridor(self, shift=3, period=20, cycles=12):
+        base = ([1] * 10 + [0] * 10) * cycles
+        j1 = base[:period * cycles]
+        j2 = ([0] * shift + base)[:period * cycles]
+        rows = []
+        for series, intersection in ((j1, "J1"), (j2, "J2")):
+            trace = ["H" if value else "V" for value in series]
+            rows.extend(phase_rows(trace, intersection))
+        write_table(self.directory, "signal_phases", rows)
+        write_table(self.directory, "vehicle_crossings", [])
+
+    def test_the_summary_states_the_reciprocity(self):
+        self._write_offset_corridor()
+        summary = derive_coordination_metrics(self.directory, self.config)
+        self.assertEqual(
+            summary["phase_correlation_reciprocity"], "C_WE(lag) = C_EW(-lag)"
+        )
+        self.assertEqual(summary["independent_phase_relationship_count"], 1)
+        note = summary["phase_correlation_independence_note"]
+        self.assertIn("must not be treated as two statistically", note)
+        self.assertIn("C_WE(lag) = C_EW(-lag)", note)
+
+    def test_the_reciprocity_actually_holds_in_the_written_distribution(self):
+        """The note is checked against the numbers, not merely asserted."""
+        self._write_offset_corridor()
+        derive_coordination_metrics(self.directory, self.config)
+        path = os.path.join(
+            self.directory, "phase_cross_correlation_distribution.csv"
+        )
+        with open(path, "r") as handle:
+            rows = list(csv.DictReader(handle))
+        by_direction = {"WE": {}, "EW": {}}
+        for row in rows:
+            by_direction[row["direction"]][int(row["lag_s"])] = float(
+                row["correlation"]
+            )
+        self.assertTrue(by_direction["WE"] and by_direction["EW"])
+        compared = 0
+        for lag, value in by_direction["WE"].items():
+            mirrored = by_direction["EW"][-lag]
+            if math.isnan(value) and math.isnan(mirrored):
+                continue
+            # Equal as algebra; the two corrcoef calls accumulate the swapped
+            # arguments in a different order, so they agree to rounding.
+            self.assertAlmostEqual(value, mirrored, places=12)
+            compared += 1
+        self.assertGreater(compared, 20)
+
+    def test_the_note_separates_mirrored_from_direction_specific_metrics(self):
+        self._write_offset_corridor()
+        summary = derive_coordination_metrics(self.directory, self.config)
+        self.assertIn(
+            "dominant_cross_correlation_lag_s", summary["mirrored_phase_metrics"]
+        )
+        vehicle = summary["direction_specific_vehicle_metrics"]
+        for name in ("GAD50_percent", "AOG_SL_projected_proxy_percent",
+                     "downstream_stop_rate_percent",
+                     "mean_detector_to_stop_line_s"):
+            self.assertIn(name, vehicle)
+            # Each named metric is genuinely reported per direction.
+            for direction in DIRECTIONS:
+                self.assertIn(name, summary["directions"][direction])
+        self.assertFalse(
+            set(vehicle) & set(summary["mirrored_phase_metrics"]),
+            "a metric cannot be both mirrored and direction-specific",
+        )
 
 
 if __name__ == "__main__":
