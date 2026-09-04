@@ -27,7 +27,13 @@ from .coordination import (
     projected_aog_percentage,
     projected_stop_line_arrival_events,
 )
-from .raw_logs import read_raw_tables, select_episode, write_rows
+from .raw_logs import (
+    available_episodes,
+    derived_output_directory,
+    read_raw_tables,
+    select_episode,
+    write_rows,
+)
 
 
 SIGN_CONVENTION = (
@@ -112,10 +118,15 @@ def _vehicle_rows_for_direction(events, episode_index, direction):
     return rows
 
 
-def derive_coordination_metrics(run_directory, config, episode_index=None):
+def derive_coordination_metrics(run_directory, config, episode_index=None,
+                                output_directory=None):
     """Direction-resolved mechanism metrics for exactly one episode."""
     tables = read_raw_tables(run_directory, REQUIRED_TABLES)
+    episodes = available_episodes(tables)
     chosen, filtered = select_episode(tables, episode_index)
+    destination = derived_output_directory(
+        run_directory, len(episodes), chosen, output_directory
+    )
     phase_rows = filtered["signal_phases"]
     crossing_rows = []
     for row in filtered["vehicle_crossings"]:
@@ -236,24 +247,26 @@ def derive_coordination_metrics(run_directory, config, episode_index=None):
 
     summary = {
         "episode_index": chosen,
+        "episodes_in_source": episodes,
+        "output_directory": destination,
         "sign_convention": SIGN_CONVENTION,
         "directions": summary_directions,
     }
 
     write_rows(
-        os.path.join(run_directory, "phase_lag_green_start_distribution.csv"),
+        os.path.join(destination, "phase_lag_green_start_distribution.csv"),
         lag_rows,
     )
     write_rows(
-        os.path.join(run_directory, "phase_cross_correlation_distribution.csv"),
+        os.path.join(destination, "phase_cross_correlation_distribution.csv"),
         correlation_rows,
     )
     write_rows(
-        os.path.join(run_directory, "vehicle_coordination_metrics.csv"),
+        os.path.join(destination, "vehicle_coordination_metrics.csv"),
         vehicle_rows,
     )
     with open(
-        os.path.join(run_directory, "coordination_summary.json"), "w"
+        os.path.join(destination, "coordination_summary.json"), "w"
     ) as handle:
         json.dump(summary, handle, indent=2, sort_keys=True)
     return summary

@@ -296,6 +296,24 @@ def compare(getter, subscription):
     return failures
 
 
+def crossing_counts(result):
+    """Crossing events per travel direction, for reporting only.
+
+    These rows are already compared element by element as the logged
+    'vehicle_crossings' table; counting them here just makes the report say
+    how much bidirectional evidence the comparison actually covered, per
+    direction, instead of leaving it implicit.
+    """
+    counts = {}
+    for row in result["logged"]["vehicle_crossings"]:
+        direction = row.get("direction", "UNSPECIFIED")
+        event = row.get("event", "UNSPECIFIED")
+        counts.setdefault(direction, {})
+        counts[direction][event] = counts[direction].get(event, 0) + 1
+        counts[direction]["total"] = counts[direction].get("total", 0) + 1
+    return counts
+
+
 def digest(result):
     """SHA-256 of the scientific content only, excluding transport diagnostics."""
     payload = json.dumps(
@@ -372,6 +390,9 @@ def main():
         "seconds_compared": len(results[GETTER]["logged"]["reward_seconds"]),
         "lane_rows_compared": len(results[GETTER]["logged"]["lane_states"]),
         "vehicles_compared": len(results[GETTER]["tripinfo"]),
+        "crossing_events_by_direction": dict(
+            (mode, crossing_counts(results[mode])) for mode in (GETTER, SUBSCRIPTION)
+        ),
         "getter_digest": digest(results[GETTER]),
         "subscription_digest": digest(results[SUBSCRIPTION]),
         "identical": bool(same_digest and not failures),
@@ -397,6 +418,15 @@ def main():
     print("simulated seconds    : {}".format(report["seconds_compared"]))
     print("lane rows compared   : {}".format(report["lane_rows_compared"]))
     print("vehicles compared    : {}".format(report["vehicles_compared"]))
+    for direction in sorted(report["crossing_events_by_direction"][GETTER]):
+        print("crossings {:<11}: getter={} subscription={}".format(
+            direction,
+            json.dumps(report["crossing_events_by_direction"][GETTER][direction],
+                       sort_keys=True),
+            json.dumps(
+                report["crossing_events_by_direction"][SUBSCRIPTION][direction],
+                sort_keys=True),
+        ))
     print("transport diagnostics: getter={} subscription={} (excluded from "
           "the comparison)".format(
               report["transport_diagnostics"][GETTER],

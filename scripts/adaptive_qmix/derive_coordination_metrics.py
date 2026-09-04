@@ -21,12 +21,18 @@ def main():
     parser.add_argument(
         "--episode-index", type=int, default=None,
         help="required when the run contains more than one episode")
+    parser.add_argument(
+        "--output-directory", default=None,
+        help="where to write derived products; by default a single-episode "
+             "source writes beside its raw logs and a multi-episode source "
+             "writes to <run>/derived/episode_NNNNN/")
     parser.add_argument("--config", default=os.path.join(
         REPOSITORY_ROOT, "config", "adaptive_qmix", "qualification_300m_medium.json"
     ))
     args = parser.parse_args()
     summary = derive_coordination_metrics(
-        args.run_directory, load_config(args.config), args.episode_index
+        args.run_directory, load_config(args.config), args.episode_index,
+        args.output_directory,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
 

@@ -37,7 +37,13 @@ import os
 
 import numpy as np
 
-from .raw_logs import read_raw_tables, select_episode, write_rows
+from .raw_logs import (
+    available_episodes,
+    derived_output_directory,
+    read_raw_tables,
+    select_episode,
+    write_rows,
+)
 
 
 WINDOW_DEMAND_ACTIVE = "demand_active"
@@ -155,9 +161,14 @@ def _summed_lane_series(lane_rows, lane_ids, field):
     return totals
 
 
-def derive_behavior_metrics(run_directory, config, episode_index=None):
+def derive_behavior_metrics(run_directory, config, episode_index=None,
+                            output_directory=None):
     tables = read_raw_tables(run_directory, REQUIRED_TABLES)
+    episodes = available_episodes(tables)
     chosen, filtered = select_episode(tables, episode_index)
+    destination = derived_output_directory(
+        run_directory, len(episodes), chosen, output_directory
+    )
     phase_rows = filtered["signal_phases"]
     action_rows = filtered["signal_actions"]
     lane_rows = filtered["lane_states"]
@@ -370,6 +381,8 @@ def derive_behavior_metrics(run_directory, config, episode_index=None):
 
     summary = {
         "episode_index": chosen,
+        "episodes_in_source": episodes,
+        "output_directory": destination,
         "clearance_time_s": clearance_time,
         "demand_generation_end_s": generation_end,
         "primary_window": WINDOW_DEMAND_ACTIVE,
@@ -392,29 +405,29 @@ def derive_behavior_metrics(run_directory, config, episode_index=None):
     }
 
     write_rows(
-        os.path.join(run_directory, "green_spell_distribution.csv"),
+        os.path.join(destination, "green_spell_distribution.csv"),
         green_spell_rows,
         ["episode_index", "window", "intersection", "movement", "spell_index",
          "start_s", "end_s", "duration_s", "right_censored", "at_window_start"],
     )
     write_rows(
-        os.path.join(run_directory, "non_green_spell_distribution.csv"),
+        os.path.join(destination, "non_green_spell_distribution.csv"),
         non_green_spell_rows,
         ["episode_index", "window", "intersection", "movement", "spell_index",
          "start_s", "end_s", "duration_s", "right_censored", "at_window_start"],
     )
     write_rows(
-        os.path.join(run_directory, "emergent_cycle_distribution.csv"),
+        os.path.join(destination, "emergent_cycle_distribution.csv"),
         cycle_rows,
     )
     write_rows(
         os.path.join(
-            run_directory, "behavior_metrics_by_intersection_movement.csv"
+            destination, "behavior_metrics_by_intersection_movement.csv"
         ),
         movement_rows,
     )
     with open(
-        os.path.join(run_directory, "behavior_summary.json"), "w"
+        os.path.join(destination, "behavior_summary.json"), "w"
     ) as handle:
         json.dump(summary, handle, indent=2, sort_keys=True)
     return summary

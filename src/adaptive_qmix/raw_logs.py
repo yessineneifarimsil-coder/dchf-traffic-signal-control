@@ -61,6 +61,38 @@ def episode_values(rows, table_name):
     return values
 
 
+def available_episodes(tables):
+    """Every episode present across the given tables, ascending."""
+    present = set()
+    for name in sorted(tables):
+        present |= episode_values(tables[name], name)
+    return sorted(present)
+
+
+def derived_output_directory(run_directory, episode_count, episode_index,
+                             explicit=None):
+    """Where the derived products for one episode belong.
+
+    A single-episode source -- a frozen-policy evaluation -- keeps writing
+    alongside its raw logs, which is what every existing workflow expects. A
+    multi-episode source gets one subdirectory per episode, so deriving
+    episode 0 and then episode 1 in the same run directory cannot silently
+    overwrite the first episode's products. An explicit directory always wins.
+    """
+    if explicit is not None:
+        directory = os.path.abspath(explicit)
+    elif int(episode_count) > 1:
+        directory = os.path.join(
+            run_directory, "derived",
+            "episode_{:05d}".format(int(episode_index)),
+        )
+    else:
+        directory = run_directory
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+    return directory
+
+
 def select_episode(tables, episode_index=None):
     """Return (episode_index, tables filtered to that episode).
 
@@ -68,9 +100,7 @@ def select_episode(tables, episode_index=None):
     single-episode frozen-policy evaluation needs no extra argument while a
     multi-episode training run cannot be analysed by accident.
     """
-    present = set()
-    for name in sorted(tables):
-        present |= episode_values(tables[name], name)
+    present = set(available_episodes(tables))
     if not present:
         raise EpisodeSelectionError(
             "No rows found in {}; nothing to analyse.".format(sorted(tables))

@@ -7,6 +7,7 @@ and no SUMO run is needed to prove the derivations correct.
 from __future__ import absolute_import
 
 import csv
+import json
 import math
 import os
 import shutil
@@ -32,7 +33,13 @@ from adaptive_qmix.coordination import (
 )
 from adaptive_qmix.coordination_analysis import derive_coordination_metrics
 from adaptive_qmix.logging import SCHEMAS
-from adaptive_qmix.raw_logs import EpisodeSelectionError, select_episode
+from adaptive_qmix.raw_logs import (
+    EpisodeSelectionError,
+    available_episodes,
+    derived_output_directory,
+    read_raw_tables,
+    select_episode,
+)
 from adaptive_qmix.traci_access import GetterDataSource, SubscriptionDataSource
 
 from .test_traci_access import FakeTraci, FakeWorld
@@ -569,6 +576,238 @@ class BidirectionalLagTests(unittest.TestCase):
             self.assertTrue(
                 summary["directions"][name]["AOG_SL_projected_is_proxy"]
             )
+
+
+# A second hand-computable trace, deliberately unlike HAND_TRACE, so an
+# episode's derived numbers identify which episode produced them.
+#   t 1..5   H   five seconds of H green, in progress from t = 0
+#   t 6..8   Y
+#   t 9..12  V
+#   t 13..15 Y
+#   t 16..20 H   H green starts again at 15, so the emergent cycle is 15 s
+SECOND_TRACE = (["H"] * 5) + (["Y"] * 3) + (["V"] * 4) + (["Y"] * 3) + (["H"] * 5)
+
+BEHAVIOR_PRODUCTS = (
+    "behavior_summary.json",
+    "behavior_metrics_by_intersection_movement.csv",
+    "green_spell_distribution.csv",
+    "non_green_spell_distribution.csv",
+    "emergent_cycle_distribution.csv",
+)
+
+COORDINATION_PRODUCTS = (
+    "coordination_summary.json",
+    "phase_lag_green_start_distribution.csv",
+    "phase_cross_correlation_distribution.csv",
+    "vehicle_coordination_metrics.csv",
+)
+
+
+class DerivedOutputIsolationTests(unittest.TestCase):
+    """Deriving one episode must never overwrite another episode's products.
+
+    A training run appends every episode to the same raw CSVs, so deriving
+    episode 0 and then episode 1 in that run directory used to write both
+    results to the same filenames: the second derivation silently replaced the
+    first, and the surviving files carried no evidence of which episode they
+    described. Products are therefore separated per episode whenever the
+    source is ambiguous, while a genuinely single-episode frozen-policy
+    evaluation keeps writing beside its raw logs.
+    """
+
+    EPISODE_TRACES = {0: HAND_TRACE, 1: SECOND_TRACE}
+
+    # H green starts at 0 and 23 in HAND_TRACE, at 0 and 15 in SECOND_TRACE.
+    EXPECTED_CYCLE = {0: 23.0, 1: 15.0}
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = config_copy()
+        self.lanes = self.config["observation"]["lanes"]
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _write_source(self, episodes):
+        """Write one raw source holding the given episodes, appended together."""
+        phases, actions, lane_rows = [], [], []
+        for episode in episodes:
+            trace = self.EPISODE_TRACES[episode]
+            for intersection in ("J1", "J2"):
+                phases.extend(phase_rows(trace, intersection, episode))
+            for index in range(len(trace) // 5):
+                for intersection in ("J1", "J2"):
+                    actions.append({
+                        "episode_index": episode,
+                        "decision_time": float(index * 5),
+                        "decision_index": index,
+                        "intersection": intersection,
+                        "action": "EXTEND",
+                    })
+            for time_value in range(1, len(trace) + 1):
+                for intersection in ("J1", "J2"):
+                    for movement, queue in (("H", 1), ("V", 10)):
+                        for lane in self.lanes[intersection][
+                            "{}_in".format(movement)
+                        ]:
+                            lane_rows.append({
+                                "episode_index": episode,
+                                "time": float(time_value),
+                                "lane": lane,
+                                "queue": queue,
+                                "vehicle_count": 0,
+                                "occupancy": 0.0,
+                                "mean_speed": 0.0,
+                            })
+        write_table(self.directory, "signal_phases", phases)
+        write_table(self.directory, "signal_actions", actions)
+        write_table(self.directory, "lane_states", lane_rows)
+        write_table(self.directory, "vehicle_crossings", [])
+
+    def _episode_directory(self, episode):
+        return os.path.join(
+            self.directory, "derived", "episode_{:05d}".format(episode)
+        )
+
+    def _read_json(self, directory, name):
+        with open(os.path.join(directory, name), "r") as handle:
+            return json.load(handle)
+
+    def _assert_products_present(self, directory, names):
+        for name in names:
+            self.assertTrue(
+                os.path.isfile(os.path.join(directory, name)),
+                "{} missing from {}".format(name, directory),
+            )
+
+    def _assert_products_absent(self, directory, names):
+        for name in names:
+            self.assertFalse(
+                os.path.isfile(os.path.join(directory, name)),
+                "{} unexpectedly written to {}".format(name, directory),
+            )
+
+    def test_two_behavior_derivations_do_not_overwrite_each_other(self):
+        self._write_source((0, 1))
+        first = derive_behavior_metrics(self.directory, self.config, 0)
+        second = derive_behavior_metrics(self.directory, self.config, 1)
+
+        self.assertEqual(first["output_directory"], self._episode_directory(0))
+        self.assertEqual(second["output_directory"], self._episode_directory(1))
+        self.assertNotEqual(first["output_directory"], second["output_directory"])
+
+        for episode in (0, 1):
+            directory = self._episode_directory(episode)
+            self._assert_products_present(directory, BEHAVIOR_PRODUCTS)
+            written = self._read_json(directory, "behavior_summary.json")
+            self.assertEqual(written["episode_index"], episode)
+            self.assertEqual(written["episodes_in_source"], [0, 1])
+            # The surviving numbers are the ones that episode produced, so the
+            # second derivation did not silently replace the first.
+            self.assertAlmostEqual(
+                written["by_intersection"][WINDOW_FULL_EPISODE]["J1"][
+                    "emergent_cycle_mean_s"
+                ],
+                self.EXPECTED_CYCLE[episode],
+            )
+        # Nothing was written beside the raw logs, where it could be mistaken
+        # for a whole-run result.
+        self._assert_products_absent(self.directory, BEHAVIOR_PRODUCTS)
+
+    def test_two_coordination_derivations_do_not_overwrite_each_other(self):
+        self._write_source((0, 1))
+        first = derive_coordination_metrics(self.directory, self.config, 0)
+        second = derive_coordination_metrics(self.directory, self.config, 1)
+
+        self.assertEqual(first["output_directory"], self._episode_directory(0))
+        self.assertEqual(second["output_directory"], self._episode_directory(1))
+
+        for episode in (0, 1):
+            directory = self._episode_directory(episode)
+            self._assert_products_present(directory, COORDINATION_PRODUCTS)
+            written = self._read_json(directory, "coordination_summary.json")
+            self.assertEqual(written["episode_index"], episode)
+            self.assertEqual(written["episodes_in_source"], [0, 1])
+            with open(os.path.join(
+                directory, "phase_lag_green_start_distribution.csv"
+            )) as handle:
+                stamped = set(
+                    int(row["episode_index"]) for row in csv.DictReader(handle)
+                )
+            self.assertEqual(stamped, {episode})
+        self._assert_products_absent(self.directory, COORDINATION_PRODUCTS)
+
+    def test_the_two_derivations_share_a_run_directory_without_colliding(self):
+        """Behaviour and coordination for both episodes coexist in one run."""
+        self._write_source((0, 1))
+        for episode in (0, 1):
+            derive_behavior_metrics(self.directory, self.config, episode)
+            derive_coordination_metrics(self.directory, self.config, episode)
+        for episode in (0, 1):
+            directory = self._episode_directory(episode)
+            self._assert_products_present(
+                directory, BEHAVIOR_PRODUCTS + COORDINATION_PRODUCTS
+            )
+            self.assertEqual(
+                self._read_json(
+                    directory, "behavior_summary.json"
+                )["episode_index"],
+                episode,
+            )
+            self.assertEqual(
+                self._read_json(
+                    directory, "coordination_summary.json"
+                )["episode_index"],
+                episode,
+            )
+
+    def test_a_single_episode_source_still_writes_beside_its_raw_logs(self):
+        """Frozen-policy evaluation keeps the existing layout."""
+        self._write_source((0,))
+        behavior = derive_behavior_metrics(self.directory, self.config)
+        coordination = derive_coordination_metrics(self.directory, self.config)
+        self.assertEqual(behavior["output_directory"], self.directory)
+        self.assertEqual(coordination["output_directory"], self.directory)
+        self.assertEqual(behavior["episodes_in_source"], [0])
+        self._assert_products_present(
+            self.directory, BEHAVIOR_PRODUCTS + COORDINATION_PRODUCTS
+        )
+        self.assertFalse(
+            os.path.isdir(os.path.join(self.directory, "derived")),
+            "an unambiguous source needs no per-episode subdirectory",
+        )
+
+    def test_an_explicit_output_directory_overrides_both_layouts(self):
+        self._write_source((0, 1))
+        target = os.path.join(self.directory, "elsewhere")
+        behavior = derive_behavior_metrics(
+            self.directory, self.config, 1, output_directory=target
+        )
+        coordination = derive_coordination_metrics(
+            self.directory, self.config, 1, output_directory=target
+        )
+        self.assertEqual(behavior["output_directory"], os.path.abspath(target))
+        self.assertEqual(coordination["output_directory"], os.path.abspath(target))
+        self._assert_products_present(
+            target, BEHAVIOR_PRODUCTS + COORDINATION_PRODUCTS
+        )
+        self._assert_products_absent(self.directory, BEHAVIOR_PRODUCTS)
+        self.assertFalse(os.path.isdir(self._episode_directory(1)))
+
+    def test_available_episodes_reports_every_episode_in_the_source(self):
+        self._write_source((0, 1))
+        tables = read_raw_tables(
+            self.directory, ("signal_phases", "signal_actions", "lane_states")
+        )
+        self.assertEqual(available_episodes(tables), [0, 1])
+
+    def test_the_directory_rule_does_not_depend_on_the_files_existing(self):
+        """The layout is decided by episode count alone, ambiguity being the risk."""
+        single = derived_output_directory(self.directory, 1, 0)
+        self.assertEqual(single, self.directory)
+        multiple = derived_output_directory(self.directory, 2, 7)
+        self.assertEqual(multiple, self._episode_directory(7))
+        self.assertTrue(os.path.isdir(multiple))
 
 
 if __name__ == "__main__":
