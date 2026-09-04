@@ -10,7 +10,7 @@ import torch
 from .config import require_scientific_run_allowed
 from .environment import AdaptiveTrafficEnvironment
 from .learner import MultiAgentLearner
-from .logging import LANE_LOG_FULL, RunLogger
+from .logging import LANE_LOG_FULL, RAW_LOG_SCHEMA_VERSION, RunLogger
 from .metrics import parse_tripinfo, scheduled_demand_metrics
 from .provenance import build_run_manifest
 from .traci_access import DEFAULT_MODE
@@ -75,6 +75,7 @@ def evaluate_checkpoint(
         traci_access_mode,
         lane_state_logging,
     )
+    manifest["raw_log_schema_version"] = RAW_LOG_SCHEMA_VERSION
     manifest["sumo_seed"] = int(sumo_seed)
     manifest["checkpoint_transition_index"] = int(payload["transition_index"])
 
@@ -106,6 +107,7 @@ def evaluate_checkpoint(
                     logger.write_json_fields(
                         "signal_actions",
                         {
+                            "episode_index": 0,
                             "decision_time": info["start_time"],
                             "decision_index": decision_index,
                             "intersection": intersection,

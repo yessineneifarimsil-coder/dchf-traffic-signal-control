@@ -9,6 +9,102 @@ import numpy as np
 from .reward import is_stopped
 
 
+WE = "WE"
+EW = "EW"
+DIRECTIONS = (WE, EW)
+
+
+class TopologyError(RuntimeError):
+    pass
+
+
+def derive_central_directions(config):
+    """Derive both central travel directions from the observation topology.
+
+    The corridor link between two adjacent signals is exactly the set of lanes
+    that leave the upstream junction on H and enter the downstream junction on
+    H. Reading it from the frozen observation lane sets avoids introducing a
+    second, independent network definition that could silently drift from the
+    one the controller actually uses.
+
+    For the N=2 qualification corridor this resolves to E1_* westbound-origin
+    (J1 -> J2) and -E1_* eastbound-origin (J2 -> J1).
+    """
+    lanes = config["observation"]["lanes"]
+    traffic_lights = list(config["network"]["traffic_lights"])
+    if len(traffic_lights) != 2:
+        raise TopologyError(
+            "Bidirectional central-link derivation currently supports exactly "
+            "two traffic lights; got {}.".format(traffic_lights)
+        )
+    upstream_first, downstream_first = traffic_lights
+
+    def central(upstream, downstream):
+        shared = set(lanes[upstream]["H_out"]) & set(lanes[downstream]["H_in"])
+        return sorted(shared)
+
+    directions = {
+        WE: {
+            "direction": WE,
+            "upstream": upstream_first,
+            "downstream": downstream_first,
+            "lanes": central(upstream_first, downstream_first),
+        },
+        EW: {
+            "direction": EW,
+            "upstream": downstream_first,
+            "downstream": upstream_first,
+            "lanes": central(downstream_first, upstream_first),
+        },
+    }
+    validate_central_directions(directions, config)
+    return directions
+
+
+def validate_central_directions(directions, config):
+    """Fail loudly on any topology that does not yield two disjoint links."""
+    expected_lengths = config["observation"]["expected_lane_lengths_m"]
+    central_length = float(config["coordination"]["central_lane_length_m"])
+    seen = {}
+    for name in DIRECTIONS:
+        spec = directions[name]
+        lane_ids = spec["lanes"]
+        if not lane_ids:
+            raise TopologyError(
+                "No central lanes resolved for direction {} ({} -> {}); the "
+                "observation topology does not describe a shared corridor "
+                "link.".format(name, spec["upstream"], spec["downstream"])
+            )
+        if spec["upstream"] == spec["downstream"]:
+            raise TopologyError(
+                "Direction {} has the same upstream and downstream "
+                "intersection.".format(name)
+            )
+        for lane_id in lane_ids:
+            if lane_id in seen:
+                raise TopologyError(
+                    "Lane {} is claimed by both direction {} and direction "
+                    "{}; the two travel directions must be disjoint.".format(
+                        lane_id, seen[lane_id], name
+                    )
+                )
+            seen[lane_id] = name
+            if lane_id not in expected_lengths:
+                raise TopologyError(
+                    "Central lane {} for direction {} is absent from the "
+                    "frozen expected lane lengths.".format(lane_id, name)
+                )
+            if abs(float(expected_lengths[lane_id]) - central_length) > 1e-6:
+                raise TopologyError(
+                    "Central lane {} is {} m but the coordination block "
+                    "declares a {} m central link; the detector offset would "
+                    "not be 50 m upstream of the stop line.".format(
+                        lane_id, expected_lengths[lane_id], central_length
+                    )
+                )
+    return directions
+
+
 def green_at_approach_detector(events):
     """GAD50: fraction of 50-m detector crossings observed during H green."""
     eligible = [event for event in events if event.get("event") == "GAD50"]
@@ -117,10 +213,16 @@ def phase_cross_correlation(j1_phase_h, j2_phase_h, max_lag_s=120):
 class VirtualDetectorTracker(object):
     """Track physical 50-m crossings, downstream stops and stop-line exits."""
 
-    def __init__(self, data_source, lane_ids, detector_position_m):
+    def __init__(self, data_source, lane_ids, detector_position_m,
+                 direction=None, upstream=None, downstream=None):
         self.source = data_source
         self.lane_ids = set(lane_ids)
         self.detector_position_m = float(detector_position_m)
+        # SUMO lane coordinates increase along the travel direction, so the
+        # same offset is 50 m upstream of the stop line in either direction.
+        self.direction = direction
+        self.upstream = upstream
+        self.downstream = downstream
         self.previous = {}
         self.detector_crossed = set()
         self.stopped_after_detector = set()
@@ -148,6 +250,10 @@ class VirtualDetectorTracker(object):
                         "position_m": position,
                         "speed_m_s": speed,
                         "signal_state": release_signal_state,
+                        "direction": self.direction,
+                        "upstream_intersection": self.upstream,
+                        "downstream_intersection": self.downstream,
+                        "intersection": self.upstream,
                     }
                 )
             if (
@@ -165,6 +271,10 @@ class VirtualDetectorTracker(object):
                         "position_m": position,
                         "speed_m_s": speed,
                         "signal_state": signal_state,
+                        "direction": self.direction,
+                        "upstream_intersection": self.upstream,
+                        "downstream_intersection": self.downstream,
+                        "intersection": self.downstream,
                     }
                 )
             if vehicle_id in self.detector_crossed and is_stopped(speed):
@@ -182,6 +292,10 @@ class VirtualDetectorTracker(object):
                     "speed_m_s": prior[2],
                     "signal_state": signal_state,
                     "stopped_after_GAD50": vehicle_id in self.stopped_after_detector,
+                    "direction": self.direction,
+                    "upstream_intersection": self.upstream,
+                    "downstream_intersection": self.downstream,
+                    "intersection": self.downstream,
                 }
             )
         self.previous = current

@@ -6,7 +6,7 @@ import os
 
 import numpy as np
 
-from .coordination import VirtualDetectorTracker
+from .coordination import DIRECTIONS, VirtualDetectorTracker, derive_central_directions
 from .ledger import VehicleLedger, reconcile_scheduled_outcomes
 from .logging import LANE_LOG_DECISION, LANE_LOG_FULL, LANE_LOG_MODES
 from .observation import SymmetricObservationBuilder
@@ -127,9 +127,23 @@ class AdaptiveTrafficEnvironment(object):
         detector_position = float(
             self.config["coordination"]["detector_position_m"]
         )
-        # E1 lanes are the eastbound J1 -> J2 central approach.
-        self.detector = VirtualDetectorTracker(
-            self.source, ["E1_0", "E1_1"], detector_position
+        # Both corridor travel directions, derived from the frozen observation
+        # topology rather than hard-coded, so there is only ever one network
+        # definition and N > 2 generalisation has somewhere to hook in.
+        self.central_directions = derive_central_directions(self.config)
+        self.detectors = dict(
+            (
+                name,
+                VirtualDetectorTracker(
+                    self.source,
+                    self.central_directions[name]["lanes"],
+                    detector_position,
+                    direction=name,
+                    upstream=self.central_directions[name]["upstream"],
+                    downstream=self.central_directions[name]["downstream"],
+                ),
+            )
+            for name in DIRECTIONS
         )
         self.previous_actual_phase = {"J1": "H", "J2": "H"}
         # Last actually-served green state, used to attribute red time during
@@ -176,6 +190,7 @@ class AdaptiveTrafficEnvironment(object):
         for lane_id in self.lane_log_ids:
             rows.append(
                 {
+                    "episode_index": self.episode_index,
                     "time": float(simulation_time),
                     "lane": lane_id,
                     "queue": int(self.source.lane_halting_number(lane_id)),
@@ -219,24 +234,33 @@ class AdaptiveTrafficEnvironment(object):
             self.legacy_waiting_integral += float(legacy_waiting_state(self.source))
             self.legacy_waiting_samples += 1
 
-        detector_events = self.detector.sample(
-            simulation_time, phase_states["J2"], phase_states["J1"]
-        )
+        # Each direction reads the downstream signal for GAD50 and stop-line
+        # events and the upstream signal for the release event. In subscription
+        # mode both trackers read the same already-fetched local vehicle view,
+        # so the second direction costs no additional TraCI round trips.
+        detector_events = []
+        for name in DIRECTIONS:
+            spec = self.central_directions[name]
+            detector_events.extend(self.detectors[name].sample(
+                simulation_time,
+                phase_states[spec["downstream"]],
+                phase_states[spec["upstream"]],
+            ))
         lane_rows = (
             self._lane_rows(simulation_time)
             if self.logger is not None and self._lane_log_due(second_offset)
             else []
         )
         if self.logger is not None:
-            self.logger.write("reward_seconds", reward_row)
+            reward_log_row = dict(reward_row)
+            reward_log_row["episode_index"] = self.episode_index
+            self.logger.write("reward_seconds", reward_log_row)
             for lane_row in lane_rows:
                 self.logger.write("lane_states", lane_row)
             for event in detector_events:
                 crossing = dict(event)
-                crossing["intersection"] = (
-                    "J1" if event["event"] == "UPSTREAM_RELEASE" else "J2"
-                )
-                crossing["approach"] = "H_WESTBOUND_TO_EASTBOUND"
+                crossing["episode_index"] = self.episode_index
+                crossing["approach"] = "H_CORRIDOR"
                 self.logger.write("vehicle_crossings", crossing)
         # Phase and red-duration bookkeeping is state, not logging: it must
         # advance on every simulated second whether or not a logger is
@@ -265,6 +289,7 @@ class AdaptiveTrafficEnvironment(object):
                 self.logger.write(
                     "signal_phases",
                     {
+                        "episode_index": self.episode_index,
                         "time": simulation_time,
                         "intersection": intersection,
                         "actual_phase": actual,

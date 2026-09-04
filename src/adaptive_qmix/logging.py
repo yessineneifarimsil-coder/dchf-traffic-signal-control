@@ -15,6 +15,11 @@ from .provenance import write_run_manifest
 # timestamp subset of the corresponding full log. Cadence affects stored
 # evidence only: no table consumed by scientific evaluation reads lane_states,
 # and no control quantity depends on it.
+# Raw-log schema version. Bumped to 1.1 when episode_index was added to every
+# time-dependent table: simulation time restarts at zero each episode, so a row
+# is only interpretable together with the episode that produced it.
+RAW_LOG_SCHEMA_VERSION = "1.1"
+
 LANE_LOG_FULL = "full"
 LANE_LOG_DECISION = "decision"
 LANE_LOG_MODES = (LANE_LOG_FULL, LANE_LOG_DECISION)
@@ -32,29 +37,30 @@ SCHEMAS = {
         "transport_healed_subscriptions",
     ],
     "signal_actions": [
-        "decision_time", "decision_index", "intersection", "observation_json",
+        "episode_index", "decision_time", "decision_index", "intersection", "observation_json",
         "action", "q_extend", "q_switch", "epsilon", "explore", "reward",
         "elapsed_seconds", "terminated", "budget_truncated", "timeout_truncated",
     ],
     "signal_phases": [
-        "time", "intersection", "actual_phase", "logical_green_phase",
+        "episode_index", "time", "intersection", "actual_phase", "logical_green_phase",
         "green_elapsed_s", "yellow", "green_start", "green_end",
         "H_red_elapsed_s", "V_red_elapsed_s",
     ],
     "lane_states": [
-        "time", "lane", "queue", "vehicle_count", "occupancy", "mean_speed",
+        "episode_index", "time", "lane", "queue", "vehicle_count", "occupancy", "mean_speed",
     ],
     "vehicle_crossings": [
-        "vehicle_id", "intersection", "approach", "event", "time",
-        "lane", "position_m", "signal_state", "speed_m_s",
+        "episode_index", "direction", "vehicle_id", "intersection",
+        "upstream_intersection", "downstream_intersection", "approach",
+        "event", "time", "lane", "position_m", "signal_state", "speed_m_s",
         "stopped_after_GAD50",
     ],
     "reward_seconds": [
-        "time", "active_vehicle_count", "stopped_active_count",
+        "episode_index", "time", "active_vehicle_count", "stopped_active_count",
         "pending_due_count", "incremental_delay_vehicle_seconds",
     ],
     "learner_updates": [
-        "transition_index", "learner_event", "method", "loss",
+        "episode_index", "transition_index", "learner_event", "method", "loss",
         "component_losses_json", "target_mean", "preclip_gradient_norms_json",
         "target_hard_copied",
     ],

@@ -9,7 +9,7 @@ from .config import require_scientific_run_allowed
 from .environment import AdaptiveTrafficEnvironment
 from .feasibility import FeasibilityMeter, write_feasibility_report
 from .learner import MultiAgentLearner, epsilon_at_transition
-from .logging import LANE_LOG_DECISION, RunLogger
+from .logging import LANE_LOG_DECISION, RAW_LOG_SCHEMA_VERSION, RunLogger
 from .provenance import build_run_manifest
 from .replay import JointReplayBuffer
 from .rng import (
@@ -90,6 +90,7 @@ def train_learned_controller(
         traci_access_mode,
         lane_state_logging,
     )
+    run_manifest["raw_log_schema_version"] = RAW_LOG_SCHEMA_VERSION
     run_manifest["initial_sumo_seed"] = initial_sumo_seed
     run_manifest["traffic_manifest_metadata"] = traffic_metadata
     run_manifest["deterministic_python_torch_seed"] = deterministic_seed
@@ -173,6 +174,7 @@ def train_learned_controller(
                         logger.write_json_fields(
                             "signal_actions",
                             {
+                                "episode_index": episode_index,
                                 "decision_time": info["start_time"],
                                 "decision_index": transition_index - 1,
                                 "intersection": intersection,
@@ -197,6 +199,7 @@ def train_learned_controller(
                             config["training"]["batch_size"], replay_rng
                         )
                         update = learner.update(batch)
+                        update["episode_index"] = episode_index
                         update["transition_index"] = transition_index
                         update["component_losses_json"] = update.pop(
                             "component_losses"
