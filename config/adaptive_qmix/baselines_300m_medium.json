@@ -1,0 +1,512 @@
+{
+  "schema_version": "1.3a",
+  "experiment_name": "qualification_n2_d300_medium_baselines",
+  "scientific_run_allowed": false,
+  "network": {
+    "path": "sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml",
+    "git_blob": "59b9b25b981d596cc9800d5accf16a70c6b65786",
+    "sha256": "3f4449c40fb6497fd6605da14246ef09432c74327f21b23a0984b0e2f1f5a790",
+    "traffic_lights": [
+      "J1",
+      "J2"
+    ],
+    "phase_map": {
+      "V_GREEN": 0,
+      "V_TO_H_YELLOW": 1,
+      "H_GREEN": 2,
+      "H_TO_V_YELLOW": 3
+    }
+  },
+  "executor": {
+    "decision_clock": "globally_synchronized",
+    "control_interval_s": 5,
+    "yellow_duration_s": 3,
+    "switch_new_green_s": 2,
+    "extend_duration_s": 5,
+    "switch_duration_s": 5,
+    "yellow_semantics": "provisional_synchronous_3plus2"
+  },
+  "initial_state": {
+    "J1_phase": "H",
+    "J2_phase": "H",
+    "J1_green_elapsed_s": 0,
+    "J2_green_elapsed_s": 0,
+    "first_joint_action_s": 0,
+    "warmup_s": 0
+  },
+  "observation": {
+    "feature_order": [
+      "q_H",
+      "q_V",
+      "phase_H",
+      "green_elapsed",
+      "lambda_H_30s",
+      "lambda_V_30s",
+      "occ_H_out",
+      "occ_V_out"
+    ],
+    "queue_normalizer_H": 150.0,
+    "queue_normalizer_V": 100.0,
+    "green_elapsed_scale_s": 60.0,
+    "arrival_window_s": 30,
+    "arrival_rate_scale_veh_s": 1.0,
+    "lane_length_tolerance_m": 0.001,
+    "vehicle_length_m": 5.0,
+    "min_gap_m": 2.5,
+    "lanes": {
+      "J1": {
+        "H_in": [
+          "-E1_0",
+          "-E1_1",
+          "E0_0",
+          "E0_1"
+        ],
+        "V_in": [
+          "E4_0",
+          "E4_1",
+          "E5_0",
+          "E5_1"
+        ],
+        "H_out": [
+          "-E0_0",
+          "-E0_1",
+          "E1_0",
+          "E1_1"
+        ],
+        "V_out": [
+          "-E4_0",
+          "-E4_1",
+          "-E5_0",
+          "-E5_1"
+        ]
+      },
+      "J2": {
+        "H_in": [
+          "E2_0",
+          "E2_1",
+          "E1_0",
+          "E1_1"
+        ],
+        "V_in": [
+          "E7_0",
+          "E7_1",
+          "E6_0",
+          "E6_1"
+        ],
+        "H_out": [
+          "-E1_0",
+          "-E1_1",
+          "-E2_0",
+          "-E2_1"
+        ],
+        "V_out": [
+          "-E7_0",
+          "-E7_1",
+          "-E6_0",
+          "-E6_1"
+        ]
+      }
+    },
+    "expected_lane_lengths_m": {
+      "-E1_0": 279.2,
+      "-E1_1": 279.2,
+      "E1_0": 279.2,
+      "E1_1": 279.2,
+      "E0_0": 289.6,
+      "E0_1": 289.6,
+      "-E0_0": 289.6,
+      "-E0_1": 289.6,
+      "E2_0": 289.6,
+      "E2_1": 289.6,
+      "-E2_0": 289.6,
+      "-E2_1": 289.6,
+      "E4_0": 189.6,
+      "E4_1": 189.6,
+      "E5_0": 189.6,
+      "E5_1": 189.6,
+      "E6_0": 189.6,
+      "E6_1": 189.6,
+      "E7_0": 189.6,
+      "E7_1": 189.6,
+      "-E4_0": 189.6,
+      "-E4_1": 189.6,
+      "-E5_0": 189.6,
+      "-E5_1": 189.6,
+      "-E6_0": 189.6,
+      "-E6_1": 189.6,
+      "-E7_0": 189.6,
+      "-E7_1": 189.6
+    }
+  },
+  "demand": {
+    "generation_end_s": 3600,
+    "maximum_simulation_s": 7200,
+    "scheduled_total": 2800,
+    "model": "conditioned_discrete_time_homogeneous_multinomial",
+    "streams": {
+      "WE": {
+        "rank": 0,
+        "count": 900,
+        "route": [
+          "E0",
+          "E1",
+          "-E2"
+        ]
+      },
+      "EW": {
+        "rank": 1,
+        "count": 700,
+        "route": [
+          "E2",
+          "-E1",
+          "-E0"
+        ]
+      },
+      "N1S1": {
+        "rank": 2,
+        "count": 300,
+        "route": [
+          "E4",
+          "-E5"
+        ]
+      },
+      "S1N1": {
+        "rank": 3,
+        "count": 300,
+        "route": [
+          "E5",
+          "-E4"
+        ]
+      },
+      "N2S2": {
+        "rank": 4,
+        "count": 300,
+        "route": [
+          "E7",
+          "-E6"
+        ]
+      },
+      "S2N2": {
+        "rank": 5,
+        "count": 300,
+        "route": [
+          "E6",
+          "-E7"
+        ]
+      }
+    },
+    "vehicle_type": {
+      "id": "car",
+      "length": 5.0,
+      "minGap": 2.5,
+      "accel": 2.6,
+      "decel": 4.5,
+      "sigma": 0.5,
+      "maxSpeed": 13.89,
+      "departLane": "free",
+      "departPos": "base",
+      "departSpeed": "max"
+    }
+  },
+  "training": {
+    "interaction_budget": 360000,
+    "replay_warmup": 5000,
+    "learner_events": 355000,
+    "replay_capacity": 200000,
+    "batch_size": 256,
+    "gamma_per_5s": 0.99,
+    "learning_rate": 0.0005,
+    "target_hard_update_events": 500,
+    "huber_beta": 1.0,
+    "gradient_max_l2_norm": 10.0,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay_transitions": 250000,
+    "checkpoint_transitions": [
+      50000,
+      75000,
+      100000,
+      125000,
+      150000,
+      175000,
+      200000,
+      225000,
+      250000,
+      275000,
+      300000,
+      325000,
+      350000,
+      360000
+    ],
+    "training_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110
+    ],
+    "compute_feasibility_transitions": 20000
+  },
+  "coordination": {
+    "detector_distance_to_stop_line_m": 50.0,
+    "central_lane_length_m": 279.2,
+    "detector_position_m": 229.2,
+    "free_flow_speed_m_s": 13.89,
+    "cross_correlation_max_lag_s": 120,
+    "rolling_window_s": 300,
+    "rolling_stride_s": 60
+  },
+  "baselines": {
+    "specification_note": "Classical and pressure baselines share every frozen element of the adaptive qualification contract: network, demand, vehicle type, seeds, observation topology, coordination instrumentation and Tmax. Only the timing authority differs. The blocks copied from qualification_300m_medium.json are byte-identical to it and a regression test enforces that; this file exists so the adaptive configuration hash never changes when a baseline setting does.",
+    "official_controllers": [
+      "simultaneous_fixed_time",
+      "optimized_fixed_offset",
+      "optimized_fixed_timing",
+      "idqn",
+      "vdn",
+      "qmix",
+      "canonical_operational_max_pressure"
+    ],
+    "diagnostic_controllers": [
+      "matched_interval_pressure_P5"
+    ],
+    "simultaneous_fixed_time": {
+      "cycle_s": 90,
+      "green_H_s": 42,
+      "green_V_s": 42,
+      "yellow_s": 3,
+      "offset_s": 0,
+      "phase_order": [
+        "H",
+        "H_TO_V_YELLOW",
+        "V",
+        "V_TO_H_YELLOW"
+      ],
+      "note": "Pretimed. Both intersections begin H green together at t = 0. It is executed at 1 s resolution and never forced through the 5 s adaptive executor."
+    },
+    "optimized_fixed_offset": {
+      "cycle_s": 90,
+      "green_H_s": 42,
+      "green_V_s": 42,
+      "yellow_s": 3,
+      "offset_grid_s": {
+        "start": 0,
+        "stop": 89,
+        "step": 1,
+        "count": 90
+      },
+      "offset_definition": "Delta = t^{H,start}_{J2} - t^{H,start}_{J1} (mod 90); a positive offset means J2's H green starts after J1's. J2 is a periodic steady-state schedule from t = 0, with no startup all-red and no warm-up."
+    },
+    "optimized_fixed_timing": {
+      "yellow_s": 3,
+      "lost_time_s": 6,
+      "benchmark_minimum_green_s": 5,
+      "benchmark_minimum_green_note": "A plan-admissibility rule for the classical benchmark search only. It is not a minimum green imposed on QMIX, which has none.",
+      "green_split_rule": "g_H = round_half_up(f_H * (C - 6)); g_V = C - 6 - g_H. Explicit round-half-up in exact decimal arithmetic, never Python's banker's round.",
+      "coarse_grid": {
+        "cycle_s": {
+          "start": 40,
+          "stop": 140,
+          "step": 10,
+          "count": 11
+        },
+        "f_H": {
+          "start": 0.3,
+          "stop": 0.75,
+          "step": 0.05,
+          "count": 10
+        },
+        "offset_s": {
+          "start": 0,
+          "stop": "C-5",
+          "step": 5,
+          "count": "C/5"
+        },
+        "candidate_count_before_rejection": 1980
+      },
+      "fine_grid": {
+        "cycle_s": {
+          "delta": 10,
+          "step": 5,
+          "clip": [
+            40,
+            140
+          ]
+        },
+        "f_H": {
+          "delta": 0.05,
+          "step": 0.025,
+          "clip": [
+            0.25,
+            0.8
+          ]
+        },
+        "offset_s": {
+          "delta": 10,
+          "step": 1,
+          "reduced_modulo": "candidate cycle"
+        },
+        "deduplicated_on": [
+          "cycle_s",
+          "f_H",
+          "offset_s"
+        ]
+      },
+      "selection": {
+        "design_family": "benchmark_design",
+        "design_seeds": [
+          2001,
+          2002,
+          2003,
+          2004,
+          2005
+        ],
+        "coarse_retained": 5,
+        "fine_retained": 10,
+        "validation_family": "benchmark_validation",
+        "validation_seeds": [
+          2101,
+          2102,
+          2103,
+          2104,
+          2105
+        ],
+        "tie_break_order": [
+          "minimum validation mean J_primary",
+          "minimum validation mean time loss",
+          "shorter cycle",
+          "lexicographic (C, f_H, Delta)"
+        ],
+        "final_family": "final_test",
+        "final_seeds": [
+          3001,
+          3002,
+          3003,
+          3004,
+          3005,
+          3006,
+          3007,
+          3008,
+          3009,
+          3010
+        ],
+        "final_access_rule": "The selected plan is frozen before any final-test manifest is generated or opened. Search code refuses the final family outright."
+      }
+    },
+    "canonical_operational_max_pressure": {
+      "minimum_green_s": 10,
+      "yellow_duration_s": 3,
+      "decision_clock": "decentralised_per_intersection_1s",
+      "pressure_definition": "P_i(p,t) = sum over (l,m) in M_i(p) of [n_l(t) - n_m(t)], where n is the instantaneous lane vehicle count (LAST_STEP_VEHICLE_NUMBER).",
+      "pressure_input": "lane_vehicle_number",
+      "forbidden_pressure_inputs": [
+        "lane_halting_number",
+        "lane_occupancy",
+        "normalized QMIX queue feature",
+        "reward",
+        "predicted arrivals"
+      ],
+      "tie_rule": "an exact tie retains the current phase",
+      "movement_pairs": {
+        "J1": {
+          "H": [
+            [
+              "E0_0",
+              "E1_0"
+            ],
+            [
+              "E0_1",
+              "E1_1"
+            ],
+            [
+              "-E1_0",
+              "-E0_0"
+            ],
+            [
+              "-E1_1",
+              "-E0_1"
+            ]
+          ],
+          "V": [
+            [
+              "E4_0",
+              "-E5_0"
+            ],
+            [
+              "E4_1",
+              "-E5_1"
+            ],
+            [
+              "E5_0",
+              "-E4_0"
+            ],
+            [
+              "E5_1",
+              "-E4_1"
+            ]
+          ]
+        },
+        "J2": {
+          "H": [
+            [
+              "E1_0",
+              "-E2_0"
+            ],
+            [
+              "E1_1",
+              "-E2_1"
+            ],
+            [
+              "E2_0",
+              "-E1_0"
+            ],
+            [
+              "E2_1",
+              "-E1_1"
+            ]
+          ],
+          "V": [
+            [
+              "E7_0",
+              "-E6_0"
+            ],
+            [
+              "E7_1",
+              "-E6_1"
+            ],
+            [
+              "E6_0",
+              "-E7_0"
+            ],
+            [
+              "E6_1",
+              "-E7_1"
+            ]
+          ]
+        }
+      },
+      "stability_claim": "None. This finite, two-phase, switching-loss implementation with a minimum green does not inherit the idealised theoretical maximum- stability guarantee. It is a strong empirical operational baseline."
+    },
+    "matched_interval_pressure_P5": {
+      "is_official_controller": false,
+      "role": "external control-authority diagnostic",
+      "pressure_definition": "identical to canonical_operational_max_pressure",
+      "execution_authority": "the adaptive SynchronousSignalExecutor: initial H/H, first decision at t = 0, decisions at t = 0,5,10,..., EXTEND = 5 s same green, SWITCH = 3 s yellow + 2 s new green, no minimum green, no maximum green",
+      "learning": "none",
+      "reward_used_for_control": false,
+      "tie_rule": "an exact tie yields EXTEND",
+      "interpretation": "QMIX versus canonical MP is controller-family competitiveness; QMIX versus P-5 is a matched-control-authority diagnostic. Canonical max-pressure claims never transfer to P-5."
+    },
+    "logging": {
+      "lane_state_logging": "full",
+      "controller_decisions_file": "controller_decisions.csv",
+      "schedule_transitions_file": "schedule_transitions.csv",
+      "note": "No QMIX decision is invented for a pretimed controller: signal_actions stays empty and schedule transitions are recorded as themselves. Action-based behaviour metrics are labelled not_applicable rather than reported as zero."
+    }
+  }
+}

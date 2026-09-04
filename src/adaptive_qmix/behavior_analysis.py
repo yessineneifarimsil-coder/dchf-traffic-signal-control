@@ -62,6 +62,13 @@ WINDOWS = (WINDOW_DEMAND_ACTIVE, WINDOW_FULL_EPISODE)
 MOVEMENTS = ("H", "V")
 YELLOW = "Y"
 
+# Reported in place of an action-based number when the controller takes no
+# online decisions at all. A pretimed plan does not make zero switches per
+# hour; the quantity simply does not exist for it, and reporting 0.0 would
+# invite a comparison across controller families that have different decision
+# semantics.
+NOT_APPLICABLE = "not_applicable"
+
 CADENCE_FULL_1S = "full_1s"
 CADENCE_DECISION = "decision"
 CADENCE_IRREGULAR = "irregular"
@@ -211,6 +218,13 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
         WINDOW_DEMAND_ACTIVE: (0.0, min(generation_end, clearance_time)),
         WINDOW_FULL_EPISODE: (0.0, clearance_time),
     }
+
+    # An online decision log is what makes switch counts meaningful. A
+    # pretimed controller writes none, so those quantities are labelled
+    # inapplicable rather than fabricated as zero. Phase-derived quantities --
+    # green spells, service deprivation, yellow fraction, emergent cycle --
+    # are unaffected and stay comparable across every controller family.
+    action_metrics_applicable = bool(action_rows)
 
     green_spell_rows, non_green_spell_rows, cycle_rows = [], [], []
     movement_rows = []
@@ -387,14 +401,22 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
                     float(yellow_seconds) / window_seconds
                     if window_seconds > 0 else float("nan")
                 ),
-                "switch_count": switch_count,
-                "decision_count": decision_count,
+                "action_metrics_applicable": action_metrics_applicable,
+                "switch_count": (
+                    switch_count if action_metrics_applicable else NOT_APPLICABLE
+                ),
+                "decision_count": (
+                    decision_count if action_metrics_applicable
+                    else NOT_APPLICABLE
+                ),
                 "switches_per_hour": (
-                    3600.0 * switch_count / window_seconds
+                    NOT_APPLICABLE if not action_metrics_applicable
+                    else 3600.0 * switch_count / window_seconds
                     if window_seconds > 0 else float("nan")
                 ),
                 "switch_fraction_of_decisions": (
-                    float(switch_count) / decision_count
+                    NOT_APPLICABLE if not action_metrics_applicable
+                    else float(switch_count) / decision_count
                     if decision_count else float("nan")
                 ),
                 "emergent_cycle_mean_s": cycle_stats["mean_s"],
@@ -410,6 +432,20 @@ def derive_behavior_metrics(run_directory, config, episode_index=None,
         "output_directory": destination,
         "clearance_time_s": clearance_time,
         "demand_generation_end_s": generation_end,
+        "action_metrics_applicable": action_metrics_applicable,
+        "action_metrics_note": (
+            "Switch counts, decision counts and switch rates exist only for a "
+            "controller that takes online decisions. This source logged {} "
+            "decisions, so they are reported as '{}' rather than as zero, and "
+            "must not be compared across controller families with different "
+            "decision semantics. Phase-derived quantities stay comparable."
+            .format(len(action_rows), NOT_APPLICABLE)
+            if not action_metrics_applicable else
+            "This source logged {} online decisions, so action-based "
+            "quantities are defined. They remain comparable only within a "
+            "controller family that shares the same decision semantics."
+            .format(len(action_rows))
+        ),
         "primary_window": WINDOW_DEMAND_ACTIVE,
         "primary_window_complete": completeness["demand_active_window_complete"],
         # The demand-active window is clipped to the observed trace, so a
