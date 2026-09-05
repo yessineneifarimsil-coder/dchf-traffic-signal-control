@@ -53,7 +53,10 @@ def main():
     # Checked before the configuration is loaded, SUMO is imported or any
     # output directory is created, so an unauthorised official run leaves
     # nothing behind.
-    authorization = authorize_run(args.run_kind, args.campaign_state)
+    authorization = authorize_run(
+        args.run_kind, args.campaign_state, args.training_seed,
+        args.transition_limit,
+    )
     if authorization is not None:
         print("official training authorised by {} ({})".format(
             authorization["authorising_stage"],

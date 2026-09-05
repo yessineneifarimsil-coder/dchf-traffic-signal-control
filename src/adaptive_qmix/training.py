@@ -61,7 +61,10 @@ def train_learned_controller(
     # campaign state showing the baseline plans frozen -- not by a mutable
     # flag in the scientific configuration, whose value is part of the frozen
     # hash. Development and compute feasibility are unaffected.
-    authorization = authorize_run(run_kind, campaign_state_directory)
+    authorization = authorize_run(
+        run_kind, campaign_state_directory, training_seed, transition_limit,
+        int(config["training"]["interaction_budget"]),
+    )
     deterministic_seed = configure_python_and_torch(training_seed, deterministic=True)
     budget = int(config["training"]["interaction_budget"])
     if transition_limit is not None:

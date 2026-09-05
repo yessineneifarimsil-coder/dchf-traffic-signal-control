@@ -135,6 +135,60 @@ class FrozenPrimarySemanticsTests(unittest.TestCase):
             )
 
 
+def checkpoint_fixture(directory):
+    """A real file whose bytes the frozen checkpoint hash must match."""
+    path = os.path.join(directory, "checkpoint.pt")
+    with open(path, "wb") as handle:
+        handle.write(b"frozen policy bytes")
+    digest = hashlib.sha256(b"frozen policy bytes").hexdigest()
+    return path, digest
+
+
+def full_validation_records(best_index=100000):
+    """Every preregistered checkpoint exactly once, each stating its source."""
+    records = []
+    for index in statistics.CHECKPOINT_TRANSITIONS:
+        records.append({
+            "transition_index": index,
+            "family": statistics.LEARNER_VALIDATION_FAMILY,
+            "seeds": list(statistics.LEARNER_VALIDATION_SEEDS),
+            "mean_J_primary_s": 9.0 if index == best_index else 12.0,
+            "mean_time_loss_s": 6.0,
+        })
+    return records
+
+
+def baseline_freeze_payload(config_sha="baseline-sha",
+                            network_sha="network-sha",
+                            network_blob="network-blob"):
+    """A semantically real freeze_baseline_plans payload."""
+    def track(offset):
+        return {
+            "plan": {"cycle_s": 90, "split_thousandths": 500,
+                     "offset_s": offset, "green_H_s": 42, "green_V_s": 42,
+                     "yellow_s": 3},
+            "selected_key": [90, 500, offset],
+            "provenance": {
+                "design_family": "benchmark_design",
+                "design_seeds": [2001, 2002, 2003, 2004, 2005],
+                "validation_family": "benchmark_validation",
+                "validation_seeds": [2101, 2102, 2103, 2104, 2105],
+                "selected_key": [90, 500, offset],
+                "protocol": "ranked on design; selected on validation",
+            },
+            "baseline_config_sha256": config_sha,
+            "network_sha256": network_sha,
+            "network_git_blob": network_blob,
+        }
+    return {
+        "optimized_fixed_offset": track(45),
+        "optimized_fixed_timing": track(20),
+        "baseline_config_sha256": config_sha,
+        "network_sha256": network_sha,
+        "network_git_blob": network_blob,
+    }
+
+
 def clean_reviews(pathology=(), methods=("qmix", "vdn", "idqn"),
                   omit=()):
     """Structured behavioural reviews for every learned method and seed."""
@@ -518,62 +572,84 @@ class StatisticalProtocolTests(unittest.TestCase):
         self.assertEqual(statistics.BOOTSTRAP_REPLICATES, 10000)
 
     def test_checkpoint_selection_follows_the_frozen_order(self):
-        records = [
-            {"transition_index": 200000, "mean_J_primary_s": 10.0,
-             "mean_time_loss_s": 5.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS},
-            {"transition_index": 100000, "mean_J_primary_s": 9.0,
-             "mean_time_loss_s": 7.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS},
-        ]
-        chosen = statistics.select_checkpoint(records)
+        chosen = statistics.select_checkpoint(full_validation_records(100000))
         self.assertEqual(chosen["transition_index"], 100000)
 
     def test_time_loss_breaks_a_j_primary_tie(self):
-        records = [
-            {"transition_index": 100000, "mean_J_primary_s": 9.0,
-             "mean_time_loss_s": 7.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS},
-            {"transition_index": 200000, "mean_J_primary_s": 9.0,
-             "mean_time_loss_s": 6.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS},
-        ]
+        records = full_validation_records()
+        for record in records:
+            record["mean_J_primary_s"] = 9.0
+        for record in records:
+            if record["transition_index"] == 200000:
+                record["mean_time_loss_s"] = 5.0
         self.assertEqual(
             statistics.select_checkpoint(records)["transition_index"], 200000
         )
 
     def test_the_earliest_checkpoint_wins_a_full_tie(self):
-        records = [
-            {"transition_index": 350000, "mean_J_primary_s": 9.0,
-             "mean_time_loss_s": 6.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS},
-            {"transition_index": 75000, "mean_J_primary_s": 9.0,
-             "mean_time_loss_s": 6.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS},
-        ]
+        records = full_validation_records()
+        for record in records:
+            record["mean_J_primary_s"] = 9.0
+            record["mean_time_loss_s"] = 6.0
         self.assertEqual(
-            statistics.select_checkpoint(records)["transition_index"], 75000
+            statistics.select_checkpoint(records)["transition_index"], 50000
         )
 
     def test_a_checkpoint_may_not_be_selected_on_final_test(self):
-        records = [{
-            "transition_index": 100000, "mean_J_primary_s": 9.0,
-            "mean_time_loss_s": 7.0, "family": "final_test",
-            "seeds": statistics.LEARNER_VALIDATION_SEEDS,
-        }]
+        records = full_validation_records()
+        records[0]["family"] = "final_test"
         with self.assertRaises(statistics.StatisticsError) as caught:
             statistics.select_checkpoint(records)
         self.assertIn("choosing the answer", str(caught.exception))
 
     def test_checkpoint_selection_requires_the_exact_validation_seeds(self):
-        records = [{
-            "transition_index": 100000, "mean_J_primary_s": 9.0,
-            "mean_time_loss_s": 7.0, "seeds": (2201, 2202, 2203),
-        }]
+        records = full_validation_records()
+        records[2]["seeds"] = [2201, 2202, 2203]
         with self.assertRaises(statistics.StatisticsError):
             statistics.select_checkpoint(records)
 
     def test_an_unlisted_checkpoint_is_refused(self):
-        records = [{
-            "transition_index": 123456, "mean_J_primary_s": 9.0,
-            "mean_time_loss_s": 7.0, "seeds": statistics.LEARNER_VALIDATION_SEEDS,
-        }]
+        records = full_validation_records()
+        records[0]["transition_index"] = 123456
         with self.assertRaises(statistics.StatisticsError):
             statistics.select_checkpoint(records)
+
+    def test_thirteen_of_fourteen_checkpoints_is_refused(self):
+        """Choosing the best of a subset is choosing from a filtered set."""
+        records = full_validation_records()[:-1]
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.select_checkpoint(records)
+        message = str(caught.exception)
+        self.assertIn("all 14 preregistered checkpoints exactly once", message)
+        self.assertIn("missing [360000]", message)
+
+    def test_a_duplicated_checkpoint_is_refused(self):
+        records = full_validation_records()
+        records.append(dict(records[0]))
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.select_checkpoint(records)
+        self.assertIn("duplicated", str(caught.exception))
+
+    def test_a_missing_family_is_not_defaulted(self):
+        records = full_validation_records()
+        del records[1]["family"]
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.select_checkpoint(records)
+        self.assertIn("never defaults", str(caught.exception))
+
+    def test_missing_seeds_are_not_defaulted(self):
+        records = full_validation_records()
+        del records[4]["seeds"]
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.select_checkpoint(records)
+        self.assertIn("'seeds'", str(caught.exception))
+
+    def test_a_non_finite_validation_metric_is_refused(self):
+        records = full_validation_records()
+        records[3]["mean_time_loss_s"] = float("nan")
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.select_checkpoint(records)
+        self.assertIn("non-finite", str(caught.exception))
 
     @staticmethod
     def _panel(offset, seeds=None, episodes=None):
@@ -715,9 +791,11 @@ class StageOrderTests(unittest.TestCase):
 
     def test_each_stage_unlocks_only_the_next(self):
         for index, stage in enumerate(stages.STAGES[:-1]):
-            stages.write_stage_artefact(
-                self.directory, stage, {"step": index}
+            payload = (
+                baseline_freeze_payload()
+                if stage == stages.FREEZE_BASELINE_PLANS else {"step": index}
             )
+            stages.write_stage_artefact(self.directory, stage, payload)
             following = stages.STAGES[index + 1]
             self.assertTrue(
                 stages.assert_stage_allowed(self.directory, following)
@@ -787,9 +865,15 @@ class FreezeAndUnlockTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.mkdtemp()
         self.state = os.path.join(self.directory, "state")
+        FreezeAndUnlockTests.CHECKPOINT_PATH, \
+            FreezeAndUnlockTests.CHECKPOINT_SHA = checkpoint_fixture(
+                self.directory
+            )
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
+        FreezeAndUnlockTests.CHECKPOINT_PATH = None
+        FreezeAndUnlockTests.CHECKPOINT_SHA = None
 
     @staticmethod
     def _plan_entry(offset=45):
@@ -807,11 +891,15 @@ class FreezeAndUnlockTests(unittest.TestCase):
             },
         }
 
-    @staticmethod
-    def _checkpoint(seed, **overrides):
+    CHECKPOINT_PATH = None
+    CHECKPOINT_SHA = None
+
+    @classmethod
+    def _checkpoint(cls, seed, **overrides):
         entry = {
             "training_seed": seed, "transition_index": 250000,
-            "checkpoint_sha256": "a" * 64,
+            "checkpoint_sha256": cls.CHECKPOINT_SHA or "a" * 64,
+            "checkpoint_path": cls.CHECKPOINT_PATH or "checkpoint.pt",
             "selected_on_family": "learner_validation",
             "selected_on_seeds": list(statistics.LEARNER_VALIDATION_SEEDS),
             "validation_mean_J_primary_s": 11.5,
@@ -976,6 +1064,18 @@ class FreezeAndUnlockTests(unittest.TestCase):
 
 class PerTrainingSeedCheckpointTests(unittest.TestCase):
     """1: ten independently selected policies per method, not one."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        FreezeAndUnlockTests.CHECKPOINT_PATH, \
+            FreezeAndUnlockTests.CHECKPOINT_SHA = checkpoint_fixture(
+                self.directory
+            )
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+        FreezeAndUnlockTests.CHECKPOINT_PATH = None
+        FreezeAndUnlockTests.CHECKPOINT_SHA = None
 
     def _checkpoints(self, **mutate):
         base = dict(
@@ -1375,9 +1475,12 @@ class OfficialTrainingAuthorizationTests(unittest.TestCase):
         shutil.rmtree(self.state, ignore_errors=True)
 
     def _complete_through_freeze(self):
-        for stage in (stages.BASELINE_DESIGN, stages.BASELINE_VALIDATION,
-                      stages.FREEZE_BASELINE_PLANS):
+        for stage in (stages.BASELINE_DESIGN, stages.BASELINE_VALIDATION):
             stages.write_stage_artefact(self.state, stage, {"stage": stage})
+        stages.write_stage_artefact(
+            self.state, stages.FREEZE_BASELINE_PLANS,
+            baseline_freeze_payload(),
+        )
 
     def test_development_and_feasibility_need_no_authorization(self):
         for run_kind in ("development", "compute_feasibility"):
@@ -1419,7 +1522,7 @@ class OfficialTrainingAuthorizationTests(unittest.TestCase):
         path = stages.artefact_path(self.state, stages.FREEZE_BASELINE_PLANS)
         with open(path) as handle:
             artefact = json.load(handle)
-        artefact["payload"]["stage"] = "something else"
+        artefact["payload"]["network_sha256"] = "tampered"
         with open(path, "w") as handle:
             json.dump(artefact, handle)
         with self.assertRaises(authorization.TrainingAuthorizationError):
@@ -1480,6 +1583,514 @@ class HashSealedWordingTests(unittest.TestCase):
             for name in dir(module):
                 self.assertNotIn("sign", name.lower().replace("design", ""),
                                  "{}.{}".format(module.__name__, name))
+
+
+class SemanticStageCompletionTests(unittest.TestCase):
+    """B: a hash-consistent file is not evidence that a stage happened."""
+
+    def setUp(self):
+        self.state = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.state, ignore_errors=True)
+
+    def test_a_real_freeze_payload_is_accepted(self):
+        path = stages.write_stage_artefact(
+            self.state, stages.FREEZE_BASELINE_PLANS,
+            baseline_freeze_payload(),
+        )
+        self.assertTrue(os.path.isfile(path))
+        self.assertTrue(
+            stages.verify_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS
+            )
+        )
+
+    def test_an_empty_freeze_payload_cannot_be_written(self):
+        with self.assertRaises(stages.StagePayloadError) as caught:
+            stages.write_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS, {"done": True}
+            )
+        self.assertIn("does not record a real baseline freeze",
+                      str(caught.exception))
+
+    def test_a_freeze_missing_one_track_is_refused(self):
+        payload = baseline_freeze_payload()
+        del payload["optimized_fixed_timing"]
+        with self.assertRaises(stages.StagePayloadError) as caught:
+            stages.write_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS, payload
+            )
+        self.assertIn("optimized_fixed_timing", str(caught.exception))
+
+    def test_a_plan_without_provenance_is_refused(self):
+        payload = baseline_freeze_payload()
+        del payload["optimized_fixed_offset"]["provenance"]["design_seeds"]
+        with self.assertRaises(stages.StagePayloadError) as caught:
+            stages.write_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS, payload
+            )
+        self.assertIn("provenance.design_seeds", str(caught.exception))
+
+    def test_a_plan_selected_on_the_wrong_family_is_refused(self):
+        payload = baseline_freeze_payload()
+        payload["optimized_fixed_timing"]["provenance"][
+            "validation_family"
+        ] = "benchmark_design"
+        with self.assertRaises(stages.StagePayloadError) as caught:
+            stages.write_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS, payload
+            )
+        self.assertIn("not benchmark_validation", str(caught.exception))
+
+    def test_a_plan_identity_disagreeing_with_the_stage_is_refused(self):
+        payload = baseline_freeze_payload()
+        payload["optimized_fixed_offset"]["network_sha256"] = "another-network"
+        with self.assertRaises(stages.StagePayloadError) as caught:
+            stages.write_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS, payload
+            )
+        self.assertIn("disagrees with the stage payload", str(caught.exception))
+
+    def test_a_hollowed_out_payload_fails_verification_after_the_fact(self):
+        """Written properly, then emptied and re-hashed."""
+        stages.write_stage_artefact(
+            self.state, stages.FREEZE_BASELINE_PLANS,
+            baseline_freeze_payload(),
+        )
+        path = stages.artefact_path(self.state, stages.FREEZE_BASELINE_PLANS)
+        with open(path) as handle:
+            artefact = json.load(handle)
+        artefact["payload"] = {"done": True}
+        artefact["payload_sha256"] = hashlib.sha256(
+            json.dumps({"done": True}, sort_keys=True,
+                       separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(stages.StagePayloadError):
+            stages.verify_stage_artefact(
+                self.state, stages.FREEZE_BASELINE_PLANS
+            )
+
+    def test_a_fake_freeze_cannot_authorise_training(self):
+        for stage in (stages.BASELINE_DESIGN, stages.BASELINE_VALIDATION):
+            stages.write_stage_artefact(self.state, stage, {"ok": True})
+        path = stages.artefact_path(self.state, stages.FREEZE_BASELINE_PLANS)
+        payload = {"looks": "official"}
+        artefact = {
+            "protocol_version": stages.PROTOCOL_VERSION,
+            "stage": stages.FREEZE_BASELINE_PLANS,
+            "stage_index": stages.STAGE_INDEX[stages.FREEZE_BASELINE_PLANS],
+            "payload": payload,
+            "payload_sha256": hashlib.sha256(
+                json.dumps(payload, sort_keys=True,
+                           separators=(",", ":")).encode("utf-8")
+            ).hexdigest(),
+        }
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(
+            authorization.TrainingAuthorizationError
+        ) as caught:
+            authorization.authorize_run("official_training", self.state)
+        self.assertIn("does not record a real baseline freeze",
+                      str(caught.exception))
+
+
+class OfficialTrainingLockTests(unittest.TestCase):
+    """D: official training is the frozen campaign, not a variation."""
+
+    def setUp(self):
+        self.state = tempfile.mkdtemp()
+        for stage in (stages.BASELINE_DESIGN, stages.BASELINE_VALIDATION):
+            stages.write_stage_artefact(self.state, stage, {"ok": True})
+        stages.write_stage_artefact(
+            self.state, stages.FREEZE_BASELINE_PLANS,
+            baseline_freeze_payload(),
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.state, ignore_errors=True)
+
+    def test_every_preregistered_seed_is_accepted(self):
+        for seed in statistics.TRAINING_SEEDS:
+            self.assertIsNotNone(authorization.authorize_run(
+                "official_training", self.state, seed, None, 360000
+            ))
+
+    def test_a_seed_outside_the_preregistered_set_is_refused(self):
+        with self.assertRaises(
+            authorization.TrainingAuthorizationError
+        ) as caught:
+            authorization.authorize_run(
+                "official_training", self.state, 999, None, 360000
+            )
+        message = str(caught.exception)
+        self.assertIn("must be one of", message)
+        self.assertIn("999", message)
+
+    def test_a_shortened_official_run_is_refused(self):
+        with self.assertRaises(
+            authorization.TrainingAuthorizationError
+        ) as caught:
+            authorization.authorize_run(
+                "official_training", self.state, 101, 1000, 360000
+            )
+        message = str(caught.exception)
+        self.assertIn("exactly 360000 transitions", message)
+        self.assertIn("matched interaction budget", message)
+
+    def test_the_full_budget_may_be_stated_explicitly(self):
+        self.assertIsNotNone(authorization.authorize_run(
+            "official_training", self.state, 101, 360000, 360000
+        ))
+
+    def test_development_is_unaffected_by_the_seed_and_budget_lock(self):
+        self.assertIsNone(authorization.authorize_run(
+            "development", None, 999, 1000, 360000
+        ))
+        self.assertIsNone(authorization.authorize_run(
+            "compute_feasibility", None, 999, 20000, 360000
+        ))
+
+    def test_the_authorization_records_the_frozen_plans(self):
+        evidence = authorization.authorize_run(
+            "official_training", self.state, 101, None, 360000
+        )
+        self.assertEqual(
+            sorted(evidence["frozen_baseline_plans"]),
+            ["optimized_fixed_offset", "optimized_fixed_timing"],
+        )
+        self.assertEqual(evidence["baseline_config_sha256"], "baseline-sha")
+
+
+class CheckpointFileBindingTests(unittest.TestCase):
+    """E: a frozen checkpoint hash must bind the bytes actually frozen."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.path, self.digest = checkpoint_fixture(self.directory)
+        FreezeAndUnlockTests.CHECKPOINT_PATH = self.path
+        FreezeAndUnlockTests.CHECKPOINT_SHA = self.digest
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+        FreezeAndUnlockTests.CHECKPOINT_PATH = None
+        FreezeAndUnlockTests.CHECKPOINT_SHA = None
+
+    def _artefact(self, mutate=None):
+        checkpoints = dict(
+            (method, dict(
+                (seed, FreezeAndUnlockTests._checkpoint(seed))
+                for seed in statistics.TRAINING_SEEDS
+            ))
+            for method in decision.LEARNED_METHODS
+        )
+        if mutate:
+            mutate(checkpoints)
+        return freeze.build_freeze_artefact(
+            "adaptive-sha", "baseline-sha", "network-sha", "network-blob",
+            FreezeAndUnlockTests._plan_entry(45),
+            FreezeAndUnlockTests._plan_entry(20), checkpoints,
+        )
+
+    def test_a_matching_hash_and_file_verify(self):
+        self.assertTrue(freeze.assert_freeze_complete(self._artefact()))
+
+    def test_an_arbitrary_hash_string_no_longer_passes(self):
+        def mutate(checkpoints):
+            checkpoints["qmix"][101]["checkpoint_sha256"] = "a" * 64
+
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(mutate))
+        self.assertIn("hashes to", str(caught.exception))
+
+    def test_a_missing_checkpoint_file_is_refused(self):
+        def mutate(checkpoints):
+            checkpoints["vdn"][105]["checkpoint_path"] = os.path.join(
+                self.directory, "absent.pt"
+            )
+
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(mutate))
+        self.assertIn("does not exist, so its hash binds nothing",
+                      str(caught.exception))
+
+    def test_a_malformed_hash_is_refused(self):
+        def mutate(checkpoints):
+            checkpoints["idqn"][108]["checkpoint_sha256"] = "not-a-hash"
+            checkpoints["idqn"][108]["checkpoint_path"] = None
+
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(mutate))
+        self.assertIn("64 lowercase hex characters", str(caught.exception))
+
+    def test_a_checkpoint_edited_after_freezing_is_detected(self):
+        artefact = self._artefact()
+        self.assertTrue(freeze.assert_freeze_complete(artefact))
+        with open(self.path, "wb") as handle:
+            handle.write(b"different policy bytes")
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(artefact)
+        self.assertIn("hashes to", str(caught.exception))
+
+
+class OfficialPanelTests(unittest.TestCase):
+    """F: official inference requires exactly 10 x 10."""
+
+    @staticmethod
+    def _panel(offset, seeds=None, episodes=None):
+        seeds = seeds or statistics.TRAINING_SEEDS
+        episodes = episodes or statistics.FINAL_SEEDS
+        return dict(
+            (seed, dict((episode, float(offset + 0.001 * episode))
+                        for episode in episodes))
+            for seed in seeds
+        )
+
+    def test_the_exact_panel_is_accepted(self):
+        result = statistics.paired_crossed_bootstrap(
+            self._panel(10.0), self._panel(12.0), replicates=50,
+            official=True,
+        )
+        self.assertEqual(result["training_seed_count"], 10)
+        self.assertEqual(result["evaluation_seed_count"], 10)
+
+    def test_a_nine_by_ten_panel_is_refused(self):
+        nine = statistics.TRAINING_SEEDS[:-1]
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.paired_crossed_bootstrap(
+                self._panel(10.0, seeds=nine),
+                self._panel(12.0, seeds=nine),
+                replicates=10, official=True,
+            )
+        self.assertIn("training seeds", str(caught.exception))
+        self.assertIn("are not exactly", str(caught.exception))
+
+    def test_a_ten_by_nine_panel_is_refused(self):
+        nine = statistics.FINAL_SEEDS[:-1]
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.paired_crossed_bootstrap(
+                self._panel(10.0, episodes=nine),
+                self._panel(12.0, episodes=nine),
+                replicates=10, official=True,
+            )
+        self.assertIn("final traffic seeds", str(caught.exception))
+
+    def test_a_foreign_training_seed_is_refused(self):
+        foreign = tuple(statistics.TRAINING_SEEDS[:-1]) + (999,)
+        with self.assertRaises(statistics.StatisticsError):
+            statistics.paired_crossed_bootstrap(
+                self._panel(10.0, seeds=foreign),
+                self._panel(12.0, seeds=foreign),
+                replicates=10, official=True,
+            )
+
+    def test_a_foreign_final_seed_is_refused(self):
+        foreign = tuple(statistics.FINAL_SEEDS[:-1]) + (4001,)
+        with self.assertRaises(statistics.StatisticsError):
+            statistics.paired_crossed_bootstrap(
+                self._panel(10.0, episodes=foreign),
+                self._panel(12.0, episodes=foreign),
+                replicates=10, official=True,
+            )
+
+    def test_a_deterministic_comparator_needs_all_ten_final_seeds(self):
+        baseline = dict(
+            (episode, 14.0) for episode in statistics.FINAL_SEEDS[:-1]
+        )
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.paired_crossed_bootstrap(
+                self._panel(10.0), baseline, replicates=10, official=True
+            )
+        self.assertIn("exactly one value for each", str(caught.exception))
+
+    def test_a_deterministic_comparator_value_must_be_finite(self):
+        baseline = dict(
+            (episode, 14.0) for episode in statistics.FINAL_SEEDS
+        )
+        baseline[3005] = float("nan")
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.paired_crossed_bootstrap(
+                self._panel(10.0), baseline, replicates=10, official=True
+            )
+        self.assertIn("one FINITE value per final traffic seed",
+                      str(caught.exception))
+
+    def test_a_non_official_call_still_permits_a_smaller_panel(self):
+        """Exploratory work is not blocked; official inference is."""
+        nine = statistics.TRAINING_SEEDS[:-1]
+        result = statistics.paired_crossed_bootstrap(
+            self._panel(10.0, seeds=nine), self._panel(12.0, seeds=nine),
+            replicates=10,
+        )
+        self.assertEqual(result["training_seed_count"], 9)
+
+    def test_summarise_comparison_can_demand_the_official_panel(self):
+        nine = statistics.TRAINING_SEEDS[:-1]
+        with self.assertRaises(statistics.StatisticsError):
+            statistics.summarise_comparison(
+                "delta_J_OFT", self._panel(10.0, seeds=nine),
+                self._panel(12.0, seeds=nine), 9, replicates=10,
+                official=True,
+            )
+
+
+class ReviewStructureTests(unittest.TestCase):
+    """G: a review record must be a real one, for every learned method."""
+
+    @staticmethod
+    def _report():
+        return dict(
+            (name, {"value": 1.0}) for name in behaviour.REQUIRED_REPORT_NAMES
+        )
+
+    def test_a_conclusion_only_dict_is_not_a_review(self):
+        problems = behaviour.review_problems(
+            {"conclusion": "no_pathology_observed"}, "qmix", 101
+        )
+        self.assertTrue(problems)
+        self.assertIn("missing gate_version", problems)
+        self.assertIn("missing reviewer", problems)
+
+    def test_conclusion_only_reviews_leave_the_gate_incomplete(self):
+        reviews = dict(
+            (method, dict(
+                (seed, {"conclusion": "no_pathology_observed"})
+                for seed in statistics.TRAINING_SEEDS
+            ))
+            for method in ("qmix", "vdn", "idqn")
+        )
+        verdict = decision.evaluate_go_no_go(
+            {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5)},
+            True, reviews,
+        )
+        self.assertEqual(verdict["verdict"], "NO-GO")
+        self.assertFalse(verdict["behaviour_review_complete"])
+
+    def test_a_review_made_after_performance_is_refused(self):
+        review = behaviour.record_review(
+            "qmix_101", self._report(), "reviewer",
+            behaviour.CONCLUSION_CLEAN, training_seed=101, method="qmix",
+        )
+        review["reviewed_before_performance"] = False
+        problems = behaviour.review_problems(review, "qmix", 101)
+        self.assertTrue(
+            any("after the numbers were seen" in item for item in problems)
+        )
+
+    def test_a_review_filed_under_the_wrong_seed_is_refused(self):
+        review = behaviour.record_review(
+            "qmix_101", self._report(), "reviewer",
+            behaviour.CONCLUSION_CLEAN, training_seed=101, method="qmix",
+        )
+        problems = behaviour.review_problems(review, "qmix", 102)
+        self.assertTrue(
+            any("filed under 102" in item for item in problems)
+        )
+
+    def test_a_review_filed_under_the_wrong_method_is_refused(self):
+        review = behaviour.record_review(
+            "qmix_101", self._report(), "reviewer",
+            behaviour.CONCLUSION_CLEAN, training_seed=101, method="qmix",
+        )
+        problems = behaviour.review_problems(review, "vdn", 101)
+        self.assertTrue(any("filed under 'vdn'" in item for item in problems))
+
+    def test_a_review_missing_a_distribution_is_refused(self):
+        report = self._report()
+        del report["queue_max"]
+        review = behaviour.record_review(
+            "qmix_101", dict(report, queue_max={"value": 1.0}), "reviewer",
+            behaviour.CONCLUSION_CLEAN, training_seed=101, method="qmix",
+        )
+        review["reported"] = report
+        problems = behaviour.review_problems(review, "qmix", 101)
+        self.assertTrue(
+            any("queue_max" in item for item in problems)
+        )
+
+    def test_a_wrong_gate_version_is_refused(self):
+        review = behaviour.record_review(
+            "qmix_101", self._report(), "reviewer",
+            behaviour.CONCLUSION_CLEAN, training_seed=101, method="qmix",
+        )
+        review["gate_version"] = "behavioural-safety-0.9"
+        problems = behaviour.review_problems(review, "qmix", 101)
+        self.assertTrue(any("gate_version" in item for item in problems))
+
+    def test_all_three_learned_methods_are_required(self):
+        summary = behaviour.summarise_reviews(
+            clean_reviews(methods=("qmix",)), statistics.TRAINING_SEEDS,
+            "qmix", required_methods=("qmix", "vdn", "idqn"),
+        )
+        self.assertTrue(summary["gating_review_complete"])
+        self.assertEqual(
+            sorted(summary["comparator_review_incomplete"]), ["idqn", "vdn"]
+        )
+        for method in ("idqn", "vdn"):
+            self.assertEqual(
+                summary["methods"][method]["missing_training_seeds"],
+                list(statistics.TRAINING_SEEDS),
+            )
+
+    def test_missing_comparator_reviews_are_explicitly_incomplete(self):
+        verdict = decision.evaluate_go_no_go(
+            {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5)},
+            True, clean_reviews(methods=("qmix",)),
+        )
+        self.assertEqual(
+            sorted(verdict["comparator_review_incomplete"]), ["idqn", "vdn"]
+        )
+
+    def test_a_malformed_qmix_review_is_not_counted_as_pathology_free(self):
+        reviews = clean_reviews()
+        del reviews["qmix"][104]["reviewer"]
+        summary = behaviour.summarise_reviews(
+            reviews, statistics.TRAINING_SEEDS, "qmix",
+            required_methods=decision.LEARNED_METHODS,
+        )
+        self.assertFalse(summary["gating_review_complete"])
+        self.assertIn(104, summary["methods"]["qmix"]["malformed_reviews"])
+
+
+class ProtocolVersionTests(unittest.TestCase):
+    """H: the two materially changed protocols are bumped once, now."""
+
+    def test_the_changed_protocols_are_version_1_1(self):
+        self.assertEqual(statistics.PROTOCOL_VERSION, "statistics-1.1")
+        self.assertEqual(decision.PROTOCOL_VERSION, "go-no-go-1.1")
+
+    def test_the_unchanged_protocols_remain_1_0(self):
+        self.assertEqual(
+            semantics.SPECIFICATION_VERSION, "primary-adaptive-semantics-1.0"
+        )
+        self.assertEqual(stages.PROTOCOL_VERSION, "campaign-stages-1.0")
+
+    def test_the_version_appears_in_the_hashed_payload(self):
+        self.assertIn("statistics-1.1", json.dumps(statistics.PROTOCOL))
+        self.assertIn("go-no-go-1.1", decision.serialize())
+
+    def test_the_decision_criteria_are_unchanged_by_the_bump(self):
+        self.assertEqual(
+            decision.DECIDING_COMPARISONS, ("delta_J_OFT", "delta_J_IDQN")
+        )
+        self.assertTrue(decision.GO_NO_GO["max_pressure_is_not_a_gate"])
+        self.assertIn("No minimum percentage improvement is required",
+                      decision.serialize())
+
+    def test_a_freeze_binds_the_bumped_versions(self):
+        artefact = freeze.build_freeze_artefact(
+            "a", "b", "c", "d", {"plan": {}, "provenance": {}},
+            {"plan": {}, "provenance": {}}, {},
+        )
+        self.assertEqual(
+            artefact["statistical_protocol_version"], "statistics-1.1"
+        )
+        self.assertEqual(
+            artefact["go_no_go_protocol_version"], "go-no-go-1.1"
+        )
 
 
 if __name__ == "__main__":

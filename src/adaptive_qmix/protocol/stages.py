@@ -12,6 +12,12 @@ Hash-sealed, not cryptographically signed: the artefact carries a digest of
 its own payload, which detects modification but proves nothing about who wrote
 it. There is no signature mechanism, and none is claimed.
 
+A hash also proves nothing about whether the stage happened, so stages that
+gate something carry a semantic validator as well. freeze_baseline_plans in
+particular must record both selected classical plans with their selection
+provenance and the configuration and network identity they were selected
+under, because completing it is what authorises official training.
+
     1  baseline_design                        evaluate the candidate grids
     2  baseline_validation                    validate the shortlists
     3  freeze_baseline_plans                  offset and timing plans frozen
@@ -92,10 +98,105 @@ def _payload_sha256(payload):
     ).hexdigest()
 
 
+# Stage-specific payload requirements. A hash proves an artefact has not been
+# edited; it says nothing about whether the stage actually happened. These
+# validators are what make completion mean something, so that a stage cannot
+# be marked done by writing a hash-consistent file with nothing in it.
+REQUIRED_PAYLOAD_FIELDS = {
+    FREEZE_BASELINE_PLANS: (
+        "optimized_fixed_offset", "optimized_fixed_timing",
+        "baseline_config_sha256", "network_sha256", "network_git_blob",
+    ),
+}
+
+REQUIRED_PLAN_FIELDS = (
+    "plan", "provenance", "selected_key", "baseline_config_sha256",
+    "network_sha256", "network_git_blob",
+)
+
+REQUIRED_PLAN_PROVENANCE = (
+    "design_family", "design_seeds", "validation_family", "validation_seeds",
+    "selected_key", "protocol",
+)
+
+
+class StagePayloadError(ArtefactError):
+    """Raised when a stage artefact is well-formed but says nothing."""
+
+
+def _validate_freeze_baseline_plans(payload):
+    """Both classical plans, each with real selection provenance and identity.
+
+    Completing this stage is what authorises official training, so an empty or
+    hand-written payload here would let a learner be trained against baselines
+    that were never actually settled.
+    """
+    problems = []
+    for field in REQUIRED_PAYLOAD_FIELDS[FREEZE_BASELINE_PLANS]:
+        if not payload.get(field):
+            problems.append("{} is missing".format(field))
+    for track in ("optimized_fixed_offset", "optimized_fixed_timing"):
+        entry = payload.get(track)
+        if not isinstance(entry, dict):
+            continue
+        for field in REQUIRED_PLAN_FIELDS:
+            if not entry.get(field):
+                problems.append("{}.{} is missing".format(track, field))
+        provenance = entry.get("provenance") or {}
+        for field in REQUIRED_PLAN_PROVENANCE:
+            if field not in provenance:
+                problems.append(
+                    "{}.provenance.{} is missing".format(track, field)
+                )
+        if provenance.get("validation_family") not in (
+            None, "benchmark_validation"
+        ):
+            problems.append(
+                "{} was selected on {!r}, not benchmark_validation".format(
+                    track, provenance["validation_family"]
+                )
+            )
+        for field in ("baseline_config_sha256", "network_sha256",
+                      "network_git_blob"):
+            if entry.get(field) and payload.get(field) and (
+                entry[field] != payload[field]
+            ):
+                problems.append(
+                    "{}.{} disagrees with the stage payload".format(
+                        track, field
+                    )
+                )
+    if problems:
+        raise StagePayloadError(
+            "The {} artefact does not record a real baseline freeze: {}. A "
+            "hash-consistent file is not evidence that the plans were "
+            "selected.".format(FREEZE_BASELINE_PLANS, problems)
+        )
+    return True
+
+
+STAGE_VALIDATORS = {
+    FREEZE_BASELINE_PLANS: _validate_freeze_baseline_plans,
+}
+
+
+def validate_stage_payload(stage, payload):
+    """Semantic check for stages that have one; a no-op for the rest."""
+    validator = STAGE_VALIDATORS.get(stage)
+    if validator is None:
+        return True
+    if not isinstance(payload, dict):
+        raise StagePayloadError(
+            "Stage {!r} requires a structured payload.".format(stage)
+        )
+    return validator(payload)
+
+
 def write_stage_artefact(state_directory, stage, payload):
     """Record a stage as complete, with a hash over exactly what it recorded."""
     if stage not in STAGE_INDEX:
         raise StageOrderError("Unknown campaign stage {!r}.".format(stage))
+    validate_stage_payload(stage, payload)
     if not os.path.isdir(state_directory):
         os.makedirs(state_directory)
     artefact = {
@@ -140,6 +241,9 @@ def verify_stage_artefact(state_directory, stage):
             "authorise the next one on evidence that changed "
             "afterwards.".format(stage, recorded, actual)
         )
+    # Semantic as well as cryptographic: an intact hash over an empty payload
+    # would otherwise read as a completed stage.
+    validate_stage_payload(stage, artefact.get("payload"))
     return artefact
 
 

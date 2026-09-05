@@ -165,8 +165,71 @@ CONCLUSION_PATHOLOGY = "pathology_observed"
 CONCLUSIONS = (CONCLUSION_CLEAN, CONCLUSION_PATHOLOGY)
 
 
+REQUIRED_REVIEW_FIELDS = (
+    "gate_version", "review_rule", "reviewer", "conclusion",
+    "reviewed_before_performance", "reported",
+)
+
+
+def review_problems(review, method, training_seed):
+    """Why this is not a real behavioural-gate record.
+
+    A dict carrying only {"conclusion": "no_pathology_observed"} would
+    otherwise pass as a review. A real one names the gate version it was made
+    under, the rule it was judged against, who judged it, that it happened
+    before performance was read, and the distributions it was judged on.
+    """
+    problems = []
+    if not isinstance(review, dict):
+        return ["is not a review record"]
+    for field in REQUIRED_REVIEW_FIELDS:
+        if field not in review:
+            problems.append("missing {}".format(field))
+    if review.get("gate_version") not in (None, GATE_VERSION):
+        problems.append(
+            "gate_version {!r} is not {!r}".format(
+                review["gate_version"], GATE_VERSION
+            )
+        )
+    if review.get("review_rule") not in (None, REVIEW_RULE):
+        problems.append("review_rule is not the preregistered rule")
+    if not str(review.get("reviewer", "")).strip():
+        problems.append("no reviewer is named")
+    if review.get("conclusion") not in CONCLUSIONS:
+        problems.append(
+            "conclusion {!r} is not one of {}".format(
+                review.get("conclusion"), list(CONCLUSIONS)
+            )
+        )
+    if review.get("reviewed_before_performance") is not True:
+        problems.append(
+            "reviewed_before_performance is not true, so it may have been "
+            "made after the numbers were seen"
+        )
+    if review.get("method") is not None and str(review["method"]) != str(
+        method
+    ):
+        problems.append(
+            "records method {!r}, filed under {!r}".format(
+                review["method"], method
+            )
+        )
+    if review.get("training_seed") is not None and int(
+        review["training_seed"]
+    ) != int(training_seed):
+        problems.append(
+            "records training seed {}, filed under {}".format(
+                review["training_seed"], training_seed
+            )
+        )
+    absent = missing_reports(review.get("reported") or {})
+    if absent:
+        problems.append("reported distributions missing: {}".format(absent))
+    return problems
+
+
 def summarise_reviews(reviews_by_method, required_training_seeds,
-                      gating_method):
+                      gating_method, required_methods=None):
     """Completeness and conclusions, kept as two separate facts.
 
     "Reviewed" and "reviewed clean" are different things, and collapsing them
@@ -181,31 +244,43 @@ def summarise_reviews(reviews_by_method, required_training_seeds,
     QMIX good, and a comparator behaving badly is itself worth reporting.
     """
     required = sorted(int(seed) for seed in required_training_seeds)
-    summary = {"gating_method": gating_method, "methods": {}}
-    for method in sorted(reviews_by_method):
-        reviews = _normalise_reviews(reviews_by_method[method])
+    required_methods = tuple(
+        required_methods if required_methods is not None
+        else sorted(set(list(reviews_by_method) + [gating_method]))
+    )
+    summary = {
+        "gating_method": gating_method,
+        "required_methods": list(required_methods),
+        "required_training_seeds": required,
+        "methods": {},
+    }
+    for method in sorted(set(list(reviews_by_method) + list(required_methods))):
+        reviews = _normalise_reviews(reviews_by_method.get(method, {}))
         reviewed = sorted(reviews)
         missing = sorted(set(required) - set(reviewed))
         foreign = sorted(set(reviewed) - set(required))
-        invalid = sorted(
-            seed for seed, review in reviews.items()
-            if review.get("conclusion") not in CONCLUSIONS
-        )
+        malformed = {}
+        for seed, review in sorted(reviews.items()):
+            problems = review_problems(review, method, seed)
+            if problems:
+                malformed[seed] = problems
         pathology = sorted(
             seed for seed, review in reviews.items()
-            if review.get("conclusion") == CONCLUSION_PATHOLOGY
+            if seed not in malformed
+            and review.get("conclusion") == CONCLUSION_PATHOLOGY
         )
         summary["methods"][method] = {
             "reviewed_training_seeds": reviewed,
             "missing_training_seeds": missing,
             "foreign_training_seeds": foreign,
-            "invalid_conclusions": invalid,
+            "invalid_conclusions": sorted(malformed),
+            "malformed_reviews": malformed,
             "pathology_training_seeds": pathology,
-            "review_complete": not missing and not foreign and not invalid,
+            "review_complete": (
+                not missing and not foreign and not malformed
+            ),
             "any_pathology_observed": bool(pathology),
         }
-    for method in sorted(reviews_by_method):
-        summary["methods"][method].setdefault("review_complete", False)
 
     gating = summary["methods"].get(gating_method)
     summary["gating_review_complete"] = bool(

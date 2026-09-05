@@ -54,7 +54,13 @@ import math
 import numpy as np
 
 
-PROTOCOL_VERSION = "statistics-1.0"
+# Bumped from 1.0 before any campaign. The 1.0 definition described a
+# hierarchical nested bootstrap; the design is crossed, so the resampling,
+# the comparator-kind handling and the training-success definition all changed
+# materially. 1.0 was never used to analyse anything, but a version string
+# that silently covered two different procedures would be worse than a bump.
+# The decision criteria themselves are unchanged and are not to change again.
+PROTOCOL_VERSION = "statistics-1.1"
 
 TRAINING_SEEDS = tuple(range(101, 111))
 LEARNER_VALIDATION_FAMILY = "learner_validation"
@@ -110,6 +116,13 @@ class StatisticsError(RuntimeError):
     pass
 
 
+def _finite(value):
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
 PROTOCOL = {
     "protocol_version": PROTOCOL_VERSION,
     "training_seeds": list(TRAINING_SEEDS),
@@ -154,13 +167,27 @@ def protocol_sha256():
 def select_checkpoint(validation_records):
     """Minimum mean J_primary, then mean time loss, then earliest checkpoint.
 
-    'validation_records' are per-checkpoint dicts carrying 'transition_index',
-    'mean_J_primary_s', 'mean_time_loss_s' and the seeds they were measured on.
+    Fails closed. The selector must be given every preregistered checkpoint
+    exactly once: choosing the best of a subset is choosing from whichever
+    checkpoints happened to be evaluated, and if the missing ones were
+    dropped for any reason connected to their results, the selection is
+    biased. Each record must also STATE its family and seeds rather than
+    letting them default -- a record that forgot to say where it was measured
+    is exactly the record that might have been measured somewhere else.
     """
     if not validation_records:
         raise StatisticsError("No validation records to select a checkpoint.")
+    seen = []
     for record in validation_records:
-        family = record.get("family", LEARNER_VALIDATION_FAMILY)
+        for field in ("transition_index", "family", "seeds",
+                      "mean_J_primary_s", "mean_time_loss_s"):
+            if field not in record:
+                raise StatisticsError(
+                    "A validation record is missing {!r}. Checkpoint "
+                    "selection never defaults a record's family, seeds or "
+                    "metrics to the expected values.".format(field)
+                )
+        family = record["family"]
         if family != LEARNER_VALIDATION_FAMILY:
             raise StatisticsError(
                 "Checkpoint selection may use only {}; got {!r}. Selecting on "
@@ -168,17 +195,38 @@ def select_checkpoint(validation_records):
                     LEARNER_VALIDATION_FAMILY, family
                 )
             )
-        seeds = tuple(sorted(record.get("seeds", LEARNER_VALIDATION_SEEDS)))
+        seeds = tuple(sorted(int(seed) for seed in record["seeds"]))
         if seeds != LEARNER_VALIDATION_SEEDS:
             raise StatisticsError(
                 "Checkpoint selection requires exactly the seeds {}; got "
                 "{}.".format(list(LEARNER_VALIDATION_SEEDS), list(seeds))
             )
-        if int(record["transition_index"]) not in CHECKPOINT_TRANSITIONS:
+        index = int(record["transition_index"])
+        if index not in CHECKPOINT_TRANSITIONS:
             raise StatisticsError(
                 "Checkpoint {} is not one of the preregistered "
-                "checkpoints.".format(record["transition_index"])
+                "checkpoints.".format(index)
             )
+        for field in ("mean_J_primary_s", "mean_time_loss_s"):
+            if not _finite(record[field]):
+                raise StatisticsError(
+                    "Checkpoint {} reports a non-finite {}; it cannot be "
+                    "ranked.".format(index, field)
+                )
+        seen.append(index)
+    missing = sorted(set(CHECKPOINT_TRANSITIONS) - set(seen))
+    duplicated = sorted(
+        index for index in set(seen) if seen.count(index) > 1
+    )
+    if missing or duplicated or len(seen) != len(CHECKPOINT_TRANSITIONS):
+        raise StatisticsError(
+            "Checkpoint selection requires all {} preregistered checkpoints "
+            "exactly once; got {} records, missing {}, duplicated {}. "
+            "Selecting the best of a subset is selecting from whichever "
+            "checkpoints happened to be evaluated.".format(
+                len(CHECKPOINT_TRANSITIONS), len(seen), missing, duplicated
+            )
+        )
     ordered = sorted(
         validation_records,
         key=lambda record: (
@@ -220,7 +268,45 @@ def _check_panel(values_by_seed, name):
     return seeds, episodes
 
 
-def difference_matrix(treatment, comparator, comparator_kind=None):
+def assert_official_panel(training_seeds, traffic_seeds):
+    """The official inference runs on exactly 101-110 x 3001-3010.
+
+    A 9 x 10 or 10 x 9 panel is not a smaller version of the design; it is a
+    different one, and whichever seed is absent was absent for a reason that
+    may not be independent of its result. Foreign or duplicated seeds are
+    refused for the same reason.
+    """
+    training = tuple(int(seed) for seed in training_seeds)
+    traffic = tuple(int(seed) for seed in traffic_seeds)
+    problems = []
+    if tuple(sorted(training)) != TRAINING_SEEDS:
+        problems.append(
+            "training seeds {} are not exactly {}".format(
+                list(training), list(TRAINING_SEEDS)
+            )
+        )
+    if tuple(sorted(traffic)) != FINAL_SEEDS:
+        problems.append(
+            "final traffic seeds {} are not exactly {}".format(
+                list(traffic), list(FINAL_SEEDS)
+            )
+        )
+    if len(set(training)) != len(training):
+        problems.append("a training seed is duplicated")
+    if len(set(traffic)) != len(traffic):
+        problems.append("a final traffic seed is duplicated")
+    if problems:
+        raise StatisticsError(
+            "The official final panel must be exactly {} training seeds x {} "
+            "final traffic seeds: {}.".format(
+                len(TRAINING_SEEDS), len(FINAL_SEEDS), "; ".join(problems)
+            )
+        )
+    return True
+
+
+def difference_matrix(treatment, comparator, comparator_kind=None,
+                      official=False):
     """The (training seed x traffic seed) matrix of paired differences.
 
     A learned comparator supplies its own training seeds, paired one to one.
@@ -230,6 +316,8 @@ def difference_matrix(treatment, comparator, comparator_kind=None):
     once per traffic realisation, not ten times.
     """
     treatment_seeds, treatment_episodes = _check_panel(treatment, "treatment")
+    if official:
+        assert_official_panel(treatment_seeds, treatment_episodes)
     left = _as_matrix(treatment, treatment_seeds, treatment_episodes)
 
     if _looks_deterministic(comparator):
@@ -248,6 +336,15 @@ def difference_matrix(treatment, comparator, comparator_kind=None):
                 "of the traffic seeds {}; got {}.".format(
                     list(treatment_episodes), sorted(comparator)
                 )
+            )
+        non_finite = sorted(
+            episode for episode in treatment_episodes
+            if not _finite(comparator[episode])
+        )
+        if non_finite:
+            raise StatisticsError(
+                "A deterministic comparator must report one FINITE value per "
+                "final traffic seed; {} are not finite.".format(non_finite)
             )
         row = np.asarray(
             [float(comparator[episode]) for episode in treatment_episodes],
@@ -327,7 +424,8 @@ def paired_crossed_bootstrap(treatment, comparator,
                              replicates=BOOTSTRAP_REPLICATES,
                              confidence=CONFIDENCE_LEVEL,
                              rng_seed=BOOTSTRAP_RNG_NAMESPACE,
-                             comparator_kind=None, draw_log=None):
+                             comparator_kind=None, draw_log=None,
+                             official=False):
     """Paired CI for mean(treatment - comparator) on the crossed design.
 
     Each replicate resamples training-seed indices once and traffic-seed
@@ -335,7 +433,9 @@ def paired_crossed_bootstrap(treatment, comparator,
     draw_log to capture the draws actually used, which is how the crossed
     structure is checked rather than assumed.
     """
-    built = difference_matrix(treatment, comparator, comparator_kind)
+    built = difference_matrix(
+        treatment, comparator, comparator_kind, official=official
+    )
     differences = built["differences"]
     observed = float(differences.mean())
     per_training_seed = differences.mean(axis=1)
@@ -467,11 +567,15 @@ def count_training_successes(records):
 
 def summarise_comparison(name, treatment, comparator, training_success_count,
                          replicates=BOOTSTRAP_REPLICATES,
-                         comparator_kind=None):
-    """Everything the protocol requires reported for one comparison."""
+                         comparator_kind=None, official=False):
+    """Everything the protocol requires reported for one comparison.
+
+    Pass official=True for the reported final inference, which then requires
+    the exact 10 x 10 panel.
+    """
     bootstrap = paired_crossed_bootstrap(
         treatment, comparator, replicates=replicates,
-        comparator_kind=comparator_kind,
+        comparator_kind=comparator_kind, official=official,
     )
     per_seed = bootstrap["per_training_seed_difference"]
     treatment_means = [

@@ -42,7 +42,11 @@ import json
 from . import behaviour, statistics
 
 
-PROTOCOL_VERSION = "go-no-go-1.0"
+# Bumped from 1.0 before any campaign, because the behavioural gate changed
+# materially: a boolean "review recorded" became structured per-policy reviews
+# in which observed pathology blocks GO. The comparisons, their roles and the
+# absence of an effect-size threshold are unchanged, and must not change again.
+PROTOCOL_VERSION = "go-no-go-1.1"
 
 PRIMARY_METRIC = "J_primary_mean_scheduled_waiting_burden_s"
 SECONDARY_TIE_METRIC = "mean_completed_time_loss_s"
@@ -248,7 +252,8 @@ def evaluate_go_no_go(interval_by_comparison, validity_passed,
     )
 
     review_summary = behaviour.summarise_reviews(
-        behaviour_reviews or {}, statistics.TRAINING_SEEDS, QMIX
+        behaviour_reviews or {}, statistics.TRAINING_SEEDS, QMIX,
+        required_methods=LEARNED_METHODS,
     )
     review_complete = review_summary["gating_review_complete"]
     pathology = review_summary["gating_pathology_observed"]

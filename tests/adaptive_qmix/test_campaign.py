@@ -15,11 +15,16 @@ import unittest
 from .common import REPOSITORY_ROOT
 
 from adaptive_qmix.baselines import campaign, plans
+from adaptive_qmix.baselines import plans as plans_module
 from adaptive_qmix.baselines.integrity import sha256_file
 from adaptive_qmix.baselines.runner import (
     OPTIMIZED_FIXED_OFFSET, OPTIMIZED_FIXED_TIMING,
 )
-from adaptive_qmix.baselines.search import DESIGN_FAMILY, DESIGN_SEEDS
+from adaptive_qmix.baselines.search import (
+    DESIGN_FAMILY,
+    DESIGN_SEEDS,
+    VALIDATION_FAMILY,
+)
 from adaptive_qmix.config import load_config
 from adaptive_qmix.protocol import stages as protocol_stages
 
@@ -59,6 +64,9 @@ class StubRunner(object):
             "J_primary_mean_scheduled_waiting_burden_s": (
                 12.0 + key[2] if cleared else float("nan")
             ),
+            "mean_completed_time_loss_s": (
+                20.0 + key[2] if cleared else float("nan")
+            ),
             "traffic_family": family, "traffic_seed": int(seed),
             "manifest_index": manifest_index,
             "phase_parameters": dict(plan),
@@ -71,6 +79,42 @@ class StubRunner(object):
         ) as handle:
             json.dump(metrics, handle, sort_keys=True)
         return metrics
+
+
+def make_shortlist(directory, stage, plans, expected_candidates=None,
+                   seeds=(2001, 2002, 2003, 2004, 2005)):
+    """Build a shortlist artefact with derivation evidence that verifies.
+
+    Tests need fixtures, but they must be fixtures of the real shape: a
+    shortlist whose retained plans are genuinely the top N of the scores it
+    carries. Anything looser would make the guard untestable.
+    """
+    spec = campaign.CAMPAIGN_STAGES[stage]
+    expected = list(expected_candidates or plans)
+    keys = [plans_module.candidate_key(plan) for plan in plans]
+    scores = []
+    for plan in expected:
+        key = plans_module.candidate_key(plan)
+        rank = keys.index(key) if key in keys else len(keys) + 1
+        scores.append({
+            "key": list(key), "valid": True,
+            "mean_J_primary_s": float(rank),
+            "mean_time_loss_s": float(rank) / 2.0,
+            "failed_seeds": [],
+        })
+    derivation = {
+        "expected_candidate_count": len(expected),
+        "expected_run_count": len(expected) * len(seeds),
+        "verified_run_count": len(expected) * len(seeds),
+        "seeds": list(seeds),
+        "family": spec["family"],
+        "controller": spec["controller"],
+        "ranking": "search.rank_by_design on mean design J_primary",
+        "scores": scores,
+    }
+    return campaign._write_shortlist_artefact(
+        directory, stage, plans, {"ranked_on": spec["family"]}, derivation
+    )
 
 
 class CampaignBase(unittest.TestCase):
@@ -549,17 +593,15 @@ class CampaignStageGraphTests(unittest.TestCase):
         shutil.rmtree(self.directory, ignore_errors=True)
 
     def _write_offset_shortlist(self, count=10):
-        return campaign.write_shortlist_artefact(
+        return make_shortlist(
             self.directory, campaign.OFFSET_DESIGN,
             [plans.fixed_offset_plan(offset) for offset in range(count)],
-            {"ranked_on": "benchmark_design"},
         )
 
     def _write_coarse_shortlist(self, count=5):
-        return campaign.write_shortlist_artefact(
+        return make_shortlist(
             self.directory, campaign.TIMING_COARSE_DESIGN,
             [plans.make_plan(90, 500, offset * 5) for offset in range(count)],
-            {"ranked_on": "benchmark_design"},
         )
 
     def test_the_fine_timing_stage_is_a_design_family_stage(self):
@@ -671,6 +713,60 @@ class CampaignStageGraphTests(unittest.TestCase):
             self._write_offset_shortlist(count=7)
         self.assertIn("must retain exactly 10", str(caught.exception))
 
+    def test_an_arbitrary_right_sized_shortlist_cannot_be_promoted(self):
+        """Ten plausible plans with no derivation evidence are not a shortlist."""
+        path = campaign.shortlist_path(
+            self.directory, campaign.OFFSET_DESIGN
+        )
+        chosen = [plans.fixed_offset_plan(offset) for offset in range(10)]
+        payload = {
+            "campaign_version": campaign.CAMPAIGN_VERSION,
+            "stage": campaign.OFFSET_DESIGN,
+            "controller": "optimized_fixed_offset",
+            "family": "benchmark_design",
+            "plans": [dict(plan) for plan in chosen],
+            "candidate_keys": [
+                list(plans.candidate_key(plan)) for plan in chosen
+            ],
+            "provenance": {"ranked_on": "benchmark_design"},
+        }
+        artefact = dict(payload)
+        artefact["payload_sha256"] = campaign._sha256_payload(payload)
+        os.makedirs(self.directory, exist_ok=True)
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.read_shortlist_artefact(
+                self.directory, campaign.OFFSET_DESIGN
+            )
+        self.assertIn("no derivation evidence", str(caught.exception))
+
+    def test_a_shortlist_that_is_not_the_top_of_its_own_scores_is_refused(self):
+        """Right length, real-looking evidence, wrong candidates."""
+        chosen = [plans.fixed_offset_plan(offset) for offset in range(10)]
+        every = [plans.fixed_offset_plan(offset) for offset in range(20)]
+        path = make_shortlist(
+            self.directory, campaign.OFFSET_DESIGN, chosen, every
+        )
+        with open(path) as handle:
+            artefact = json.load(handle)
+        # Swap in a candidate the recorded scores rank 15th.
+        artefact["plans"][0] = dict(plans.fixed_offset_plan(15))
+        artefact["candidate_keys"][0] = list(
+            plans.candidate_key(plans.fixed_offset_plan(15))
+        )
+        payload = dict(
+            (k, v) for k, v in artefact.items() if k != "payload_sha256"
+        )
+        artefact["payload_sha256"] = campaign._sha256_payload(payload)
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.read_shortlist_artefact(
+                self.directory, campaign.OFFSET_DESIGN
+            )
+        self.assertIn("not the top 10 of its own scores", str(caught.exception))
+
     def test_a_shortlist_from_another_controller_is_refused(self):
         path = self._write_offset_shortlist()
         with open(path) as handle:
@@ -757,10 +853,9 @@ class CampaignCliStageTests(unittest.TestCase):
     def test_the_cli_refuses_timing_validation_before_the_fine_stage(self):
         output = os.path.join(self.directory, "out2")
         state = os.path.join(self.directory, "state2")
-        campaign.write_shortlist_artefact(
+        make_shortlist(
             state, campaign.TIMING_COARSE_DESIGN,
             [plans.make_plan(90, 500, index * 5) for index in range(5)],
-            {"ranked_on": "benchmark_design"},
         )
         code, text = self._invoke([
             "--stage", "timing_validation", "--output-root", output,
@@ -791,10 +886,9 @@ class CampaignCliStageTests(unittest.TestCase):
 
     def test_a_dry_run_of_the_fine_stage_uses_the_verified_shortlist(self):
         state = os.path.join(self.directory, "state4")
-        campaign.write_shortlist_artefact(
+        make_shortlist(
             state, campaign.TIMING_COARSE_DESIGN,
             [plans.make_plan(90, 500, index * 5) for index in range(5)],
-            {"ranked_on": "benchmark_design"},
         )
         code, text = self._invoke([
             "--stage", "timing_fine_design",
@@ -866,6 +960,304 @@ class TrainingCliAuthorizationTests(unittest.TestCase):
         collapsed = " ".join(text.split())
         self.assertIn("--campaign-state", collapsed)
         self.assertIn("freeze_baseline_plans", collapsed)
+
+
+class StageFinaliserTests(CampaignBase):
+    """A: shortlists are derived from the complete verified result set."""
+
+    def setUp(self):
+        super(StageFinaliserTests, self).setUp()
+        self.shortlists = os.path.join(self.directory, "shortlists")
+        # A three-candidate offset track, so a stage is finalisable in a test.
+        self.stage = campaign.OFFSET_DESIGN
+
+    def _finalise(self, **kwargs):
+        return campaign.finalise_stage(
+            self.stage, self.output_root, self.manifest_root,
+            self.shortlists, self.config, REPOSITORY_ROOT, **kwargs
+        )
+
+    def _run_everything(self, candidates=None):
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, DESIGN_FAMILY, DESIGN_SEEDS
+        )
+        return self.execute(
+            StubRunner(), candidates=candidates, seeds=DESIGN_SEEDS
+        )
+
+    def test_the_seed_set_is_not_a_caller_parameter(self):
+        """A finaliser that took seeds could be pointed at a subset."""
+        import inspect
+        signature = inspect.signature(campaign.finalise_stage)
+        self.assertNotIn("seeds", signature.parameters)
+        self.assertNotIn(
+            "seeds", inspect.signature(campaign.collect_stage_runs).parameters
+        )
+
+    def test_an_incomplete_stage_cannot_finalise(self):
+        """Ranking a partial set would rank candidates on unequal evidence."""
+        self._run_everything()
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            self._finalise()
+        message = str(caught.exception)
+        self.assertIn("is not complete", message)
+        self.assertIn("expected runs verify", message)
+
+    def test_a_complete_stage_derives_its_shortlist_from_the_scores(self):
+        every = [plans.fixed_offset_plan(offset) for offset in range(90)]
+        self._run_everything(candidates=every)
+        result = self._finalise()
+        self.assertEqual(result["kind"], "shortlist")
+        self.assertEqual(len(result["retained_keys"]), 10)
+        self.assertEqual(result["verified_run_count"], 450)
+        # The stub scores 12.0 + offset, so the ten smallest offsets win.
+        self.assertEqual(
+            [key[2] for key in result["retained_keys"]], list(range(10))
+        )
+        artefact = campaign.read_shortlist_artefact(
+            self.shortlists, self.stage
+        )
+        self.assertEqual(len(artefact["plans"]), 10)
+        self.assertEqual(artefact["derivation"]["verified_run_count"], 450)
+
+    def test_a_missing_run_blocks_finalisation(self):
+        every = [plans.fixed_offset_plan(offset) for offset in range(90)]
+        ledger = self._run_everything(candidates=every)
+        shutil.rmtree(ledger[0]["run_directory"], ignore_errors=True)
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            self._finalise()
+        self.assertIn("449 of 450", str(caught.exception))
+
+    def test_there_is_no_public_way_to_declare_plans_selected(self):
+        """Only the finaliser may produce an official shortlist."""
+        self.assertFalse(hasattr(campaign, "write_shortlist_artefact"))
+        self.assertTrue(hasattr(campaign, "_write_shortlist_artefact"))
+        self.assertTrue(hasattr(campaign, "finalise_stage"))
+
+    def test_a_validation_stage_writes_a_selected_plan_artefact(self):
+        chosen = [plans.fixed_offset_plan(offset) for offset in range(10)]
+        make_shortlist(self.shortlists, campaign.OFFSET_DESIGN, chosen)
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, VALIDATION_FAMILY
+        )
+        campaign.execute_campaign(
+            StubRunner(), "optimized_fixed_offset", chosen,
+            VALIDATION_FAMILY, self.config, self.output_root,
+            self.manifest_root, REPOSITORY_ROOT,
+        )
+        result = campaign.finalise_stage(
+            campaign.OFFSET_VALIDATION, self.output_root, self.manifest_root,
+            self.shortlists, self.config, REPOSITORY_ROOT,
+        )
+        self.assertEqual(result["kind"], "selected_plan")
+        artefact = campaign.read_selected_plan_artefact(
+            self.shortlists, campaign.OFFSET_VALIDATION
+        )
+        self.assertIn("provenance", artefact)
+        self.assertEqual(
+            artefact["provenance"]["validation_family"], VALIDATION_FAMILY
+        )
+        self.assertTrue(artefact["baseline_config_sha256"])
+        self.assertTrue(artefact["network_sha256"])
+        # The stub scores 12.0 + offset, so offset 0 wins on J_primary.
+        self.assertEqual(artefact["plan"]["offset_s"], 0)
+
+    def test_a_tampered_selected_plan_artefact_is_refused(self):
+        chosen = [plans.fixed_offset_plan(offset) for offset in range(10)]
+        make_shortlist(self.shortlists, campaign.OFFSET_DESIGN, chosen)
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, VALIDATION_FAMILY
+        )
+        campaign.execute_campaign(
+            StubRunner(), "optimized_fixed_offset", chosen,
+            VALIDATION_FAMILY, self.config, self.output_root,
+            self.manifest_root, REPOSITORY_ROOT,
+        )
+        campaign.finalise_stage(
+            campaign.OFFSET_VALIDATION, self.output_root, self.manifest_root,
+            self.shortlists, self.config, REPOSITORY_ROOT,
+        )
+        path = campaign.selected_plan_path(
+            self.shortlists, campaign.OFFSET_VALIDATION
+        )
+        with open(path) as handle:
+            artefact = json.load(handle)
+        artefact["plan"]["offset_s"] = 77
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(campaign.StageSequenceError):
+            campaign.read_selected_plan_artefact(
+                self.shortlists, campaign.OFFSET_VALIDATION
+            )
+
+
+class EnvironmentBindingTests(CampaignBase):
+    """C: a run made under another configuration must be rerun."""
+
+    def test_a_marker_records_the_environment_it_was_produced_under(self):
+        first = StubRunner()
+        ledger = self.execute(first)
+        marker = campaign.read_completion_marker(ledger[0]["run_directory"])
+        environment = marker["environment"]
+        self.assertEqual(
+            environment["baseline_config_sha256"],
+            self.config["_config_sha256"],
+        )
+        self.assertTrue(environment["network_sha256"])
+        self.assertTrue(environment["network_git_blob"])
+
+    def test_a_run_from_another_config_is_rerun_not_reused(self):
+        first = StubRunner()
+        ledger = self.execute(first)
+        directory = ledger[0]["run_directory"]
+        marker_path = os.path.join(directory, campaign.MARKER_FILENAME)
+        with open(marker_path) as handle:
+            marker = json.load(handle)
+        marker["environment"]["baseline_config_sha256"] = "an-older-config"
+        payload = dict(
+            (k, v) for k, v in marker.items() if k != "marker_sha256"
+        )
+        marker["marker_sha256"] = campaign._sha256_payload(payload)
+        with open(marker_path, "w") as handle:
+            json.dump(marker, handle)
+        second = StubRunner()
+        self.execute(second)
+        self.assertEqual(len(second.calls), 1)
+
+    def test_a_run_from_another_network_is_rerun(self):
+        first = StubRunner()
+        ledger = self.execute(first)
+        directory = ledger[0]["run_directory"]
+        problems = campaign.completion_problems(
+            directory, OPTIMIZED_FIXED_OFFSET, self.candidates[0],
+            DESIGN_FAMILY, 2001,
+            *self._identity(2001),
+            environment=dict(
+                campaign.environment_identity(self.config, REPOSITORY_ROOT),
+                network_sha256="a-different-network",
+            )
+        )
+        self.assertTrue(
+            any("different environment" in item for item in problems)
+        )
+
+    def _identity(self, seed):
+        manifest = campaign.ensure_seed_manifest(
+            self.manifest_root, self.config, DESIGN_FAMILY, seed
+        )
+        return (
+            manifest["manifest_csv_sha256"], manifest["route_xml_sha256"],
+            manifest["sumo_seed"],
+        )
+
+    def test_a_cleared_run_without_a_finite_tie_metric_is_not_complete(self):
+        """CLEARED alone does not make a run usable evidence."""
+        class NoTieMetric(StubRunner):
+            def __call__(self, *args, **kwargs):
+                metrics = StubRunner.__call__(self, *args, **kwargs)
+                metrics["mean_completed_time_loss_s"] = float("nan")
+                with open(os.path.join(
+                    kwargs.get("output_directory") or args[9],
+                    campaign.METRICS_FILENAME,
+                ), "w") as handle:
+                    json.dump(metrics, handle, sort_keys=True)
+                return metrics
+
+        ledger = self.execute(NoTieMetric())
+        self.assertTrue(all(
+            entry["status"] == campaign.STATUS_FAILED for entry in ledger
+        ))
+        self.assertIsNone(
+            campaign.read_completion_marker(ledger[0]["run_directory"])
+        )
+
+
+class ShardLedgerTests(CampaignBase):
+    """C: concurrent shards must not rewrite one another's ledger."""
+
+    def test_each_shard_writes_its_own_ledger(self):
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, DESIGN_FAMILY, (2001, 2002)
+        )
+        for index in range(2):
+            self.execute(
+                StubRunner(), shard_index=index, shard_count=2,
+                allow_manifest_generation=False,
+            )
+        names = sorted(
+            name for name in os.listdir(self.output_root)
+            if name.startswith("campaign_ledger")
+        )
+        self.assertEqual(names, [
+            "campaign_ledger.shard000of002.csv",
+            "campaign_ledger.shard000of002.json",
+            "campaign_ledger.shard001of002.csv",
+            "campaign_ledger.shard001of002.json",
+        ])
+        self.assertNotIn(campaign.LEDGER_JSON, names)
+
+    def test_the_shard_ledgers_aggregate_to_the_whole_work_list(self):
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, DESIGN_FAMILY, (2001, 2002)
+        )
+        for index in range(2):
+            self.execute(
+                StubRunner(), shard_index=index, shard_count=2,
+                allow_manifest_generation=False,
+            )
+        aggregate = campaign.aggregate_ledgers(self.output_root)
+        self.assertEqual(len(aggregate["entries"]), 6)
+        self.assertEqual(len(aggregate["shard_ledgers"]), 2)
+        keys = [
+            (tuple(entry["candidate_key"]), entry["traffic_seed"])
+            for entry in aggregate["entries"]
+        ]
+        self.assertEqual(len(keys), len(set(keys)))
+        self.assertEqual(keys, sorted(keys))
+
+    def test_overlapping_shards_are_an_error_not_a_silent_merge(self):
+        """Two shards claiming one run would halve or double the evidence."""
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, DESIGN_FAMILY, (2001, 2002)
+        )
+        ledger = self.execute(
+            StubRunner(), allow_manifest_generation=False
+        )
+        for index in range(2):
+            # Both shard ledgers claim the same first run.
+            campaign.write_ledger(
+                self.output_root, ledger[:1],
+                shard_index=index, shard_count=2,
+            )
+        with self.assertRaises(campaign.CampaignError) as caught:
+            campaign.aggregate_ledgers(self.output_root)
+        self.assertIn("partition the work exactly once", str(caught.exception))
+
+    def test_a_worker_may_not_generate_a_missing_manifest(self):
+        with self.assertRaises(campaign.CampaignError) as caught:
+            self.execute(
+                StubRunner(), shard_index=0, shard_count=2,
+                allow_manifest_generation=False,
+            )
+        self.assertIn("consume manifests read-only", str(caught.exception))
+
+    def test_sharded_runs_default_to_read_only_manifests(self):
+        with self.assertRaises(campaign.CampaignError):
+            self.execute(StubRunner(), shard_index=0, shard_count=2)
+
+    def test_pre_generated_manifests_are_verified_not_rewritten(self):
+        prepared = campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, DESIGN_FAMILY, (2001, 2002)
+        )
+        before = dict(
+            (seed, entry["route_xml_sha256"])
+            for seed, entry in prepared.items()
+        )
+        loaded = campaign.load_seed_manifests(
+            self.manifest_root, self.config, DESIGN_FAMILY, (2001, 2002)
+        )
+        for seed, entry in loaded.items():
+            self.assertEqual(entry["route_xml_sha256"], before[seed])
 
 
 if __name__ == "__main__":

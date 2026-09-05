@@ -26,6 +26,10 @@ import json
 import os
 
 from . import stages
+from .statistics import (
+    TRAINING_BUDGET_TRANSITIONS,
+    TRAINING_SEEDS,
+)
 
 
 AUTHORIZATION_VERSION = "official-training-authorization-1.0"
@@ -68,10 +72,15 @@ def authorization_evidence(state_directory):
         artefact = stages.verify_stage_artefact(
             state_directory, REQUIRED_STAGE
         )
+        # Verified semantically, not merely hash-consistently: the payload
+        # must record both selected classical plans with their provenance and
+        # the identity they were selected under.
+        stages.validate_stage_payload(REQUIRED_STAGE, artefact.get("payload"))
     except (stages.StageOrderError, stages.ArtefactError) as error:
         raise TrainingAuthorizationError(
             "Official training is not authorised: {}".format(error)
         )
+    payload = artefact.get("payload") or {}
     path = stages.artefact_path(state_directory, REQUIRED_STAGE)
     with open(path, "rb") as handle:
         file_digest = hashlib.sha256(handle.read()).hexdigest()
@@ -83,6 +92,13 @@ def authorization_evidence(state_directory):
         "authorising_artefact_sha256": file_digest,
         "authorising_payload_sha256": artefact["payload_sha256"],
         "campaign_state_directory": state_directory,
+        "frozen_baseline_plans": dict(
+            (track, payload[track]["selected_key"])
+            for track in ("optimized_fixed_offset", "optimized_fixed_timing")
+            if isinstance(payload.get(track), dict)
+        ),
+        "baseline_config_sha256": payload.get("baseline_config_sha256"),
+        "network_sha256": payload.get("network_sha256"),
         "completed_stages": stages.completed_stages(state_directory),
         "final_test_unlocked": False,
         "final_test_note": (
@@ -95,12 +111,48 @@ def authorization_evidence(state_directory):
     }
 
 
-def authorize_run(run_kind, state_directory=None):
+def assert_official_training_parameters(training_seed, transition_limit,
+                                        interaction_budget):
+    """Official training is the frozen campaign, not a variation on it.
+
+    Only the ten preregistered training seeds exist as inferential units, and
+    the matched interaction budget is the whole basis of the comparison
+    against IDQN and VDN. A shortened official run would be a different
+    experiment reported under the same name.
+    """
+    seed = int(training_seed)
+    if seed not in TRAINING_SEEDS:
+        raise TrainingAuthorizationError(
+            "Official training seed must be one of {}; got {}. The training "
+            "seed is the inferential unit, and a seed outside the "
+            "preregistered set has no place in the panel.".format(
+                list(TRAINING_SEEDS), seed
+            )
+        )
+    budget = int(interaction_budget)
+    if transition_limit is not None and int(transition_limit) != budget:
+        raise TrainingAuthorizationError(
+            "Official training must execute exactly {} transitions; "
+            "--transition-limit {} would shorten it. The matched interaction "
+            "budget is what makes the comparison between methods "
+            "fair.".format(budget, transition_limit)
+        )
+    return True
+
+
+def authorize_run(run_kind, state_directory=None, training_seed=None,
+                  transition_limit=None, interaction_budget=None):
     """Returns the evidence for an official run, or None when none is needed."""
     if run_kind in UNGATED_RUN_KINDS:
         return None
     if run_kind != AUTHORISED_RUN_KIND:
         raise TrainingAuthorizationError(
             "Unknown run kind {!r}.".format(run_kind)
+        )
+    if training_seed is not None:
+        assert_official_training_parameters(
+            training_seed, transition_limit,
+            TRAINING_BUDGET_TRANSITIONS if interaction_budget is None
+            else interaction_budget,
         )
     return authorization_evidence(state_directory)

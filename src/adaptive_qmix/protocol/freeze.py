@@ -61,9 +61,14 @@ REQUIRED_PLAN_PROVENANCE = (
 )
 REQUIRED_CHECKPOINT_FIELDS = (
     "training_seed", "transition_index", "checkpoint_sha256",
-    "selected_on_family", "selected_on_seeds",
+    "checkpoint_path", "selected_on_family", "selected_on_seeds",
     "validation_mean_J_primary_s", "validation_mean_time_loss_s",
 )
+
+# A hash that matches nothing is decoration. Each record names the file it
+# froze, and the hash is checked against those bytes: otherwise "frozen"
+# would mean only that somebody wrote down sixty-four hex characters.
+CHECKPOINT_HASH_PATTERN = "64 lowercase hex characters"
 
 # The inferential unit is the training seed, so every method carries ten
 # independently selected policies -- one per training seed -- and not a single
@@ -266,7 +271,48 @@ def _checkpoint_problems(method, entries):
                 "{}.transition_index {} is not a preregistered "
                 "checkpoint".format(entry_label, index)
             )
+        problems.extend(_checkpoint_file_problems(entry_label, entry))
     return problems
+
+
+def _checkpoint_file_problems(entry_label, entry):
+    """The recorded hash must be the hash of the file actually frozen."""
+    digest = entry.get("checkpoint_sha256")
+    path = entry.get("checkpoint_path")
+    problems = []
+    if digest and not (
+        len(str(digest)) == 64
+        and all(character in "0123456789abcdef" for character in str(digest))
+    ):
+        problems.append(
+            "{}.checkpoint_sha256 is not {}".format(
+                entry_label, CHECKPOINT_HASH_PATTERN
+            )
+        )
+    if not path:
+        return problems
+    if not os.path.isfile(path):
+        problems.append(
+            "{}.checkpoint_path {} does not exist, so its hash binds "
+            "nothing".format(entry_label, path)
+        )
+        return problems
+    actual = _sha256_file(path)
+    if digest and actual != digest:
+        problems.append(
+            "{}.checkpoint_sha256 is {} but {} hashes to {}".format(
+                entry_label, digest, path, actual
+            )
+        )
+    return problems
+
+
+def _sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def freeze_problems(artefact):
