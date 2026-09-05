@@ -1053,10 +1053,22 @@ class BaselineConfigTests(unittest.TestCase):
         self.baseline = load_config(BASELINE_CONFIG_PATH)
         self.qualification = load_config(QUALIFICATION_CONFIG_PATH)
 
-    def test_the_adaptive_qualification_hash_is_untouched(self):
+    def test_the_adaptive_qualification_hash_is_pinned(self):
+        """Pinned to the frozen-semantics value, so a drift is caught here.
+
+        This moved once, deliberately, when the primary yellow semantics was
+        declared frozen in S3; it must not move again without that being an
+        explicit decision.
+        """
         self.assertEqual(
             self.qualification["_config_sha256"],
-            "fa31ffc2b83f17dd49b9525cebea60de8b3b52b9c2312cb16f9626a7a8e8882c",
+            "18342d3b6e9646d062f63ebc8474571cdedb151c49bbe50b375130ff98f7c954",
+        )
+
+    def test_the_baseline_hash_is_pinned(self):
+        self.assertEqual(
+            self.baseline["_config_sha256"],
+            "c25393bb5bfd4ab03d8f0527fb15fe1037d04cf75795d8550ea8e0361d21ef4a",
         )
 
     def test_the_baseline_config_is_a_separate_file_with_its_own_hash(self):

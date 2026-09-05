@@ -24,7 +24,7 @@
     "switch_new_green_s": 2,
     "extend_duration_s": 5,
     "switch_duration_s": 5,
-    "yellow_semantics": "provisional_synchronous_3plus2"
+    "yellow_semantics": "frozen_primary_synchronous_3plus2"
   },
   "initial_state": {
     "J1_phase": "H",

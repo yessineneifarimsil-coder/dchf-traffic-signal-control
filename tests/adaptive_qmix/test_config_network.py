@@ -13,10 +13,31 @@ from adaptive_qmix.signal_executor import UnsupportedAsynchronousSemantics, vali
 
 
 class ConfigAndNetworkTests(unittest.TestCase):
-    def test_official_training_is_blocked_by_provisional_yellow(self):
+    def test_official_training_is_blocked_until_explicitly_unlocked(self):
+        """The semantics is frozen; the unlock is still a separate action."""
         config = config_copy()
-        with self.assertRaises(ScientificRunBlocked):
+        with self.assertRaises(ScientificRunBlocked) as caught:
             require_scientific_run_allowed(config)
+        self.assertIn("scientific_run_allowed is still false",
+                      str(caught.exception))
+
+    def test_a_renamed_yellow_semantics_cannot_pass_as_frozen(self):
+        """The old blocker keyed on a prefix, so any other string passed."""
+        config = config_copy()
+        config["scientific_run_allowed"] = True
+        config["executor"]["yellow_semantics"] = "definitely_final_honest"
+        with self.assertRaises(ScientificRunBlocked) as caught:
+            require_scientific_run_allowed(config)
+        self.assertIn("must be declared", str(caught.exception))
+
+    def test_frozen_semantics_with_wrong_durations_is_refused(self):
+        config = config_copy()
+        config["scientific_run_allowed"] = True
+        config["executor"]["yellow_duration_s"] = 4
+        config["executor"]["switch_new_green_s"] = 1
+        with self.assertRaises(ScientificRunBlocked) as caught:
+            require_scientific_run_allowed(config)
+        self.assertIn("frozen at 5 s decisions", str(caught.exception))
 
     def test_asynchronous_three_plus_five_is_rejected(self):
         config = config_copy()

@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 
+from .protocol import semantics as semantics_module
+
 
 class ContractError(ValueError):
     """Raised when a configuration violates the approved contract."""
@@ -60,9 +62,20 @@ def validate_config(config):
             "next joint-decision time. elapsed_seconds only solves discounting."
         )
 
-    if executor["yellow_semantics"] == "provisional_synchronous_3plus2":
+    semantics = executor["yellow_semantics"]
+    if semantics == semantics_module.FROZEN_YELLOW_SEMANTICS:
+        # The frozen primary declaration is only meaningful if the numbers
+        # behind it are the frozen ones, so it is verified rather than trusted.
+        try:
+            semantics_module.assert_frozen_timing(executor)
+            semantics_module.assert_no_imposed_green_bounds(executor)
+        except semantics_module.SemanticsError as error:
+            raise ContractError(str(error))
+    elif semantics.startswith(semantics_module.PROVISIONAL_PREFIX):
         if (yellow, new_green, control) != (3, 2, 5):
-            raise ContractError("provisional_synchronous_3plus2 must be exactly 3+2.")
+            raise ContractError(
+                "{} must be exactly 3+2.".format(semantics)
+            )
 
     observation = config["observation"]
     if len(observation["feature_order"]) != 8:
@@ -92,13 +105,23 @@ def validate_config(config):
 
 
 def require_scientific_run_allowed(config):
+    """An official run needs the frozen declaration AND an explicit unlock.
+
+    The old blocker keyed on the string "provisional_", which meant any other
+    string would have passed. It now requires the positive declaration from
+    adaptive_qmix.protocol.semantics, whose durations are verified to be
+    exactly 5 / 3 / 2, so a run cannot become official by renaming a field.
+    """
+    try:
+        semantics_module.assert_primary_semantics_frozen(config)
+    except semantics_module.SemanticsError as error:
+        raise ScientificRunBlocked(
+            "Official run blocked: {}".format(error)
+        )
     if not bool(config.get("scientific_run_allowed", False)):
         raise ScientificRunBlocked(
-            "Official run blocked: yellow semantics remains provisional."
-        )
-    semantics = config["executor"]["yellow_semantics"]
-    if semantics.startswith("provisional_"):
-        raise ScientificRunBlocked(
-            "Official run blocked by provisional yellow semantics: {}".format(semantics)
+            "Official run blocked: the primary semantics is frozen, but "
+            "scientific_run_allowed is still false. Unlocking is a separate, "
+            "explicit action taken after the pre-final audit."
         )
 
