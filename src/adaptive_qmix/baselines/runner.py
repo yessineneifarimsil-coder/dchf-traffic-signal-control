@@ -36,6 +36,7 @@ from ..metrics import parse_tripinfo, scheduled_demand_metrics
 from ..provenance import build_run_manifest, sha256_file
 from ..signal_executor import EXTEND, SWITCH
 from ..traci_access import DEFAULT_MODE
+from .integrity import verify_manifest_for_run
 from .executors import (
     CanonicalMaxPressureExecutor,
     PretimedScheduleExecutor,
@@ -43,7 +44,7 @@ from .executors import (
     TIMING_PRETIMED,
     TIMING_SYNCHRONOUS,
 )
-from .plans import validate_plan
+from .plans import MIN_GREEN_S, candidate_is_valid, validate_plan
 from .pressure import (
     FROZEN_MOVEMENT_PAIRS,
     LANE_COUNT_ACCESSOR,
@@ -231,7 +232,8 @@ def _write_rows(path, fieldnames, rows, controller, timing_authority,
 def _baseline_manifest(repository_root, config, manifest_csv_path, controller,
                        plan, traffic_family, traffic_seed, sumo_seed, run_kind,
                        traci_access_mode, lane_state_logging,
-                       qualification_config_path):
+                       qualification_config_path, verified_hashes=None,
+                       manifest_index=0):
     manifest = build_run_manifest(
         repository_root,
         config,
@@ -257,6 +259,13 @@ def _baseline_manifest(repository_root, config, manifest_csv_path, controller,
     manifest["traffic_seed"] = int(traffic_seed)
     manifest["sumo_seed"] = int(sumo_seed)
     manifest["manifest_sha256"] = sha256_file(manifest_csv_path)
+    manifest["manifest_index"] = int(manifest_index)
+    if verified_hashes is not None:
+        manifest["manifest_csv_sha256"] = verified_hashes["csv_sha256"]
+        # SUMO executes the route XML; the CSV is provenance for it. Both are
+        # recorded so a run can be tied to the file that actually ran.
+        manifest["route_xml_sha256"] = verified_hashes["route_xml_sha256"]
+        manifest["manifest_metadata_verified"] = True
     manifest["baseline_config_sha256"] = config["_config_sha256"]
     manifest["baseline_config_path"] = config.get("_config_path")
     if qualification_config_path and os.path.isfile(qualification_config_path):
@@ -280,20 +289,54 @@ def run_baseline(traci_module, config, repository_root, controller,
                  traci_access_mode=DEFAULT_MODE,
                  lane_state_logging=LANE_LOG_FULL,
                  qualification_config_path=None,
-                 movement_pairs=None):
-    """One full-clearance baseline episode, logged exactly like an adaptive run."""
+                 movement_pairs=None, manifest_index=0,
+                 manifest_prefix=None):
+    """One full-clearance baseline episode, logged exactly like an adaptive run.
+
+    Every held-out and manifest-integrity check runs before an output
+    directory is created or a manifest is opened, so a refused run leaves no
+    trace on disk to be mistaken for a real one later.
+    """
     if controller not in BASELINE_CONTROLLERS:
         raise BaselineError(
             "Unknown baseline controller {!r}; expected one of {}.".format(
                 controller, BASELINE_CONTROLLERS
             )
         )
+    # Argument validity first: it touches nothing, so a malformed call is
+    # rejected before the guard even needs to look at a manifest.
     if controller in PRETIMED_CONTROLLERS:
         if plan is None:
             raise BaselineError(
                 "{} is pretimed and needs an explicit plan.".format(controller)
             )
         validate_plan(plan)
+    if controller == OPTIMIZED_FIXED_TIMING and not candidate_is_valid(plan):
+        # The classical benchmark's plan-admissibility rule, enforced where a
+        # plan is executed and not only where one is generated. It is a rule
+        # about pretimed plans; QMIX and P-5 have no minimum green and are
+        # deliberately untouched by it.
+        raise BaselineError(
+            "optimized_fixed_timing refuses a plan with a green below {} s: "
+            "g_H = {}, g_V = {}, C = {}. This admissibility rule is classical "
+            "only and is never applied to QMIX or P-5.".format(
+                MIN_GREEN_S, plan["green_H_s"], plan["green_V_s"],
+                plan["cycle_s"],
+            )
+        )
+    # Held-out and manifest-integrity checks, before any directory exists and
+    # before SUMO is given a route file to execute.
+    if manifest_prefix is None:
+        if not str(manifest_csv_path).endswith(".csv"):
+            raise BaselineError(
+                "Cannot locate the manifest metadata for {!r}; pass "
+                "manifest_prefix explicitly.".format(manifest_csv_path)
+            )
+        manifest_prefix = str(manifest_csv_path)[: -len(".csv")]
+    _metadata, verified_hashes = verify_manifest_for_run(
+        manifest_prefix, traffic_family, traffic_seed, manifest_index
+    )
+
     network_path = os.path.join(repository_root, config["network"]["path"])
     if controller in PRESSURE_CONTROLLERS:
         validate_movement_pairs(network_path, movement_pairs)
@@ -307,6 +350,7 @@ def run_baseline(traci_module, config, repository_root, controller,
         repository_root, config, manifest_csv_path, controller, plan,
         traffic_family, traffic_seed, sumo_seed, run_kind, traci_access_mode,
         lane_state_logging, qualification_config_path,
+        verified_hashes=verified_hashes, manifest_index=manifest_index,
     )
 
     policy = None
@@ -426,6 +470,10 @@ def run_baseline(traci_module, config, repository_root, controller,
     metrics["traffic_seed"] = int(traffic_seed)
     metrics["sumo_seed"] = int(sumo_seed)
     metrics["manifest_sha256"] = manifest["manifest_sha256"]
+    metrics["manifest_csv_sha256"] = manifest["manifest_csv_sha256"]
+    # The route XML is what SUMO actually executed; the CSV is provenance.
+    metrics["route_xml_sha256"] = manifest["route_xml_sha256"]
+    metrics["manifest_index"] = int(manifest_index)
     metrics["network_sha256"] = manifest["network_sha256"]
     metrics["network_git_blob"] = manifest["network_git_blob"]
     metrics["baseline_config_sha256"] = manifest["baseline_config_sha256"]

@@ -8,14 +8,17 @@ controllers, the grids or the selection protocol correct.
 from __future__ import absolute_import
 
 import inspect
+import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
 from .common import REPOSITORY_ROOT, config_copy
 
-from adaptive_qmix.baselines import plans, pressure, search
+from adaptive_qmix.baselines import integrity, plans, pressure, search
 from adaptive_qmix.baselines.executors import (
     CanonicalMaxPressureExecutor,
     PretimedScheduleExecutor,
@@ -26,7 +29,9 @@ from adaptive_qmix.baselines.executors import (
 from adaptive_qmix.baselines.runner import (
     BaselineEnvironment,
     BaselineError,
+    OPTIMIZED_FIXED_TIMING,
     SIMULTANEOUS_FIXED_TIME,
+    _baseline_manifest,
     _log_matched_decisions,
     run_baseline,
     BASELINE_CONTROLLERS,
@@ -48,6 +53,7 @@ from adaptive_qmix.config import load_config
 from adaptive_qmix.environment import AdaptiveTrafficEnvironment
 from adaptive_qmix.ledger import VehicleLedger
 from adaptive_qmix.metrics import scheduled_demand_metrics
+from adaptive_qmix.traffic import generate_manifest_records, write_manifest
 from adaptive_qmix.signal_executor import (
     EXTEND,
     SWITCH,
@@ -812,11 +818,13 @@ class SelectionProtocolTests(unittest.TestCase):
 
     @staticmethod
     def _record(plan, family, mean_j, mean_loss, valid=True, failed=0):
+        seeds = list(search.required_seeds(family))
         return {
             "plan": dict(plan), "key": plans.candidate_key(plan),
             "family": family, "valid": valid, "failed_seed_count": failed,
             "failed_seeds": [], "mean_J_primary_s": mean_j,
-            "mean_time_loss_s": mean_loss, "seeds": [], "run_count": 5,
+            "mean_time_loss_s": mean_loss, "seeds": seeds,
+            "required_seeds": seeds, "run_count": len(seeds),
             "clearance_statuses": [],
         }
 
@@ -939,17 +947,20 @@ class ClearanceFailureRankingTests(unittest.TestCase):
     """S2-G: an uncleared candidate is never given a favourable score."""
 
     @staticmethod
-    def _runs(statuses, j_value=5.0):
+    def _runs(statuses, j_value=5.0, family=None):
+        """One run per preregistered seed; statuses is padded with CLEARED."""
+        seeds = search.required_seeds(family or search.DESIGN_FAMILY)
+        statuses = list(statuses) + ["CLEARED"] * (len(seeds) - len(statuses))
         return [
             {
-                "traffic_seed": 2001 + index,
+                "traffic_seed": seed,
                 "clearance_status": status,
                 "J_primary_valid": status == "CLEARED",
                 search.PRIMARY_FIELD: j_value if status == "CLEARED"
                 else float("nan"),
                 search.TIME_LOSS_FIELD: 1.0,
             }
-            for index, status in enumerate(statuses)
+            for seed, status in zip(seeds, statuses)
         ]
 
     def test_a_failing_candidate_is_marked_invalid_with_no_finite_score(self):
@@ -965,42 +976,55 @@ class ClearanceFailureRankingTests(unittest.TestCase):
             "a failing candidate must not carry a finite J_primary",
         )
 
-    def test_a_failing_candidate_never_outranks_a_valid_one(self):
+    def test_a_failing_candidate_is_excluded_from_the_shortlist(self):
         good = search.summarise_candidate(
             plans.fixed_offset_plan(10),
-            self._runs(["CLEARED"] * 3, j_value=999.0),
+            self._runs(["CLEARED"], j_value=999.0),
             search.DESIGN_FAMILY,
         )
         bad = search.summarise_candidate(
             plans.fixed_offset_plan(20),
-            self._runs(["CLEARANCE_FAILURE"] * 3),
+            self._runs(["CLEARANCE_FAILURE"] * 5),
             search.DESIGN_FAMILY,
         )
-        ranked = search.rank_by_design([bad, good], 2)
+        ranked = search.rank_by_design([bad, good], 1)
+        self.assertEqual(len(ranked), 1)
         self.assertTrue(ranked[0]["valid"])
         self.assertEqual(ranked[0]["plan"]["offset_s"], 10)
 
-    def test_failing_candidates_are_ordered_deterministically_among_themselves(self):
-        one_failure = search.summarise_candidate(
+    def test_the_shortlist_is_never_padded_with_invalid_candidates(self):
+        """Too few valid candidates is an error, not a shorter-quality list."""
+        good = search.summarise_candidate(
+            plans.fixed_offset_plan(10), self._runs([]), search.DESIGN_FAMILY
+        )
+        bad = search.summarise_candidate(
+            plans.fixed_offset_plan(20),
+            self._runs(["CLEARANCE_FAILURE"] * 5),
+            search.DESIGN_FAMILY,
+        )
+        with self.assertRaises(search.SelectionError) as caught:
+            search.rank_by_design([good, bad], 2)
+        self.assertIn("never padded", str(caught.exception))
+
+    def test_a_single_failing_seed_invalidates_the_whole_candidate(self):
+        record = search.summarise_candidate(
             plans.fixed_offset_plan(30),
             self._runs(["CLEARED", "CLEARANCE_FAILURE"]),
             search.DESIGN_FAMILY,
         )
-        two_failures = search.summarise_candidate(
-            plans.fixed_offset_plan(40),
-            self._runs(["CLEARANCE_FAILURE", "CLEARANCE_FAILURE"]),
-            search.DESIGN_FAMILY,
-        )
-        ranked = search.rank_by_design([two_failures, one_failure], 2)
-        self.assertEqual(
-            [record["plan"]["offset_s"] for record in ranked], [30, 40]
-        )
+        self.assertFalse(record["valid"])
+        self.assertEqual(record["failed_seeds"], [2002])
+        with self.assertRaises(search.SelectionError):
+            search.rank_by_design([record], 1)
 
     def test_no_plan_is_selected_when_every_candidate_failed(self):
         records = [
             search.summarise_candidate(
                 plans.fixed_offset_plan(offset),
-                self._runs(["CLEARANCE_FAILURE"]),
+                self._runs(
+                    ["CLEARANCE_FAILURE"] * 5,
+                    family=search.VALIDATION_FAMILY,
+                ),
                 search.VALIDATION_FAMILY,
             )
             for offset in (0, 10)
@@ -1015,6 +1039,7 @@ class ClearanceFailureRankingTests(unittest.TestCase):
             search.DESIGN_FAMILY,
         )
         self.assertFalse(record["valid"])
+        self.assertEqual(record["failed_seeds"], [2001])
 
 
 class BaselineConfigTests(unittest.TestCase):
@@ -1317,15 +1342,6 @@ class LedgerReconciliationTests(unittest.TestCase):
 class FinalSeedProtectionTests(unittest.TestCase):
     """S2-I: development and search code cannot reach the final family."""
 
-    def test_the_baseline_script_refuses_the_final_family(self):
-        path = os.path.join(
-            REPOSITORY_ROOT, "scripts", "adaptive_qmix", "run_baseline.py"
-        )
-        with open(path, "r") as handle:
-            source = handle.read()
-        self.assertIn("FINAL_FAMILY", source)
-        self.assertIn("LeakageError", source)
-
     def test_search_entry_points_all_guard_the_family(self):
         for family in (search.FINAL_FAMILY, "training", "learner_validation"):
             with self.assertRaises(search.LeakageError):
@@ -1333,10 +1349,10 @@ class FinalSeedProtectionTests(unittest.TestCase):
 
     def test_summarising_a_candidate_rejects_a_final_seed(self):
         runs = [{
-            "traffic_seed": 3001, "clearance_status": "CLEARED",
+            "traffic_seed": seed, "clearance_status": "CLEARED",
             "J_primary_valid": True, search.PRIMARY_FIELD: 5.0,
             search.TIME_LOSS_FIELD: 1.0,
-        }]
+        } for seed in (2001, 2002, 2003, 2004, 3001)]
         with self.assertRaises(search.LeakageError):
             search.summarise_candidate(
                 plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
@@ -1352,6 +1368,655 @@ class FinalSeedProtectionTests(unittest.TestCase):
                 if "final_test" in name:
                     found.append(os.path.join(root, name))
         self.assertEqual(found, [])
+
+
+SCRIPT_PATH = os.path.join(
+    REPOSITORY_ROOT, "scripts", "adaptive_qmix", "run_baseline.py"
+)
+
+
+def invoke_cli(arguments):
+    """Actually run the baseline script and return (code, stdout+stderr)."""
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = os.path.join(REPOSITORY_ROOT, "src")
+    completed = subprocess.run(
+        [sys.executable, SCRIPT_PATH] + list(arguments),
+        cwd=REPOSITORY_ROOT, env=environment,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    )
+    return completed.returncode, completed.stdout.decode("utf-8", "replace")
+
+
+class HeldOutGuardTests(unittest.TestCase):
+    """A: the guard is one place, and it runs before anything is created."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def test_the_final_family_is_refused(self):
+        with self.assertRaises(integrity.HeldOutDataError):
+            integrity.assert_traffic_selection_allowed("final_test", 2001, 0)
+
+    def test_every_final_seed_is_refused_under_any_family(self):
+        for family in integrity.ALLOWED_FAMILIES:
+            for seed in range(3001, 3011):
+                with self.assertRaises(integrity.HeldOutDataError):
+                    integrity.assert_traffic_selection_allowed(family, seed, 0)
+
+    def test_benchmark_design_with_seed_3001_is_refused(self):
+        """The exact relabelling the review asked about."""
+        with self.assertRaises(integrity.HeldOutDataError) as caught:
+            integrity.assert_traffic_selection_allowed(
+                "benchmark_design", 3001, 0
+            )
+        self.assertIn("held-out final test", str(caught.exception))
+        self.assertIn(
+            "relabelling the family does not release", str(caught.exception)
+        )
+
+    def test_seeds_just_outside_the_held_out_block_are_allowed(self):
+        for seed in (3000, 3011, 2005, 2105, 101):
+            self.assertTrue(
+                integrity.assert_traffic_selection_allowed(
+                    "benchmark_design", seed, 0
+                )
+            )
+
+    def test_non_baseline_families_are_refused(self):
+        for family in ("training", "learner_validation",
+                       "legacy_deterministic_sanity", "made_up"):
+            with self.assertRaises(integrity.HeldOutDataError):
+                integrity.assert_traffic_selection_allowed(family, 101, 0)
+
+    def test_the_cli_refuses_benchmark_design_with_a_final_seed(self):
+        output = os.path.join(self.directory, "must_not_exist")
+        code, text = invoke_cli([
+            "--controller", "simultaneous_fixed_time",
+            "--traffic-family", "benchmark_design", "--traffic-seed", "3001",
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("held-out final test", text)
+        self.assertFalse(
+            os.path.exists(output),
+            "a refused run must not create its output directory",
+        )
+
+    def test_the_cli_refuses_the_final_family_outright(self):
+        output = os.path.join(self.directory, "also_must_not_exist")
+        code, text = invoke_cli([
+            "--controller", "simultaneous_fixed_time",
+            "--traffic-family", "final_test", "--traffic-seed", "2001",
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("held out", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_nothing_is_written_anywhere_by_a_refused_run(self):
+        before = sorted(os.listdir(self.directory))
+        code, _text = invoke_cli([
+            "--controller", "canonical_operational_max_pressure",
+            "--traffic-family", "benchmark_validation",
+            "--traffic-seed", "3010",
+            "--output-directory", os.path.join(self.directory, "nope"),
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertEqual(sorted(os.listdir(self.directory)), before)
+
+
+class ManifestIntegrityTests(unittest.TestCase):
+    """A and B: the manifest, not the label, says what the traffic is."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = load_config(BASELINE_CONFIG_PATH)
+        self.prefix = os.path.join(self.directory, "manifest")
+        records = generate_manifest_records(
+            self.config, "development", 101, 0
+        )
+        self.metadata = write_manifest(
+            records, self.config, self.prefix, "development", 101, 0
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def test_a_matching_manifest_verifies(self):
+        metadata, hashes = integrity.verify_manifest_for_run(
+            self.prefix, "development", 101, 0
+        )
+        self.assertEqual(metadata["family"], "development")
+        self.assertEqual(hashes["csv_sha256"], self.metadata["csv_sha256"])
+        self.assertEqual(
+            hashes["route_xml_sha256"], self.metadata["route_xml_sha256"]
+        )
+
+    def test_a_mismatched_family_is_refused(self):
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            integrity.verify_manifest_for_run(
+                self.prefix, "benchmark_design", 101, 0
+            )
+        self.assertIn("family", str(caught.exception))
+        self.assertIn("never overrides", str(caught.exception))
+
+    def test_a_mismatched_seed_is_refused(self):
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            integrity.verify_manifest_for_run(self.prefix, "development", 102, 0)
+
+    def test_a_mismatched_manifest_index_is_refused(self):
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 1)
+
+    def test_a_manifest_with_the_wrong_vehicle_count_is_refused(self):
+        path = integrity.metadata_path_for(self.prefix)
+        with open(path) as handle:
+            metadata = json.load(handle)
+        metadata["scheduled_total"] = 2799
+        with open(path, "w") as handle:
+            json.dump(metadata, handle)
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+        self.assertIn("2799", str(caught.exception))
+
+    def test_a_final_test_manifest_is_refused_even_if_labelled_otherwise(self):
+        """The metadata is authoritative, so a disguised manifest still fails."""
+        path = integrity.metadata_path_for(self.prefix)
+        with open(path) as handle:
+            metadata = json.load(handle)
+        metadata["family"] = "final_test"
+        with open(path, "w") as handle:
+            json.dump(metadata, handle)
+        with self.assertRaises(integrity.HeldOutDataError):
+            integrity.verify_manifest_for_run(self.prefix, "final_test", 101, 0)
+        with self.assertRaises(integrity.HeldOutDataError):
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+
+    def test_a_manifest_whose_metadata_carries_a_final_seed_is_refused(self):
+        path = integrity.metadata_path_for(self.prefix)
+        with open(path) as handle:
+            metadata = json.load(handle)
+        metadata["seed_value"] = 3005
+        with open(path, "w") as handle:
+            json.dump(metadata, handle)
+        with self.assertRaises(integrity.HeldOutDataError):
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+
+    def test_a_missing_metadata_file_is_refused(self):
+        os.remove(integrity.metadata_path_for(self.prefix))
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+
+    def test_a_tampered_csv_is_refused(self):
+        with open(self.prefix + ".csv", "a") as handle:
+            handle.write("extra,row,that,was,not,hashed,here\n")
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+        self.assertIn("route manifest CSV", str(caught.exception))
+
+    def test_a_tampered_route_xml_is_refused_with_an_intact_csv(self):
+        """SUMO executes the route XML, so its hash is the one that matters."""
+        csv_before = integrity.sha256_file(self.prefix + ".csv")
+        with open(self.prefix + ".rou.xml", "r") as handle:
+            body = handle.read()
+        # Move one vehicle's departure: a change SUMO would act on and the
+        # CSV hash would never notice.
+        tampered = body.replace('depart="0"', 'depart="7"', 1)
+        self.assertNotEqual(tampered, body)
+        with open(self.prefix + ".rou.xml", "w") as handle:
+            handle.write(tampered)
+        self.assertEqual(
+            integrity.sha256_file(self.prefix + ".csv"), csv_before,
+            "the CSV is untouched, which is exactly the dangerous case",
+        )
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+        message = str(caught.exception)
+        self.assertIn("route XML executed by SUMO", message)
+        self.assertIn("SUMO executes the route XML", message)
+
+    def test_a_missing_route_xml_is_refused(self):
+        os.remove(self.prefix + ".rou.xml")
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            integrity.verify_manifest_for_run(self.prefix, "development", 101, 0)
+
+    def test_the_runner_refuses_a_tampered_route_before_starting_sumo(self):
+        """traci is never touched, because the guard fails first."""
+        with open(self.prefix + ".rou.xml", "a") as handle:
+            handle.write("<!-- appended after hashing -->\n")
+        output = os.path.join(self.directory, "run")
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            run_baseline(
+                None, self.config, REPOSITORY_ROOT, SIMULTANEOUS_FIXED_TIME,
+                self.prefix + ".csv", self.prefix + ".rou.xml",
+                "development", 101, 1, output,
+                plan=plans.simultaneous_plan(),
+            )
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_cli_refuses_a_manifest_prefix_that_does_not_match(self):
+        output = os.path.join(self.directory, "cli_run")
+        code, text = invoke_cli([
+            "--controller", "simultaneous_fixed_time",
+            "--traffic-family", "benchmark_design", "--traffic-seed", "2001",
+            "--manifest-prefix", self.prefix,
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("not what this run declared", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_cli_refuses_a_tampered_route_xml(self):
+        with open(self.prefix + ".rou.xml", "a") as handle:
+            handle.write("<!-- tampered -->\n")
+        output = os.path.join(self.directory, "cli_tampered")
+        code, text = invoke_cli([
+            "--controller", "simultaneous_fixed_time",
+            "--traffic-family", "development", "--traffic-seed", "101",
+            "--manifest-prefix", self.prefix,
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("route XML executed by SUMO", text)
+        self.assertFalse(os.path.exists(output))
+
+
+class RecordedHashTests(unittest.TestCase):
+    """B: both verified hashes are written into the run manifest."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = load_config(BASELINE_CONFIG_PATH)
+        self.prefix = os.path.join(self.directory, "manifest")
+        self.metadata = write_manifest(
+            generate_manifest_records(self.config, "development", 101, 0),
+            self.config, self.prefix, "development", 101, 0,
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def test_the_run_manifest_records_both_verified_hashes(self):
+        _metadata, hashes = integrity.verify_manifest_for_run(
+            self.prefix, "development", 101, 0
+        )
+        manifest = _baseline_manifest(
+            REPOSITORY_ROOT, self.config, self.prefix + ".csv",
+            SIMULTANEOUS_FIXED_TIME, plans.simultaneous_plan(), "development",
+            101, 1234, "development_baseline", "subscription", "full", None,
+            verified_hashes=hashes, manifest_index=0,
+        )
+        self.assertEqual(
+            manifest["manifest_csv_sha256"], self.metadata["csv_sha256"]
+        )
+        self.assertEqual(
+            manifest["route_xml_sha256"], self.metadata["route_xml_sha256"]
+        )
+        self.assertNotEqual(
+            manifest["manifest_csv_sha256"], manifest["route_xml_sha256"],
+            "the CSV and the route XML are different files",
+        )
+        self.assertTrue(manifest["manifest_metadata_verified"])
+        self.assertEqual(manifest["manifest_index"], 0)
+
+    def test_the_recorded_route_hash_is_the_file_sumo_would_read(self):
+        _metadata, hashes = integrity.verify_manifest_for_run(
+            self.prefix, "development", 101, 0
+        )
+        self.assertEqual(
+            hashes["route_xml_sha256"],
+            integrity.sha256_file(self.prefix + ".rou.xml"),
+        )
+
+
+class ExactSeedSetTests(unittest.TestCase):
+    """C: a mean over the wrong seed set is not the preregistered quantity."""
+
+    @staticmethod
+    def _run(seed, status="CLEARED"):
+        return {
+            "traffic_seed": seed, "clearance_status": status,
+            "J_primary_valid": status == "CLEARED",
+            search.PRIMARY_FIELD: 5.0, search.TIME_LOSS_FIELD: 1.0,
+        }
+
+    def test_the_exact_design_seed_set_is_accepted(self):
+        runs = [self._run(seed) for seed in (2001, 2002, 2003, 2004, 2005)]
+        record = search.summarise_candidate(
+            plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
+        )
+        self.assertEqual(record["seeds"], [2001, 2002, 2003, 2004, 2005])
+        self.assertEqual(record["required_seeds"], record["seeds"])
+        self.assertTrue(record["valid"])
+
+    def test_four_of_five_design_seeds_are_refused(self):
+        runs = [self._run(seed) for seed in (2001, 2002, 2003, 2004)]
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
+            )
+        message = str(caught.exception)
+        self.assertIn("missing [2005]", message)
+        self.assertIn("Got 4 runs", message)
+
+    def test_a_duplicated_seed_is_refused(self):
+        runs = [self._run(seed) for seed in (2001, 2002, 2003, 2004, 2004)]
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
+            )
+        message = str(caught.exception)
+        self.assertIn("duplicated [2004]", message)
+        self.assertIn("missing [2005]", message)
+
+    def test_a_duplicated_seed_with_the_right_count_is_still_refused(self):
+        """Five runs, but not the five seeds."""
+        runs = [self._run(seed) for seed in (2001, 2001, 2002, 2003, 2004)]
+        with self.assertRaises(search.SelectionError):
+            search.summarise_candidate(
+                plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
+            )
+
+    def test_an_extra_seed_is_refused(self):
+        runs = [
+            self._run(seed) for seed in (2001, 2002, 2003, 2004, 2005, 2006)
+        ]
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
+            )
+        self.assertIn("unexpected [2006]", str(caught.exception))
+
+    def test_validation_seeds_are_refused_in_the_design_stage(self):
+        runs = [self._run(seed) for seed in (2101, 2102, 2103, 2104, 2105)]
+        with self.assertRaises(search.SelectionError):
+            search.summarise_candidate(
+                plans.simultaneous_plan(), runs, search.DESIGN_FAMILY
+            )
+
+    def test_design_seeds_are_refused_in_the_validation_stage(self):
+        runs = [self._run(seed) for seed in (2001, 2002, 2003, 2004, 2005)]
+        with self.assertRaises(search.SelectionError):
+            search.summarise_candidate(
+                plans.simultaneous_plan(), runs, search.VALIDATION_FAMILY
+            )
+
+    def test_an_empty_run_list_is_refused(self):
+        with self.assertRaises(search.SelectionError):
+            search.summarise_candidate(
+                plans.simultaneous_plan(), [], search.DESIGN_FAMILY
+            )
+
+    def test_the_required_seed_sets_are_the_preregistered_ones(self):
+        self.assertEqual(
+            search.required_seeds(search.DESIGN_FAMILY),
+            (2001, 2002, 2003, 2004, 2005),
+        )
+        self.assertEqual(
+            search.required_seeds(search.VALIDATION_FAMILY),
+            (2101, 2102, 2103, 2104, 2105),
+        )
+
+
+class ExecutionAdmissibilityTests(unittest.TestCase):
+    """D: a short green is refused where a plan is executed, not only generated."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = load_config(BASELINE_CONFIG_PATH)
+        self.prefix = os.path.join(self.directory, "manifest")
+        write_manifest(
+            generate_manifest_records(self.config, "development", 101, 0),
+            self.config, self.prefix, "development", 101, 0,
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _run(self, controller, plan):
+        return run_baseline(
+            None, self.config, REPOSITORY_ROOT, controller,
+            self.prefix + ".csv", self.prefix + ".rou.xml",
+            "development", 101, 1,
+            os.path.join(self.directory, "out"), plan=plan,
+        )
+
+    def test_a_short_green_timing_plan_is_refused_at_execution(self):
+        short = plans.make_plan(40, 900, 0)
+        self.assertEqual(short["green_V_s"], 3)
+        with self.assertRaises(BaselineError) as caught:
+            self._run(OPTIMIZED_FIXED_TIMING, short)
+        message = str(caught.exception)
+        self.assertIn("below 5 s", message)
+        self.assertIn("g_V = 3", message)
+
+    def test_the_refusal_says_the_rule_is_classical_only(self):
+        with self.assertRaises(BaselineError) as caught:
+            self._run(OPTIMIZED_FIXED_TIMING, plans.make_plan(40, 900, 0))
+        self.assertIn("never applied to QMIX or P-5", str(caught.exception))
+
+    def test_an_admissible_timing_plan_passes_the_check(self):
+        """It gets past admissibility and fails later, on the absent traci."""
+        good = plans.make_plan(90, 500, 10)
+        self.assertTrue(plans.candidate_is_valid(good))
+        with self.assertRaises(Exception) as caught:
+            self._run(OPTIMIZED_FIXED_TIMING, good)
+        self.assertNotIsInstance(caught.exception, BaselineError)
+
+    def test_the_cli_refuses_a_short_green_before_writing_anything(self):
+        output = os.path.join(self.directory, "cli_short")
+        code, text = invoke_cli([
+            "--controller", "optimized_fixed_timing",
+            "--traffic-family", "development", "--traffic-seed", "101",
+            "--manifest-prefix", self.prefix,
+            "--cycle", "40", "--split", "900", "--offset", "0",
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("below 5 s", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_constraint_does_not_bind_on_the_preregistered_grid(self):
+        """Documented, not widened: the rule simply never fires here."""
+        coarse = plans.coarse_timing_candidates(include_invalid=True)
+        self.assertEqual(len(coarse), 1980)
+        self.assertTrue(all(plans.candidate_is_valid(p) for p in coarse))
+        self.assertEqual(
+            min(min(p["green_H_s"], p["green_V_s"]) for p in coarse), 8
+        )
+        fine = plans.fine_timing_candidates(coarse, include_invalid=True)
+        self.assertEqual(
+            min(min(p["green_H_s"], p["green_V_s"]) for p in fine), 7
+        )
+        self.assertTrue(all(plans.candidate_is_valid(p) for p in fine))
+
+
+class StructuralProtocolTests(unittest.TestCase):
+    """E: the stage order is enforced by the code, not by a convention."""
+
+    def setUp(self):
+        self.calls = []
+
+    def _evaluator(self, scores=None, failing_keys=()):
+        """A mock campaign: records what it was asked, returns synthetic runs."""
+        def evaluate(candidate_plans, family, seeds):
+            self.calls.append({
+                "family": family, "seeds": list(seeds),
+                "count": len(candidate_plans),
+                "keys": [plans.candidate_key(p) for p in candidate_plans],
+            })
+            out = []
+            for plan in candidate_plans:
+                key = plans.candidate_key(plan)
+                failed = key in failing_keys
+                score = 100.0 if scores is None else scores(plan)
+                out.append([
+                    {
+                        "traffic_seed": seed,
+                        "clearance_status": (
+                            "CLEARANCE_FAILURE" if failed else "CLEARED"
+                        ),
+                        "J_primary_valid": not failed,
+                        search.PRIMARY_FIELD: (
+                            float("nan") if failed else score
+                        ),
+                        search.TIME_LOSS_FIELD: score / 2.0,
+                    }
+                    for seed in seeds
+                ])
+            return out
+        return evaluate
+
+    def test_the_offset_protocol_runs_ninety_then_ten_then_selects(self):
+        design = self._evaluator(scores=lambda p: float(p["offset_s"]))
+        validation = self._evaluator(scores=lambda p: float(p["offset_s"]))
+        result = search.run_fixed_offset_protocol(design, validation)
+        self.assertEqual(self.calls[0]["count"], 90)
+        self.assertEqual(self.calls[0]["family"], search.DESIGN_FAMILY)
+        self.assertEqual(self.calls[0]["seeds"], [2001, 2002, 2003, 2004, 2005])
+        self.assertEqual(self.calls[1]["count"], 10)
+        self.assertEqual(self.calls[1]["family"], search.VALIDATION_FAMILY)
+        self.assertEqual(self.calls[1]["seeds"], [2101, 2102, 2103, 2104, 2105])
+        # Scores rise with the offset, so offsets 0..9 are retained and 0 wins.
+        self.assertEqual(
+            [key[2] for key in self.calls[1]["keys"]], list(range(10))
+        )
+        self.assertEqual(result["selected_plan"]["offset_s"], 0)
+        self.assertTrue(result["frozen"])
+        self.assertFalse(result["final_seeds_touched"])
+
+    def test_the_timing_protocol_runs_coarse_then_fine_then_validation(self):
+        def score(plan):
+            # Smallest cycle and smallest offset score best, deterministically.
+            return float(plan["cycle_s"] * 1000 + plan["offset_s"])
+
+        design = self._evaluator(scores=score)
+        validation = self._evaluator(scores=score)
+        result = search.run_fixed_timing_protocol(design, validation)
+
+        self.assertEqual(
+            [call["family"] for call in self.calls],
+            [search.DESIGN_FAMILY, search.DESIGN_FAMILY,
+             search.VALIDATION_FAMILY],
+        )
+        stages = [stage["stage"] for stage in result["stages"]]
+        self.assertEqual(
+            stages, ["coarse_design", "fine_design", "validation"]
+        )
+        self.assertEqual(self.calls[0]["count"], 1980)
+        self.assertEqual(result["coarse_candidate_count"], 1980)
+        # Exactly five coarse winners seed the fine neighbourhood ...
+        self.assertEqual(
+            len(result["stages"][0]["retained_keys"]), 5
+        )
+        # ... and exactly ten fine winners reach validation.
+        self.assertEqual(len(result["stages"][1]["retained_keys"]), 10)
+        self.assertEqual(self.calls[2]["count"], 10)
+        self.assertEqual(
+            self.calls[2]["keys"], result["stages"][1]["retained_keys"]
+        )
+        self.assertEqual(result["selected_plan"]["cycle_s"], 40)
+        self.assertEqual(result["selected_plan"]["offset_s"], 0)
+
+    def test_the_fine_stage_sees_exactly_the_winners_neighbourhood(self):
+        def score(plan):
+            return float(plan["cycle_s"] * 1000 + plan["offset_s"])
+
+        result = search.run_fixed_timing_protocol(
+            self._evaluator(scores=score), self._evaluator(scores=score)
+        )
+        winner_keys = result["stages"][0]["retained_keys"]
+        self.assertEqual(len(winner_keys), 5)
+        expected = [
+            plans.candidate_key(plan)
+            for plan in plans.fine_timing_candidates(
+                [plans.make_plan(*key) for key in winner_keys]
+            )
+        ]
+        self.assertEqual(self.calls[1]["keys"], expected)
+        self.assertEqual(len(expected), len(set(expected)))
+        self.assertEqual(result["fine_candidate_count"], len(expected))
+
+    def test_no_stage_ever_names_the_final_family_or_its_seeds(self):
+        def score(plan):
+            return float(plan["cycle_s"] * 1000 + plan["offset_s"])
+
+        result = search.run_fixed_timing_protocol(
+            self._evaluator(scores=score), self._evaluator(scores=score)
+        )
+        for call in self.calls:
+            self.assertNotEqual(call["family"], search.FINAL_FAMILY)
+            self.assertFalse(
+                set(call["seeds"]) & set(search.FINAL_SEEDS)
+            )
+        self.assertFalse(result["final_seeds_touched"])
+        self.assertIn("frozen", result["freeze_note"])
+
+    def test_the_protocol_preserves_identities_seeds_and_scores(self):
+        design = self._evaluator(scores=lambda p: float(p["offset_s"]))
+        validation = self._evaluator(scores=lambda p: float(p["offset_s"]))
+        result = search.run_fixed_offset_protocol(design, validation)
+        stage = result["stages"][0]
+        self.assertEqual(stage["candidate_count"], 90)
+        self.assertEqual(stage["valid_count"], 90)
+        self.assertEqual(stage["seeds"], [2001, 2002, 2003, 2004, 2005])
+        first = stage["scores"][0]
+        self.assertEqual(first["key"], (90, 500, 0))
+        self.assertEqual(first["seeds"], [2001, 2002, 2003, 2004, 2005])
+        self.assertEqual(first["mean_J_primary_s"], 0.0)
+        self.assertEqual(result["selected_key"], (90, 500, 0))
+        self.assertEqual(result["selected_validation_seeds"],
+                         [2101, 2102, 2103, 2104, 2105])
+
+    def test_a_stage_that_evaluates_the_wrong_seeds_fails_closed(self):
+        def bad(candidate_plans, family, seeds):
+            return [
+                [
+                    {
+                        "traffic_seed": seed, "clearance_status": "CLEARED",
+                        "J_primary_valid": True, search.PRIMARY_FIELD: 1.0,
+                        search.TIME_LOSS_FIELD: 1.0,
+                    }
+                    for seed in list(seeds)[:4]
+                ]
+                for _plan in candidate_plans
+            ]
+
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(bad, bad)
+        self.assertIn("exactly one run for each", str(caught.exception))
+
+    def test_a_stage_that_returns_the_wrong_number_of_results_fails(self):
+        def short(candidate_plans, family, seeds):
+            return []
+
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(short, short)
+        self.assertIn("were submitted", str(caught.exception))
+
+    def test_too_few_valid_candidates_stops_the_protocol(self):
+        """Rather than shortlisting plans that could not clear."""
+        all_keys = set(
+            plans.candidate_key(plan)
+            for plan in plans.fixed_offset_candidates()
+        )
+        # Leave only nine valid candidates where ten are required.
+        keep = set(list(sorted(all_keys))[:9])
+        failing = all_keys - keep
+        design = self._evaluator(
+            scores=lambda p: float(p["offset_s"]), failing_keys=failing
+        )
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(design, design)
+        self.assertIn("never padded", str(caught.exception))
+
+    def test_the_protocol_does_not_run_a_campaign_itself(self):
+        """Without evaluators there is nothing to execute: it is orchestration."""
+        with self.assertRaises(TypeError):
+            search.run_fixed_offset_protocol()
 
 
 if __name__ == "__main__":

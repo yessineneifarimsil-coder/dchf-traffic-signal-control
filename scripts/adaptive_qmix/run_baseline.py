@@ -8,14 +8,16 @@ instrumentation and metrics are the adaptive framework's own.
         --traffic-family development --traffic-seed 101 \
         --output-directory results/raw/baselines/simultaneous
 
-A held-out final_test manifest cannot be generated from here: the family is
-refused before anything is written.
+A held-out final_test manifest cannot be generated from here, and neither can
+a final-test seed borrowed under another family's label: both are refused by
+adaptive_qmix.baselines.integrity before any directory or manifest exists. A
+supplied --manifest-prefix is believed only after its own metadata agrees with
+the request and its CSV and route XML hash to what that metadata records.
 """
 
 from __future__ import print_function
 
 import argparse
-import json
 import os
 import sys
 
@@ -26,13 +28,18 @@ REPOSITORY_ROOT = os.path.abspath(
 sys.path.insert(0, os.path.join(REPOSITORY_ROOT, "src"))
 
 from adaptive_qmix.baselines.plans import (  # noqa: E402
-    fixed_offset_plan, make_plan, simultaneous_plan,
+    MIN_GREEN_S, candidate_is_valid, fixed_offset_plan, make_plan,
+    simultaneous_plan,
 )
 from adaptive_qmix.baselines.runner import (  # noqa: E402
-    BASELINE_CONTROLLERS, OPTIMIZED_FIXED_OFFSET, OPTIMIZED_FIXED_TIMING,
-    PRETIMED_CONTROLLERS, SIMULTANEOUS_FIXED_TIME, run_baseline,
+    BASELINE_CONTROLLERS, BaselineError, OPTIMIZED_FIXED_OFFSET,
+    OPTIMIZED_FIXED_TIMING, SIMULTANEOUS_FIXED_TIME, run_baseline,
 )
-from adaptive_qmix.baselines.search import FINAL_FAMILY, LeakageError  # noqa: E402
+from adaptive_qmix.baselines.integrity import (  # noqa: E402
+    assert_manifest_files_match,
+    assert_traffic_selection_allowed,
+    verify_manifest_for_run,
+)
 from adaptive_qmix.config import load_config  # noqa: E402
 from adaptive_qmix.logging import LANE_LOG_FULL  # noqa: E402
 from adaptive_qmix.traci_access import DEFAULT_MODE, MODES  # noqa: E402
@@ -67,7 +74,19 @@ def resolve_plan(args):
             raise SystemExit(
                 "optimized_fixed_timing needs {}.".format(", ".join(missing))
             )
-        return make_plan(args.cycle, args.split, args.offset)
+        plan = make_plan(args.cycle, args.split, args.offset)
+        if not candidate_is_valid(plan):
+            # Checked here as well as in run_baseline, so a refused plan never
+            # gets as far as creating an output directory.
+            raise BaselineError(
+                "optimized_fixed_timing refuses a plan with a green below "
+                "{} s: g_H = {}, g_V = {}, C = {}. This admissibility rule is "
+                "classical only and is never applied to QMIX or P-5.".format(
+                    MIN_GREEN_S, plan["green_H_s"], plan["green_V_s"],
+                    plan["cycle_s"],
+                )
+            )
+        return plan
     return None
 
 
@@ -91,25 +110,31 @@ def main():
     parser.add_argument("--run-kind", default="development_baseline")
     args = parser.parse_args()
 
-    if args.traffic_family == FINAL_FAMILY:
-        raise LeakageError(
-            "final_test is held out. It may not be generated or opened until "
-            "every baseline plan is frozen and an official run is authorised."
+    # Before anything is created, written or opened. A refused run must leave
+    # no output directory and no manifest behind.
+    assert_traffic_selection_allowed(
+        args.traffic_family, args.traffic_seed, args.manifest_index
+    )
+    plan = resolve_plan(args)
+
+    if args.manifest_prefix:
+        # An existing manifest is trusted only after its own metadata agrees
+        # with this request and its files hash to what that metadata records.
+        prefix = os.path.abspath(args.manifest_prefix)
+        metadata, verified = verify_manifest_for_run(
+            prefix, args.traffic_family, args.traffic_seed, args.manifest_index
         )
+    else:
+        prefix = None
 
     import traci
 
     config = load_config(args.config)
-    plan = resolve_plan(args)
     output_directory = os.path.abspath(args.output_directory)
     if not os.path.isdir(output_directory):
         os.makedirs(output_directory)
 
-    if args.manifest_prefix:
-        prefix = os.path.abspath(args.manifest_prefix)
-        with open(prefix + ".metadata.json") as handle:
-            metadata = json.load(handle)
-    else:
+    if prefix is None:
         records = generate_manifest_records(
             config, args.traffic_family, args.traffic_seed, args.manifest_index
         )
@@ -118,6 +143,9 @@ def main():
             records, config, prefix, args.traffic_family, args.traffic_seed,
             args.manifest_index,
         )
+        # A freshly written manifest is verified too: the hashes must describe
+        # the files that were just produced, including the route XML.
+        verified = assert_manifest_files_match(prefix, metadata)
     sumo_seed = int(metadata.get(
         "sumo_seed",
         derive_sumo_seed(
@@ -131,7 +159,8 @@ def main():
     print("  traffic family : {} seed {} index {}".format(
         args.traffic_family, args.traffic_seed, args.manifest_index))
     print("  SUMO seed      : {}".format(sumo_seed))
-    print("  manifest sha256: {}".format(metadata["csv_sha256"]))
+    print("  manifest sha256: {}".format(verified["csv_sha256"]))
+    print("  route sha256   : {}".format(verified["route_xml_sha256"]))
     sys.stdout.flush()
 
     metrics = run_baseline(
@@ -141,6 +170,7 @@ def main():
         run_kind=args.run_kind, traci_access_mode=args.traci_access_mode,
         lane_state_logging=LANE_LOG_FULL,
         qualification_config_path=QUALIFICATION_CONFIG,
+        manifest_index=args.manifest_index, manifest_prefix=prefix,
     )
     print("")
     print("  status         : {}".format(metrics["clearance_status"]))
