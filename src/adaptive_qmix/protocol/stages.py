@@ -105,19 +105,36 @@ def _payload_sha256(payload):
 REQUIRED_PAYLOAD_FIELDS = {
     FREEZE_BASELINE_PLANS: (
         "optimized_fixed_offset", "optimized_fixed_timing",
-        "baseline_config_sha256", "network_sha256", "network_git_blob",
+        "adaptive_config_sha256", "baseline_config_sha256", "network_sha256",
+        "network_git_blob",
     ),
 }
 
 REQUIRED_PLAN_FIELDS = (
     "plan", "provenance", "selected_key", "baseline_config_sha256",
     "network_sha256", "network_git_blob",
+    "selected_plan_artefact_path", "selected_plan_artefact_sha256",
 )
 
 REQUIRED_PLAN_PROVENANCE = (
     "design_family", "design_seeds", "validation_family", "validation_seeds",
     "selected_key", "protocol",
 )
+
+# The provenance the classical search protocol fixes. Anything else means the
+# plan was selected under a different design and is not the frozen winner.
+EXPECTED_DESIGN_FAMILY = "benchmark_design"
+EXPECTED_DESIGN_SEEDS = [2001, 2002, 2003, 2004, 2005]
+EXPECTED_VALIDATION_FAMILY = "benchmark_validation"
+EXPECTED_VALIDATION_SEEDS = [2101, 2102, 2103, 2104, 2105]
+
+
+def _file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 class StagePayloadError(ArtefactError):
@@ -148,12 +165,42 @@ def _validate_freeze_baseline_plans(payload):
                 problems.append(
                     "{}.provenance.{} is missing".format(track, field)
                 )
-        if provenance.get("validation_family") not in (
-            None, "benchmark_validation"
+        if provenance.get("design_family") != EXPECTED_DESIGN_FAMILY:
+            problems.append(
+                "{} was ranked on {!r}, not {}".format(
+                    track, provenance.get("design_family"),
+                    EXPECTED_DESIGN_FAMILY,
+                )
+            )
+        if provenance.get("validation_family") != EXPECTED_VALIDATION_FAMILY:
+            problems.append(
+                "{} was selected on {!r}, not {}".format(
+                    track, provenance.get("validation_family"),
+                    EXPECTED_VALIDATION_FAMILY,
+                )
+            )
+        for field, expected in (
+            ("design_seeds", EXPECTED_DESIGN_SEEDS),
+            ("validation_seeds", EXPECTED_VALIDATION_SEEDS),
+        ):
+            recorded = provenance.get(field)
+            if recorded is not None and sorted(
+                int(seed) for seed in recorded
+            ) != expected:
+                problems.append(
+                    "{}.provenance.{} is {}, not exactly {}".format(
+                        track, field, list(recorded), expected
+                    )
+                )
+        if entry.get("selected_key") is not None and provenance.get(
+            "selected_key"
+        ) is not None and list(entry["selected_key"]) != list(
+            provenance["selected_key"]
         ):
             problems.append(
-                "{} was selected on {!r}, not benchmark_validation".format(
-                    track, provenance["validation_family"]
+                "{}.selected_key {} disagrees with its own provenance "
+                "{}".format(
+                    track, entry["selected_key"], provenance["selected_key"]
                 )
             )
         for field in ("baseline_config_sha256", "network_sha256",
@@ -165,6 +212,21 @@ def _validate_freeze_baseline_plans(payload):
                     "{}.{} disagrees with the stage payload".format(
                         track, field
                     )
+                )
+        # The freeze is only as good as the artefacts it claims to rest on.
+        artefact_path = entry.get("selected_plan_artefact_path")
+        recorded_hash = entry.get("selected_plan_artefact_sha256")
+        if artefact_path and recorded_hash:
+            if not os.path.isfile(artefact_path):
+                problems.append(
+                    "{}.selected_plan_artefact_path {} does not exist".format(
+                        track, artefact_path
+                    )
+                )
+            elif _file_sha256(artefact_path) != recorded_hash:
+                problems.append(
+                    "{} selected-plan artefact at {} no longer hashes to the "
+                    "value the freeze recorded".format(track, artefact_path)
                 )
     if problems:
         raise StagePayloadError(

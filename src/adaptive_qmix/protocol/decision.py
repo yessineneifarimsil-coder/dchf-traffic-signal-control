@@ -256,12 +256,13 @@ def evaluate_go_no_go(interval_by_comparison, validity_passed,
         required_methods=LEARNED_METHODS,
     )
     review_complete = review_summary["gating_review_complete"]
+    all_reviews_complete = review_summary["all_reviews_complete"]
     pathology = review_summary["gating_pathology_observed"]
 
     verdict = (
         "GO" if (
             criteria_met and validity_passed and review_complete
-            and not pathology
+            and all_reviews_complete and not pathology
         ) else "NO-GO"
     )
     reasons = []
@@ -274,6 +275,16 @@ def evaluate_go_no_go(interval_by_comparison, validity_passed,
             "training seeds {}, invalid conclusions {})".format(
                 QMIX, gating.get("missing_training_seeds", "all"),
                 gating.get("invalid_conclusions", []),
+            )
+        )
+    if all_reviews_complete is False and review_complete:
+        # The gating method is fine; a comparator's review set is not. That is
+        # an incomplete protocol, not evidence about QMIX either way.
+        reasons.append(
+            "the behavioural review protocol is incomplete for {}; comparator "
+            "reviews are mandatory to report and their absence is not "
+            "evidence for or against {}".format(
+                review_summary["incomplete_methods"], QMIX
             )
         )
     if pathology:
@@ -302,6 +313,8 @@ def evaluate_go_no_go(interval_by_comparison, validity_passed,
         "validity_passed": bool(validity_passed),
         "behaviour_review": review_summary,
         "behaviour_review_complete": review_complete,
+        "all_behaviour_reviews_complete": all_reviews_complete,
+        "incomplete_review_methods": review_summary["incomplete_methods"],
         "behaviour_pathology_observed": pathology,
         "comparator_pathology": review_summary["comparator_pathology"],
         "comparator_review_incomplete": (

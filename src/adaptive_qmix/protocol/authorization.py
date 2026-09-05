@@ -97,6 +97,7 @@ def authorization_evidence(state_directory):
             for track in ("optimized_fixed_offset", "optimized_fixed_timing")
             if isinstance(payload.get(track), dict)
         ),
+        "adaptive_config_sha256": payload.get("adaptive_config_sha256"),
         "baseline_config_sha256": payload.get("baseline_config_sha256"),
         "network_sha256": payload.get("network_sha256"),
         "completed_stages": stages.completed_stages(state_directory),
@@ -140,8 +141,35 @@ def assert_official_training_parameters(training_seed, transition_limit,
     return True
 
 
+def assert_adaptive_config_frozen(evidence, adaptive_config_sha256):
+    """Official training runs the configuration the baselines were frozen for.
+
+    A copy of the qualification config with one hyper-parameter changed is a
+    different specification, however scientifically reasonable it looks. Its
+    hash is not the frozen one, and that is the whole check.
+    """
+    frozen = evidence.get("adaptive_config_sha256")
+    if not frozen:
+        raise TrainingAuthorizationError(
+            "The baseline freeze records no adaptive_config_sha256, so the "
+            "configuration this training would use cannot be shown to be the "
+            "frozen one."
+        )
+    if adaptive_config_sha256 != frozen:
+        raise TrainingAuthorizationError(
+            "Official training must use the frozen adaptive configuration.\n"
+            "  frozen  : {}\n  supplied: {}\n"
+            "A configuration that differs in any field is a different "
+            "specification, not a variant of the frozen one.".format(
+                frozen, adaptive_config_sha256
+            )
+        )
+    return True
+
+
 def authorize_run(run_kind, state_directory=None, training_seed=None,
-                  transition_limit=None, interaction_budget=None):
+                  transition_limit=None, interaction_budget=None,
+                  adaptive_config_sha256=None):
     """Returns the evidence for an official run, or None when none is needed."""
     if run_kind in UNGATED_RUN_KINDS:
         return None
@@ -155,4 +183,8 @@ def authorize_run(run_kind, state_directory=None, training_seed=None,
             TRAINING_BUDGET_TRANSITIONS if interaction_budget is None
             else interaction_budget,
         )
-    return authorization_evidence(state_directory)
+    evidence = authorization_evidence(state_directory)
+    if adaptive_config_sha256 is not None:
+        assert_adaptive_config_frozen(evidence, adaptive_config_sha256)
+    evidence["adaptive_config_verified"] = adaptive_config_sha256 is not None
+    return evidence

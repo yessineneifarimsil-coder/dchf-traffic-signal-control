@@ -158,11 +158,30 @@ def full_validation_records(best_index=100000):
     return records
 
 
-def baseline_freeze_payload(config_sha="baseline-sha",
+ADAPTIVE_SHA = "adaptive-config-sha"
+
+
+def baseline_freeze_payload(directory=None, config_sha="baseline-sha",
                             network_sha="network-sha",
-                            network_blob="network-blob"):
-    """A semantically real freeze_baseline_plans payload."""
-    def track(offset):
+                            network_blob="network-blob",
+                            adaptive_sha=ADAPTIVE_SHA):
+    """A semantically real freeze_baseline_plans payload.
+
+    The two selected-plan artefacts it rests on are written to disk, because
+    the validator now checks that they exist and still hash to what the freeze
+    recorded.
+    """
+    directory = directory or tempfile.mkdtemp()
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+    def track(name, offset):
+        artefact_path = os.path.join(directory, name + ".selected.json")
+        with open(artefact_path, "w") as handle:
+            json.dump({"stage": name, "selected_key": [90, 500, offset]},
+                      handle, sort_keys=True)
+        with open(artefact_path, "rb") as handle:
+            artefact_sha = hashlib.sha256(handle.read()).hexdigest()
         return {
             "plan": {"cycle_s": 90, "split_thousandths": 500,
                      "offset_s": offset, "green_H_s": 42, "green_V_s": 42,
@@ -179,10 +198,13 @@ def baseline_freeze_payload(config_sha="baseline-sha",
             "baseline_config_sha256": config_sha,
             "network_sha256": network_sha,
             "network_git_blob": network_blob,
+            "selected_plan_artefact_path": artefact_path,
+            "selected_plan_artefact_sha256": artefact_sha,
         }
     return {
-        "optimized_fixed_offset": track(45),
-        "optimized_fixed_timing": track(20),
+        "optimized_fixed_offset": track("offset_validation", 45),
+        "optimized_fixed_timing": track("timing_validation", 20),
+        "adaptive_config_sha256": adaptive_sha,
         "baseline_config_sha256": config_sha,
         "network_sha256": network_sha,
         "network_git_blob": network_blob,
@@ -792,7 +814,7 @@ class StageOrderTests(unittest.TestCase):
     def test_each_stage_unlocks_only_the_next(self):
         for index, stage in enumerate(stages.STAGES[:-1]):
             payload = (
-                baseline_freeze_payload()
+                baseline_freeze_payload(self.directory)
                 if stage == stages.FREEZE_BASELINE_PLANS else {"step": index}
             )
             stages.write_stage_artefact(self.directory, stage, payload)
@@ -1217,6 +1239,7 @@ class BehaviourGatingTests(unittest.TestCase):
         )
 
     def test_comparator_pathology_is_reported_but_does_not_gate(self):
+        """Complete comparator reviews that FOUND pathology still allow GO."""
         verdict = decision.evaluate_go_no_go(
             self.INTERVALS, True,
             clean_reviews(pathology=[("idqn", 102), ("vdn", 109)]),
@@ -1227,13 +1250,19 @@ class BehaviourGatingTests(unittest.TestCase):
         )
         self.assertNotIn("idqn", " ".join(verdict["reasons"]))
 
-    def test_comparator_reviews_remain_mandatory_to_report(self):
+    def test_an_incomplete_comparator_review_set_is_not_a_go(self):
+        """An unreviewed comparator is an incomplete protocol, not a neutral one."""
         verdict = decision.evaluate_go_no_go(
             self.INTERVALS, True, clean_reviews(omit=[("vdn", 104)])
         )
-        # QMIX is complete, so the verdict stands, but the gap is surfaced.
-        self.assertEqual(verdict["verdict"], "GO")
-        self.assertIn("vdn", verdict["comparator_review_incomplete"])
+        self.assertEqual(verdict["verdict"], "NO-GO")
+        # QMIX itself is fine; the protocol is not complete.
+        self.assertTrue(verdict["behaviour_review_complete"])
+        self.assertFalse(verdict["all_behaviour_reviews_complete"])
+        self.assertIn("vdn", verdict["incomplete_review_methods"])
+        self.assertIn("not evidence for or against", " ".join(
+            verdict["reasons"]
+        ))
 
     def test_an_invalid_conclusion_is_not_a_completed_review(self):
         reviews = clean_reviews()
@@ -1479,7 +1508,7 @@ class OfficialTrainingAuthorizationTests(unittest.TestCase):
             stages.write_stage_artefact(self.state, stage, {"stage": stage})
         stages.write_stage_artefact(
             self.state, stages.FREEZE_BASELINE_PLANS,
-            baseline_freeze_payload(),
+            baseline_freeze_payload(self.state),
         )
 
     def test_development_and_feasibility_need_no_authorization(self):
@@ -1597,7 +1626,7 @@ class SemanticStageCompletionTests(unittest.TestCase):
     def test_a_real_freeze_payload_is_accepted(self):
         path = stages.write_stage_artefact(
             self.state, stages.FREEZE_BASELINE_PLANS,
-            baseline_freeze_payload(),
+            baseline_freeze_payload(self.state),
         )
         self.assertTrue(os.path.isfile(path))
         self.assertTrue(
@@ -1615,7 +1644,7 @@ class SemanticStageCompletionTests(unittest.TestCase):
                       str(caught.exception))
 
     def test_a_freeze_missing_one_track_is_refused(self):
-        payload = baseline_freeze_payload()
+        payload = baseline_freeze_payload(self.state)
         del payload["optimized_fixed_timing"]
         with self.assertRaises(stages.StagePayloadError) as caught:
             stages.write_stage_artefact(
@@ -1624,7 +1653,7 @@ class SemanticStageCompletionTests(unittest.TestCase):
         self.assertIn("optimized_fixed_timing", str(caught.exception))
 
     def test_a_plan_without_provenance_is_refused(self):
-        payload = baseline_freeze_payload()
+        payload = baseline_freeze_payload(self.state)
         del payload["optimized_fixed_offset"]["provenance"]["design_seeds"]
         with self.assertRaises(stages.StagePayloadError) as caught:
             stages.write_stage_artefact(
@@ -1633,7 +1662,7 @@ class SemanticStageCompletionTests(unittest.TestCase):
         self.assertIn("provenance.design_seeds", str(caught.exception))
 
     def test_a_plan_selected_on_the_wrong_family_is_refused(self):
-        payload = baseline_freeze_payload()
+        payload = baseline_freeze_payload(self.state)
         payload["optimized_fixed_timing"]["provenance"][
             "validation_family"
         ] = "benchmark_design"
@@ -1644,7 +1673,7 @@ class SemanticStageCompletionTests(unittest.TestCase):
         self.assertIn("not benchmark_validation", str(caught.exception))
 
     def test_a_plan_identity_disagreeing_with_the_stage_is_refused(self):
-        payload = baseline_freeze_payload()
+        payload = baseline_freeze_payload(self.state)
         payload["optimized_fixed_offset"]["network_sha256"] = "another-network"
         with self.assertRaises(stages.StagePayloadError) as caught:
             stages.write_stage_artefact(
@@ -1656,7 +1685,7 @@ class SemanticStageCompletionTests(unittest.TestCase):
         """Written properly, then emptied and re-hashed."""
         stages.write_stage_artefact(
             self.state, stages.FREEZE_BASELINE_PLANS,
-            baseline_freeze_payload(),
+            baseline_freeze_payload(self.state),
         )
         path = stages.artefact_path(self.state, stages.FREEZE_BASELINE_PLANS)
         with open(path) as handle:
@@ -1707,7 +1736,7 @@ class OfficialTrainingLockTests(unittest.TestCase):
             stages.write_stage_artefact(self.state, stage, {"ok": True})
         stages.write_stage_artefact(
             self.state, stages.FREEZE_BASELINE_PLANS,
-            baseline_freeze_payload(),
+            baseline_freeze_payload(self.state),
         )
 
     def tearDown(self):
@@ -1716,7 +1745,8 @@ class OfficialTrainingLockTests(unittest.TestCase):
     def test_every_preregistered_seed_is_accepted(self):
         for seed in statistics.TRAINING_SEEDS:
             self.assertIsNotNone(authorization.authorize_run(
-                "official_training", self.state, seed, None, 360000
+                "official_training", self.state, seed, None, 360000,
+                ADAPTIVE_SHA,
             ))
 
     def test_a_seed_outside_the_preregistered_set_is_refused(self):
@@ -1743,7 +1773,7 @@ class OfficialTrainingLockTests(unittest.TestCase):
 
     def test_the_full_budget_may_be_stated_explicitly(self):
         self.assertIsNotNone(authorization.authorize_run(
-            "official_training", self.state, 101, 360000, 360000
+            "official_training", self.state, 101, 360000, 360000, ADAPTIVE_SHA
         ))
 
     def test_development_is_unaffected_by_the_seed_and_budget_lock(self):
@@ -1756,7 +1786,7 @@ class OfficialTrainingLockTests(unittest.TestCase):
 
     def test_the_authorization_records_the_frozen_plans(self):
         evidence = authorization.authorize_run(
-            "official_training", self.state, 101, None, 360000
+            "official_training", self.state, 101, None, 360000, ADAPTIVE_SHA
         )
         self.assertEqual(
             sorted(evidence["frozen_baseline_plans"]),
@@ -2040,8 +2070,12 @@ class ReviewStructureTests(unittest.TestCase):
             {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5)},
             True, clean_reviews(methods=("qmix",)),
         )
+        self.assertEqual(verdict["verdict"], "NO-GO")
         self.assertEqual(
             sorted(verdict["comparator_review_incomplete"]), ["idqn", "vdn"]
+        )
+        self.assertEqual(
+            sorted(verdict["incomplete_review_methods"]), ["idqn", "vdn"]
         )
 
     def test_a_malformed_qmix_review_is_not_counted_as_pathology_free(self):

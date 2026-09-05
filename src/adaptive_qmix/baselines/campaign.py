@@ -112,10 +112,14 @@ def environment_identity(config, repository_root):
     """What a completed run was produced UNDER, not merely what it ran on.
 
     A marker that records only the manifest hashes would let a run made under
-    a different baseline configuration or a different network be reused after
-    either changed. Binding the config and network identity means such a run
-    is rerun instead of silently carried forward.
+    a different baseline configuration, a different network or a different
+    version of this code be reused after any of them changed. The source
+    commit is included for the same reason as the config hash: a controller
+    fix landing mid-campaign must invalidate the runs made before it, not be
+    quietly mixed with them.
     """
+    from ..provenance import _git_value
+
     network_path = os.path.join(
         os.path.abspath(repository_root), config["network"]["path"]
     )
@@ -123,6 +127,9 @@ def environment_identity(config, repository_root):
         "baseline_config_sha256": config.get("_config_sha256"),
         "network_sha256": sha256_file(network_path),
         "network_git_blob": config["network"].get("git_blob"),
+        "source_commit": _git_value(
+            os.path.abspath(repository_root), ["rev-parse", "HEAD"]
+        ),
         "campaign_version": CAMPAIGN_VERSION,
         "raw_log_schema_version": RAW_LOG_SCHEMA_VERSION,
     }
@@ -573,12 +580,13 @@ def ledger_names(shard_index=0, shard_count=1):
     )
 
 
-def aggregate_ledgers(directory):
+def aggregate_ledgers(directory, expected_work=None):
     """Merge every per-shard ledger deterministically, refusing overlaps.
 
     Two shards claiming the same run means the split was wrong, which would
     silently halve or double the evidence, so it is an error rather than a
-    de-duplication.
+    de-duplication. Passing the expected work list also catches the opposite
+    mistake: a shard that never ran leaves a hole no overlap check would see.
     """
     entries, sources = [], []
     for name in sorted(os.listdir(directory)):
@@ -603,9 +611,28 @@ def aggregate_ledgers(directory):
                 "partition the work exactly once.".format(key)
             )
         seen[key] = entry
+    if expected_work is not None:
+        wanted = set(
+            (item["controller"], tuple(item["key"]), item["family"],
+             int(item["seed"]))
+            for item in expected_work
+        )
+        missing = sorted(wanted - set(seen))
+        unexpected = sorted(set(seen) - wanted)
+        if missing or unexpected:
+            raise CampaignError(
+                "The shard ledgers do not cover the work exactly: {} runs "
+                "missing, {} unexpected. A shard that never ran leaves a hole "
+                "no overlap check would find. First missing: {}".format(
+                    len(missing), len(unexpected), missing[:3]
+                )
+            )
     ordered = [seen[key] for key in sorted(seen)]
     write_ledger(directory, ordered, aggregate=True)
-    return {"entries": ordered, "shard_ledgers": sources}
+    return {
+        "entries": ordered, "shard_ledgers": sources,
+        "covered_expected_work": expected_work is not None,
+    }
 
 
 def write_ledger(directory, entries, shard_index=0, shard_count=1,
@@ -1137,3 +1164,167 @@ def read_selected_plan_artefact(directory, stage):
                 )
             )
     return artefact
+
+
+# ---------------------------------------------------------------------------
+# Global stage completion and the stage-3 baseline freeze.
+#
+# The protocol's baseline_design and baseline_validation stages span two
+# controller tracks each, so neither is complete until both tracks are. And
+# the freeze that authorises official training is built ONLY from the two
+# verified selected-plan artefacts: a payload assembled any other way would be
+# a claim that the plans were selected, rather than evidence of it.
+# ---------------------------------------------------------------------------
+
+GLOBAL_STAGE_TRACKS = {
+    protocol_stages.BASELINE_DESIGN: (
+        OFFSET_DESIGN, TIMING_COARSE_DESIGN, TIMING_FINE_DESIGN,
+    ),
+    protocol_stages.BASELINE_VALIDATION: (
+        OFFSET_VALIDATION, TIMING_VALIDATION,
+    ),
+}
+
+VALIDATION_TRACKS = {
+    "optimized_fixed_offset": OFFSET_VALIDATION,
+    "optimized_fixed_timing": TIMING_VALIDATION,
+}
+
+
+def global_stage_track_status(global_stage, shortlist_directory):
+    """Which of a global stage's campaign tracks have verified artefacts."""
+    status = {}
+    for stage in GLOBAL_STAGE_TRACKS[global_stage]:
+        reader = (
+            read_selected_plan_artefact
+            if CAMPAIGN_STAGES[stage]["retain"] is None
+            else read_shortlist_artefact
+        )
+        try:
+            artefact = reader(shortlist_directory, stage)
+        except StageSequenceError as error:
+            status[stage] = {"complete": False, "reason": str(error)}
+            continue
+        path = (
+            selected_plan_path(shortlist_directory, stage)
+            if CAMPAIGN_STAGES[stage]["retain"] is None
+            else shortlist_path(shortlist_directory, stage)
+        )
+        status[stage] = {
+            "complete": True,
+            "artefact_path": path,
+            "artefact_sha256": sha256_file(path),
+            "payload_sha256": artefact["payload_sha256"],
+        }
+    return status
+
+
+def complete_global_stage(global_stage, shortlist_directory, state_directory):
+    """Write the protocol stage artefact once every track is verified."""
+    status = global_stage_track_status(global_stage, shortlist_directory)
+    outstanding = sorted(
+        stage for stage, item in status.items() if not item["complete"]
+    )
+    if outstanding:
+        return {"written": False, "outstanding": outstanding, "tracks": status}
+    protocol_stages.assert_stage_allowed(state_directory, global_stage)
+    payload = {
+        "global_stage": global_stage,
+        "tracks": dict(
+            (stage, {
+                "artefact_path": item["artefact_path"],
+                "artefact_sha256": item["artefact_sha256"],
+                "payload_sha256": item["payload_sha256"],
+            })
+            for stage, item in sorted(status.items())
+        ),
+    }
+    path = protocol_stages.write_stage_artefact(
+        state_directory, global_stage, payload
+    )
+    return {
+        "written": True, "artefact": path, "outstanding": [], "tracks": status
+    }
+
+
+def build_baseline_freeze_payload(shortlist_directory, config,
+                                  repository_root, adaptive_config):
+    """Assemble the stage-3 freeze from the two verified selected plans.
+
+    Everything in the payload is read back out of the artefacts the validation
+    stages produced and re-verified here: the provenance families and seeds,
+    that each selected key really is the key of the plan it names, that the
+    identity matches the configuration and network in force, and that the
+    artefact files still hash to what they did. The adaptive configuration
+    hash is recorded too, so official training can refuse to run under a
+    different one.
+    """
+    environment = environment_identity(config, repository_root)
+    payload = {
+        "adaptive_config_sha256": adaptive_config["_config_sha256"],
+        "baseline_config_sha256": environment["baseline_config_sha256"],
+        "network_sha256": environment["network_sha256"],
+        "network_git_blob": environment["network_git_blob"],
+        "source_commit": environment["source_commit"],
+    }
+    for track, stage in sorted(VALIDATION_TRACKS.items()):
+        artefact = read_selected_plan_artefact(shortlist_directory, stage)
+        plan = artefact["plan"]
+        recorded_key = list(artefact["selected_key"])
+        actual_key = list(candidate_key(plan))
+        if recorded_key != actual_key:
+            raise StageSequenceError(
+                "The {} selected-plan artefact records key {} but its plan is "
+                "{}.".format(track, recorded_key, actual_key)
+            )
+        provenance = artefact["provenance"]
+        if list(provenance.get("selected_key", [])) != actual_key:
+            raise StageSequenceError(
+                "The {} provenance records key {} but its plan is {}.".format(
+                    track, provenance.get("selected_key"), actual_key
+                )
+            )
+        for field in ("baseline_config_sha256", "network_sha256",
+                      "network_git_blob"):
+            if artefact[field] != environment[field]:
+                raise StageSequenceError(
+                    "The {} plan was selected under a different {}: {} versus "
+                    "the current {}. A plan chosen under another "
+                    "configuration or network is not the frozen "
+                    "winner.".format(
+                        track, field, artefact[field], environment[field]
+                    )
+                )
+        path = selected_plan_path(shortlist_directory, stage)
+        payload[track] = {
+            "plan": dict(plan),
+            "selected_key": actual_key,
+            "provenance": dict(provenance),
+            "baseline_config_sha256": artefact["baseline_config_sha256"],
+            "network_sha256": artefact["network_sha256"],
+            "network_git_blob": artefact["network_git_blob"],
+            "selected_plan_artefact_path": path,
+            "selected_plan_artefact_sha256": sha256_file(path),
+            "validation_mean_J_primary_s": artefact.get(
+                "validation_mean_J_primary_s"
+            ),
+            "validation_mean_time_loss_s": artefact.get(
+                "validation_mean_time_loss_s"
+            ),
+        }
+    return payload
+
+
+def freeze_baseline_plans(shortlist_directory, state_directory, config,
+                          repository_root, adaptive_config):
+    """Complete campaign stage 3 from evidence, never from a written claim."""
+    payload = build_baseline_freeze_payload(
+        shortlist_directory, config, repository_root, adaptive_config
+    )
+    protocol_stages.assert_stage_allowed(
+        state_directory, protocol_stages.FREEZE_BASELINE_PLANS
+    )
+    path = protocol_stages.write_stage_artefact(
+        state_directory, protocol_stages.FREEZE_BASELINE_PLANS, payload
+    )
+    return {"artefact": path, "payload": payload}

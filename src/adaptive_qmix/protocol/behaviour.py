@@ -167,7 +167,7 @@ CONCLUSIONS = (CONCLUSION_CLEAN, CONCLUSION_PATHOLOGY)
 
 REQUIRED_REVIEW_FIELDS = (
     "gate_version", "review_rule", "reviewer", "conclusion",
-    "reviewed_before_performance", "reported",
+    "reviewed_before_performance", "reported", "method", "training_seed",
 )
 
 
@@ -185,13 +185,15 @@ def review_problems(review, method, training_seed):
     for field in REQUIRED_REVIEW_FIELDS:
         if field not in review:
             problems.append("missing {}".format(field))
-    if review.get("gate_version") not in (None, GATE_VERSION):
+    # Exact and non-null throughout: a field that may be absent is a field a
+    # sloppy or invented record can omit.
+    if review.get("gate_version") != GATE_VERSION:
         problems.append(
             "gate_version {!r} is not {!r}".format(
-                review["gate_version"], GATE_VERSION
+                review.get("gate_version"), GATE_VERSION
             )
         )
-    if review.get("review_rule") not in (None, REVIEW_RULE):
+    if review.get("review_rule") != REVIEW_RULE:
         problems.append("review_rule is not the preregistered rule")
     if not str(review.get("reviewer", "")).strip():
         problems.append("no reviewer is named")
@@ -206,17 +208,17 @@ def review_problems(review, method, training_seed):
             "reviewed_before_performance is not true, so it may have been "
             "made after the numbers were seen"
         )
-    if review.get("method") is not None and str(review["method"]) != str(
-        method
-    ):
+    if review.get("method") is None:
+        problems.append("names no method")
+    elif str(review["method"]) != str(method):
         problems.append(
             "records method {!r}, filed under {!r}".format(
                 review["method"], method
             )
         )
-    if review.get("training_seed") is not None and int(
-        review["training_seed"]
-    ) != int(training_seed):
+    if review.get("training_seed") is None:
+        problems.append("names no training seed")
+    elif int(review["training_seed"]) != int(training_seed):
         problems.append(
             "records training seed {}, filed under {}".format(
                 review["training_seed"], training_seed
@@ -285,6 +287,17 @@ def summarise_reviews(reviews_by_method, required_training_seeds,
     gating = summary["methods"].get(gating_method)
     summary["gating_review_complete"] = bool(
         gating and gating["review_complete"]
+    )
+    # Every learned method's review set must be complete before a verdict is
+    # issued: an unreviewed comparator is an incomplete protocol, not a
+    # neutral one. Only the gating method's PATHOLOGY affects the criterion.
+    summary["all_reviews_complete"] = all(
+        summary["methods"].get(method, {}).get("review_complete", False)
+        for method in required_methods
+    )
+    summary["incomplete_methods"] = sorted(
+        method for method in required_methods
+        if not summary["methods"].get(method, {}).get("review_complete", False)
     )
     summary["gating_pathology_observed"] = bool(
         gating and gating["any_pathology_observed"]

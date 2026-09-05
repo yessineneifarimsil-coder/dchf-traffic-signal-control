@@ -61,9 +61,12 @@ def train_learned_controller(
     # campaign state showing the baseline plans frozen -- not by a mutable
     # flag in the scientific configuration, whose value is part of the frozen
     # hash. Development and compute feasibility are unaffected.
+    # After the configuration is loaded and before any output is created: the
+    # configuration this run would actually use must be the frozen one.
     authorization = authorize_run(
         run_kind, campaign_state_directory, training_seed, transition_limit,
         int(config["training"]["interaction_budget"]),
+        config.get("_config_sha256"),
     )
     deterministic_seed = configure_python_and_torch(training_seed, deterministic=True)
     budget = int(config["training"]["interaction_budget"])
@@ -110,6 +113,9 @@ def train_learned_controller(
         )
         run_manifest["authorising_artefact_sha256"] = (
             authorization["authorising_artefact_sha256"]
+        )
+        run_manifest["frozen_adaptive_config_sha256"] = (
+            authorization["adaptive_config_sha256"]
         )
 
     learner = MultiAgentLearner(method, training_seed, config["training"], device)

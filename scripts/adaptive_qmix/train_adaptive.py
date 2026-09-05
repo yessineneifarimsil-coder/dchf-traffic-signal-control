@@ -53,15 +53,13 @@ def main():
     # Checked before the configuration is loaded, SUMO is imported or any
     # output directory is created, so an unauthorised official run leaves
     # nothing behind.
-    authorization = authorize_run(
+    # Seed and budget are checked before anything is loaded; the adaptive
+    # configuration hash is checked in train_learned_controller, after the
+    # config is parsed and still before any output directory is created.
+    authorize_run(
         args.run_kind, args.campaign_state, args.training_seed,
         args.transition_limit,
     )
-    if authorization is not None:
-        print("official training authorised by {} ({})".format(
-            authorization["authorising_stage"],
-            authorization["authorising_artefact_sha256"][:16],
-        ))
     config = load_config(args.config)
     import traci
     result = train_learned_controller(

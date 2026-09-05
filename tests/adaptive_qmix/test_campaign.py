@@ -26,6 +26,7 @@ from adaptive_qmix.baselines.search import (
     VALIDATION_FAMILY,
 )
 from adaptive_qmix.config import load_config
+from adaptive_qmix.protocol import authorization
 from adaptive_qmix.protocol import stages as protocol_stages
 
 
@@ -808,7 +809,12 @@ class CampaignStageGraphTests(unittest.TestCase):
 
 
 class CampaignCliStageTests(unittest.TestCase):
-    """3: a real CLI invocation, not just the library, enforces the order."""
+    """1: the supported command path executes the frozen workflow.
+
+    The runner is monkeypatched inside the subprocess through a sitecustomize
+    shim, so the whole coordinator -- prepare, two shards, aggregate, finalise
+    -- executes for real without SUMO.
+    """
 
     SCRIPT = os.path.join(
         REPOSITORY_ROOT, "scripts", "adaptive_qmix",
@@ -817,6 +823,13 @@ class CampaignCliStageTests(unittest.TestCase):
 
     def setUp(self):
         self.directory = tempfile.mkdtemp()
+        self.root = os.path.join(self.directory, "campaign")
+        self.shim = os.path.join(self.directory, "shim")
+        os.makedirs(self.shim)
+        # A stub runner injected into the child process, so the CLI itself is
+        # what runs rather than a re-implementation of it in the test.
+        with open(os.path.join(self.shim, "sitecustomize.py"), "w") as handle:
+            handle.write(STUB_RUNNER_SHIM)
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
@@ -825,79 +838,178 @@ class CampaignCliStageTests(unittest.TestCase):
         import subprocess
         import sys
         environment = dict(os.environ)
-        environment["PYTHONPATH"] = os.path.join(REPOSITORY_ROOT, "src")
+        environment["PYTHONPATH"] = os.pathsep.join([
+            self.shim, os.path.join(REPOSITORY_ROOT, "src"),
+        ])
         completed = subprocess.run(
-            [sys.executable, self.SCRIPT] + list(arguments),
+            [sys.executable, self.SCRIPT, "--campaign-root", self.root]
+            + list(arguments),
             cwd=REPOSITORY_ROOT, env=environment,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         )
         return completed.returncode, completed.stdout.decode("utf-8", "replace")
 
-    def test_the_cli_offers_no_arbitrary_shortlist_option(self):
-        """An unauthenticated candidate list must not be acceptable input."""
-        code, text = self._invoke(["--help"])
-        self.assertEqual(code, 0)
-        self.assertNotIn("--shortlist ", text)
-        self.assertIn("--stage", text)
-
-    def test_the_cli_refuses_validation_before_design(self):
-        output = os.path.join(self.directory, "out")
+    def _offset_design_end_to_end(self):
         code, text = self._invoke([
-            "--stage", "offset_validation", "--output-root", output,
-            "--campaign-state", os.path.join(self.directory, "state"),
+            "--action", "prepare", "--stage", "offset_design",
+        ])
+        self.assertEqual(code, 0, text)
+        self.assertIn("prepared 5 manifests for benchmark_design", text)
+        for index in range(2):
+            code, text = self._invoke([
+                "--action", "run-shard", "--stage", "offset_design",
+                "--shard-index", str(index), "--shard-count", "2",
+            ])
+            self.assertEqual(code, 0, text)
+            self.assertIn("shard {} of 2".format(index), text)
+        return self._invoke([
+            "--action", "finalise", "--stage", "offset_design",
+            "--shard-count", "2",
+        ])
+
+    def test_prepare_then_two_shards_then_finalise_yields_a_shortlist(self):
+        code, text = self._offset_design_end_to_end()
+        self.assertEqual(code, 0, text)
+        self.assertIn("aggregated 2 shard ledgers", text)
+        self.assertIn("450 runs covered exactly once", text)
+        self.assertIn("finalised offset_design: shortlist", text)
+        artefact = campaign.read_shortlist_artefact(
+            os.path.join(self.root, "artefacts"), campaign.OFFSET_DESIGN
+        )
+        self.assertEqual(len(artefact["plans"]), 10)
+        self.assertEqual(artefact["derivation"]["verified_run_count"], 450)
+        # The stub scores 12 + offset, so the ten smallest offsets are kept.
+        self.assertEqual(
+            [key[2] for key in artefact["candidate_keys"]], list(range(10))
+        )
+
+    def test_a_fresh_two_shard_run_needs_prepare_first(self):
+        """The failure the review asked about: manifests never prepared."""
+        code, text = self._invoke([
+            "--action", "run-shard", "--stage", "offset_design",
+            "--shard-index", "0", "--shard-count", "2",
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("consume manifests read-only", text)
+
+    def test_each_shard_writes_its_own_ledger(self):
+        self._invoke(["--action", "prepare", "--stage", "offset_design"])
+        for index in range(2):
+            self._invoke([
+                "--action", "run-shard", "--stage", "offset_design",
+                "--shard-index", str(index), "--shard-count", "2",
+            ])
+        names = sorted(
+            name for name in os.listdir(os.path.join(self.root, "runs"))
+            if name.startswith("campaign_ledger")
+        )
+        self.assertIn("campaign_ledger.shard000of002.json", names)
+        self.assertIn("campaign_ledger.shard001of002.json", names)
+
+    def test_finalising_with_a_shard_missing_is_refused(self):
+        self._invoke(["--action", "prepare", "--stage", "offset_design"])
+        self._invoke([
+            "--action", "run-shard", "--stage", "offset_design",
+            "--shard-index", "0", "--shard-count", "2",
+        ])
+        code, text = self._invoke([
+            "--action", "finalise", "--stage", "offset_design",
+            "--shard-count", "2",
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("do not cover the work exactly", text)
+
+    def test_a_worker_never_finalises(self):
+        """run-shard has no path to a shortlist artefact."""
+        self._invoke(["--action", "prepare", "--stage", "offset_design"])
+        self._invoke([
+            "--action", "run-shard", "--stage", "offset_design",
+            "--shard-index", "0", "--shard-count", "1",
+        ])
+        with self.assertRaises(campaign.StageSequenceError):
+            campaign.read_shortlist_artefact(
+                os.path.join(self.root, "artefacts"), campaign.OFFSET_DESIGN
+            )
+
+    def test_validation_cannot_start_before_the_design_stages_complete(self):
+        code, text = self._invoke([
+            "--action", "prepare", "--stage", "offset_validation",
         ])
         self.assertNotEqual(code, 0)
         self.assertIn("produced no shortlist artefact", text)
-        self.assertFalse(os.path.exists(output))
 
-    def test_the_cli_refuses_timing_validation_before_the_fine_stage(self):
-        output = os.path.join(self.directory, "out2")
-        state = os.path.join(self.directory, "state2")
-        make_shortlist(
-            state, campaign.TIMING_COARSE_DESIGN,
-            [plans.make_plan(90, 500, index * 5) for index in range(5)],
-        )
+    def test_validation_still_blocked_after_only_the_offset_track(self):
+        """The global design stage needs the timing tracks too."""
+        code, text = self._offset_design_end_to_end()
+        self.assertEqual(code, 0, text)
+        self.assertIn("global stage baseline_design still needs", text)
+        self.assertIn("timing_coarse_design", text)
         code, text = self._invoke([
-            "--stage", "timing_validation", "--output-root", output,
-            "--campaign-state", state,
+            "--action", "prepare", "--stage", "offset_validation",
         ])
         self.assertNotEqual(code, 0)
-        self.assertIn("timing_fine_design", text)
-        self.assertFalse(os.path.exists(output))
+        self.assertIn("baseline_design incomplete", text)
 
-    def test_the_cli_requires_a_campaign_state_for_a_real_run(self):
-        output = os.path.join(self.directory, "out3")
-        code, text = self._invoke([
-            "--stage", "offset_design", "--output-root", output,
-        ])
-        self.assertNotEqual(code, 0)
-        self.assertIn("--campaign-state is required", text)
-        self.assertFalse(os.path.exists(output))
+    def test_status_reports_progress(self):
+        code, text = self._invoke(["--action", "status"])
+        self.assertEqual(code, 0, text)
+        self.assertIn("baseline_design       : 0 of 3 tracks complete", text)
+        self._offset_design_end_to_end()
+        code, text = self._invoke(["--action", "status"])
+        self.assertIn("baseline_design       : 1 of 3 tracks complete", text)
 
-    def test_a_dry_run_of_the_first_stage_is_allowed(self):
-        code, text = self._invoke([
-            "--stage", "offset_design",
-            "--output-root", os.path.join(self.directory, "dry"),
-            "--dry-run",
-        ])
+    def test_the_cli_offers_no_arbitrary_shortlist_option(self):
+        code, text = self._invoke(["--help"])
         self.assertEqual(code, 0)
-        self.assertIn("candidates : 90", text)
-        self.assertIn("frozen grid", text)
+        self.assertNotIn("--shortlist ", text)
+        self.assertIn("--action", text)
 
-    def test_a_dry_run_of_the_fine_stage_uses_the_verified_shortlist(self):
-        state = os.path.join(self.directory, "state4")
-        make_shortlist(
-            state, campaign.TIMING_COARSE_DESIGN,
-            [plans.make_plan(90, 500, index * 5) for index in range(5)],
-        )
-        code, text = self._invoke([
-            "--stage", "timing_fine_design",
-            "--output-root", os.path.join(self.directory, "dry2"),
-            "--shortlist-directory", state, "--dry-run",
-        ])
-        self.assertEqual(code, 0)
-        self.assertIn("verified shortlist of timing_coarse_design", text)
-        self.assertIn("family     : benchmark_design", text)
+
+STUB_RUNNER_SHIM = '''
+"""Injected into the campaign CLI subprocess to stand in for SUMO."""
+import json
+import os
+import sys
+
+
+def _install():
+    try:
+        from adaptive_qmix.baselines import campaign, plans
+    except Exception:
+        return
+
+    def stub(traci_module, config, repository_root, controller,
+             manifest_csv_path, route_xml_path, family, seed, sumo_seed,
+             output_directory, plan=None, manifest_index=0,
+             manifest_prefix=None, **kwargs):
+        from adaptive_qmix.baselines.integrity import sha256_file
+        key = plans.candidate_key(plan)
+        metrics = {
+            "controller": controller,
+            "clearance_status": "CLEARED",
+            "J_primary_valid": True,
+            "J_primary_mean_scheduled_waiting_burden_s": 12.0 + key[2],
+            "mean_completed_time_loss_s": 20.0 + key[2],
+            "traffic_family": family,
+            "traffic_seed": int(seed),
+            "manifest_index": manifest_index,
+            "phase_parameters": dict(plan),
+            "sumo_seed": int(sumo_seed),
+            "manifest_csv_sha256": sha256_file(manifest_csv_path),
+            "route_xml_sha256": sha256_file(route_xml_path),
+        }
+        with open(os.path.join(output_directory, "evaluation_metrics.json"),
+                  "w") as handle:
+            json.dump(metrics, handle, sort_keys=True)
+        return metrics
+
+    import adaptive_qmix.baselines.runner as runner_module
+    runner_module.run_baseline = stub
+    sys.modules["traci"] = type(sys)("traci")
+
+
+_install()
+'''
 
 
 class TrainingCliAuthorizationTests(unittest.TestCase):
@@ -1258,6 +1370,252 @@ class ShardLedgerTests(CampaignBase):
         )
         for seed, entry in loaded.items():
             self.assertEqual(entry["route_xml_sha256"], before[seed])
+
+
+class BaselineFreezeFromArtefactsTests(CampaignBase):
+    """2: stage 3 is built from the two verified selected-plan artefacts."""
+
+    def setUp(self):
+        super(BaselineFreezeFromArtefactsTests, self).setUp()
+        self.shortlists = os.path.join(self.directory, "artefacts")
+        self.state = os.path.join(self.directory, "state")
+        self.adaptive = load_config(os.path.join(
+            REPOSITORY_ROOT, "config", "adaptive_qmix",
+            "qualification_300m_medium.json",
+        ))
+
+    def _complete_validation_track(self, stage, design_stage, plans_list):
+        make_shortlist(self.shortlists, design_stage, plans_list)
+        campaign.prepare_seed_manifests(
+            self.manifest_root, self.config, VALIDATION_FAMILY
+        )
+        campaign.execute_campaign(
+            StubRunner(), campaign.CAMPAIGN_STAGES[stage]["controller"],
+            plans_list, VALIDATION_FAMILY, self.config, self.output_root,
+            self.manifest_root, REPOSITORY_ROOT,
+        )
+        return campaign.finalise_stage(
+            stage, self.output_root, self.manifest_root, self.shortlists,
+            self.config, REPOSITORY_ROOT,
+        )
+
+    def _both_tracks(self):
+        protocol_stages.write_stage_artefact(
+            self.state, protocol_stages.BASELINE_DESIGN, {"ok": True}
+        )
+        self._complete_validation_track(
+            campaign.OFFSET_VALIDATION, campaign.OFFSET_DESIGN,
+            [plans.fixed_offset_plan(offset) for offset in range(10)],
+        )
+        self._complete_validation_track(
+            campaign.TIMING_VALIDATION, campaign.TIMING_FINE_DESIGN,
+            [plans.make_plan(90, 500, offset * 5) for offset in range(10)],
+        )
+        campaign.complete_global_stage(
+            protocol_stages.BASELINE_VALIDATION, self.shortlists, self.state
+        )
+
+    def test_the_freeze_is_built_from_the_verified_artefacts(self):
+        self._both_tracks()
+        result = campaign.freeze_baseline_plans(
+            self.shortlists, self.state, self.config, REPOSITORY_ROOT,
+            self.adaptive,
+        )
+        payload = result["payload"]
+        self.assertEqual(
+            payload["adaptive_config_sha256"],
+            self.adaptive["_config_sha256"],
+        )
+        self.assertEqual(
+            payload["baseline_config_sha256"], self.config["_config_sha256"]
+        )
+        for track in ("optimized_fixed_offset", "optimized_fixed_timing"):
+            entry = payload[track]
+            self.assertEqual(
+                entry["selected_key"],
+                list(plans.candidate_key(entry["plan"])),
+            )
+            self.assertEqual(
+                entry["provenance"]["design_seeds"],
+                list(DESIGN_SEEDS),
+            )
+            self.assertTrue(os.path.isfile(
+                entry["selected_plan_artefact_path"]
+            ))
+        # And it verifies as a stage artefact.
+        self.assertTrue(protocol_stages.verify_stage_artefact(
+            self.state, protocol_stages.FREEZE_BASELINE_PLANS
+        ))
+
+    def test_the_freeze_cannot_be_built_without_both_tracks(self):
+        protocol_stages.write_stage_artefact(
+            self.state, protocol_stages.BASELINE_DESIGN, {"ok": True}
+        )
+        self._complete_validation_track(
+            campaign.OFFSET_VALIDATION, campaign.OFFSET_DESIGN,
+            [plans.fixed_offset_plan(offset) for offset in range(10)],
+        )
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.freeze_baseline_plans(
+                self.shortlists, self.state, self.config, REPOSITORY_ROOT,
+                self.adaptive,
+            )
+        self.assertIn("timing_validation", str(caught.exception))
+
+    def test_a_tampered_selected_plan_blocks_the_freeze(self):
+        self._both_tracks()
+        path = campaign.selected_plan_path(
+            self.shortlists, campaign.OFFSET_VALIDATION
+        )
+        with open(path) as handle:
+            artefact = json.load(handle)
+        artefact["plan"]["offset_s"] = 77
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(campaign.StageSequenceError):
+            campaign.freeze_baseline_plans(
+                self.shortlists, self.state, self.config, REPOSITORY_ROOT,
+                self.adaptive,
+            )
+
+    def test_an_artefact_edited_after_freezing_invalidates_the_stage(self):
+        self._both_tracks()
+        campaign.freeze_baseline_plans(
+            self.shortlists, self.state, self.config, REPOSITORY_ROOT,
+            self.adaptive,
+        )
+        path = campaign.selected_plan_path(
+            self.shortlists, campaign.TIMING_VALIDATION
+        )
+        with open(path, "a") as handle:
+            handle.write("\n")
+        with self.assertRaises(protocol_stages.StagePayloadError) as caught:
+            protocol_stages.verify_stage_artefact(
+                self.state, protocol_stages.FREEZE_BASELINE_PLANS
+            )
+        self.assertIn("no longer hashes to the value the freeze recorded",
+                      str(caught.exception))
+
+    def test_the_global_validation_stage_needs_both_tracks(self):
+        protocol_stages.write_stage_artefact(
+            self.state, protocol_stages.BASELINE_DESIGN, {"ok": True}
+        )
+        self._complete_validation_track(
+            campaign.OFFSET_VALIDATION, campaign.OFFSET_DESIGN,
+            [plans.fixed_offset_plan(offset) for offset in range(10)],
+        )
+        partial = campaign.complete_global_stage(
+            protocol_stages.BASELINE_VALIDATION, self.shortlists, self.state
+        )
+        self.assertFalse(partial["written"])
+        self.assertEqual(
+            partial["outstanding"], [campaign.TIMING_VALIDATION]
+        )
+
+    def test_official_training_refuses_a_near_identical_adaptive_config(self):
+        """A copy that changes only the learning rate is a different config."""
+        self._both_tracks()
+        campaign.freeze_baseline_plans(
+            self.shortlists, self.state, self.config, REPOSITORY_ROOT,
+            self.adaptive,
+        )
+        variant_path = os.path.join(self.directory, "variant.json")
+        with open(os.path.join(
+            REPOSITORY_ROOT, "config", "adaptive_qmix",
+            "qualification_300m_medium.json",
+        )) as handle:
+            data = json.load(handle)
+        original_rate = data["training"]["learning_rate"]
+        data["training"]["learning_rate"] = float(original_rate) * 2.0
+        with open(variant_path, "w") as handle:
+            json.dump(data, handle, indent=2)
+        variant = load_config(variant_path)
+        self.assertNotEqual(
+            variant["_config_sha256"], self.adaptive["_config_sha256"]
+        )
+        # Everything else about it is scientifically plausible.
+        self.assertEqual(variant["executor"], self.adaptive["executor"])
+        self.assertEqual(variant["network"], self.adaptive["network"])
+        with self.assertRaises(
+            authorization.TrainingAuthorizationError
+        ) as caught:
+            authorization.authorize_run(
+                "official_training", self.state, 101, None, 360000,
+                variant["_config_sha256"],
+            )
+        message = str(caught.exception)
+        self.assertIn("must use the frozen adaptive configuration", message)
+        self.assertIn("different specification", message)
+        # The frozen one is accepted.
+        self.assertIsNotNone(authorization.authorize_run(
+            "official_training", self.state, 101, None, 360000,
+            self.adaptive["_config_sha256"],
+        ))
+
+
+class CodeProvenanceResumeTests(CampaignBase):
+    """4: a run made under another commit is rerun, not reused."""
+
+    def test_the_marker_records_the_source_commit(self):
+        first = StubRunner()
+        ledger = self.execute(first)
+        marker = campaign.read_completion_marker(ledger[0]["run_directory"])
+        commit = marker["environment"]["source_commit"]
+        self.assertTrue(commit)
+        self.assertEqual(len(commit), 40)
+
+    def test_a_run_from_another_commit_is_rerun(self):
+        first = StubRunner()
+        ledger = self.execute(first)
+        directory = ledger[0]["run_directory"]
+        marker_path = os.path.join(directory, campaign.MARKER_FILENAME)
+        with open(marker_path) as handle:
+            marker = json.load(handle)
+        marker["environment"]["source_commit"] = "0" * 40
+        payload = dict(
+            (k, v) for k, v in marker.items() if k != "marker_sha256"
+        )
+        marker["marker_sha256"] = campaign._sha256_payload(payload)
+        with open(marker_path, "w") as handle:
+            json.dump(marker, handle)
+        second = StubRunner()
+        self.execute(second)
+        self.assertEqual(
+            len(second.calls), 1,
+            "a run produced under another commit must not be reused",
+        )
+
+    def test_the_difference_is_reported_by_name(self):
+        first = StubRunner()
+        ledger = self.execute(first)
+        problems = campaign.completion_problems(
+            ledger[0]["run_directory"], OPTIMIZED_FIXED_OFFSET,
+            self.candidates[0], DESIGN_FAMILY, 2001,
+            *self._identity(2001),
+            environment=dict(
+                campaign.environment_identity(self.config, REPOSITORY_ROOT),
+                source_commit="0" * 40,
+            )
+        )
+        joined = " ".join(problems)
+        self.assertIn("different environment", joined)
+        self.assertIn("source_commit", joined)
+
+    def _identity(self, seed):
+        manifest = campaign.ensure_seed_manifest(
+            self.manifest_root, self.config, DESIGN_FAMILY, seed
+        )
+        return (
+            manifest["manifest_csv_sha256"], manifest["route_xml_sha256"],
+            manifest["sumo_seed"],
+        )
+
+    def test_the_environment_identity_names_every_bound_field(self):
+        identity = campaign.environment_identity(self.config, REPOSITORY_ROOT)
+        for field in ("baseline_config_sha256", "network_sha256",
+                      "network_git_blob", "source_commit",
+                      "campaign_version", "raw_log_schema_version"):
+            self.assertIn(field, identity, field)
 
 
 if __name__ == "__main__":
