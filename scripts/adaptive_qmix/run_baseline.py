@@ -122,7 +122,11 @@ def main():
         # with this request and its files hash to what that metadata records.
         prefix = os.path.abspath(args.manifest_prefix)
         metadata, verified = verify_manifest_for_run(
-            prefix, args.traffic_family, args.traffic_seed, args.manifest_index
+            prefix, args.traffic_family, args.traffic_seed,
+            args.manifest_index,
+            sumo_seed=derive_sumo_seed(
+                args.traffic_family, args.traffic_seed, args.manifest_index
+            ),
         )
     else:
         prefix = None
@@ -146,12 +150,11 @@ def main():
         # A freshly written manifest is verified too: the hashes must describe
         # the files that were just produced, including the route XML.
         verified = assert_manifest_files_match(prefix, metadata)
-    sumo_seed = int(metadata.get(
-        "sumo_seed",
-        derive_sumo_seed(
-            args.traffic_family, args.traffic_seed, args.manifest_index
-        ),
-    ))
+    # The seed the selection derives, which the guard has already proved equal
+    # to the manifest's own. The runner verifies it again independently.
+    sumo_seed = derive_sumo_seed(
+        args.traffic_family, args.traffic_seed, args.manifest_index
+    )
 
     print("baseline run")
     print("  controller     : {}".format(args.controller))

@@ -17,20 +17,40 @@ finite J_primary to rank on -- imputing one would reward a plan for the
 vehicles it never served. The rule is deterministic and applies at every
 stage:
 
-  * a candidate is VALID only if every one of its seed runs cleared and every
-    run reports J_primary_valid;
-  * valid candidates rank before invalid ones, always;
-  * invalid candidates rank among themselves by how many seeds failed, then by
-    their identity key, so the ordering is total and reproducible;
-  * an invalid candidate is never selected while any valid candidate exists,
-    and if none is valid the selection raises rather than returning a plan
-    that cannot serve the demand.
+  * a candidate is VALID only if every one of its seed runs cleared, reported
+    J_primary_valid, and produced a finite J_primary and a finite tie-break
+    time loss;
+  * invalid candidates are EXCLUDED from the shortlist, not ranked behind the
+    valid ones: a shortlist is the set that will be evaluated further, and
+    carrying a plan that could not clear into validation would end in a
+    selection;
+  * if too few valid candidates remain, ranking fails closed rather than
+    padding the shortlist;
+  * selection likewise raises rather than returning a plan that cannot serve
+    the demand.
+
+Run identity. Seed numbers are not identity. Family, seed and manifest index
+all feed the traffic generator, so a run is only evidence about a candidate if
+its recorded family, seed, index, controller and phase parameters are the ones
+that were asked for. Those are checked as hard errors, which is what makes a
+shuffled or stale result set impossible to attach to the wrong plan.
 """
 
 from __future__ import absolute_import
 
 import math
 
+from .integrity import (
+    BENCHMARK_MANIFEST_INDEX,
+    BENCHMARK_SEEDS,
+    DESIGN_FAMILY,
+    DESIGN_SEEDS,
+    FINAL_FAMILY,
+    FINAL_SEEDS,
+    VALIDATION_FAMILY,
+    VALIDATION_SEEDS,
+    assert_benchmark_binding,
+)
 from .plans import (
     candidate_is_valid as candidate_is_admissible,
     candidate_key,
@@ -39,14 +59,6 @@ from .plans import (
     fixed_offset_candidates,
 )
 
-
-DESIGN_FAMILY = "benchmark_design"
-VALIDATION_FAMILY = "benchmark_validation"
-FINAL_FAMILY = "final_test"
-
-DESIGN_SEEDS = (2001, 2002, 2003, 2004, 2005)
-VALIDATION_SEEDS = (2101, 2102, 2103, 2104, 2105)
-FINAL_SEEDS = (3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010)
 
 FORBIDDEN_FAMILIES = (FINAL_FAMILY,)
 FORBIDDEN_SEEDS = frozenset(FINAL_SEEDS)
@@ -108,6 +120,135 @@ def required_seeds(family):
     return DESIGN_SEEDS if family == DESIGN_FAMILY else VALIDATION_SEEDS
 
 
+# Fields every run must carry for its identity to be checkable at all.
+IDENTITY_FIELDS = (
+    "traffic_family", "traffic_seed", "manifest_index", "controller",
+    "phase_parameters",
+)
+
+FAMILY_FIELD = "traffic_family"
+SEED_FIELD = "traffic_seed"
+INDEX_FIELD = "manifest_index"
+CONTROLLER_FIELD = "controller"
+PLAN_FIELD = "phase_parameters"
+
+# Traffic-realisation fields that must agree across candidates for one seed.
+PAIRING_FIELDS = (
+    "traffic_family", "manifest_index", "manifest_csv_sha256",
+    "route_xml_sha256", "sumo_seed",
+)
+
+
+def _finite(value):
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def assert_run_identity(run, plan, family, controller):
+    """A run is evidence about a candidate only if it is that candidate's run.
+
+    Everything here is a hard error rather than an invalidity: a run reporting
+    another family, another index, another controller or another plan is not a
+    failed evaluation of this candidate, it is somebody else's result. Letting
+    it through positionally is how a shuffled or stale result set silently
+    re-labels itself.
+    """
+    missing = [field for field in IDENTITY_FIELDS if field not in run]
+    if missing:
+        raise SelectionError(
+            "Run for candidate {} carries no {}; its identity cannot be "
+            "established, so it cannot be counted as evidence.".format(
+                candidate_key(plan), missing
+            )
+        )
+    problems = []
+    if str(run[FAMILY_FIELD]) != str(family):
+        problems.append(
+            (FAMILY_FIELD, run[FAMILY_FIELD], family)
+        )
+    expected_seeds = BENCHMARK_SEEDS.get(family, ())
+    if int(run[SEED_FIELD]) not in expected_seeds:
+        problems.append((SEED_FIELD, run[SEED_FIELD], list(expected_seeds)))
+    if int(run[INDEX_FIELD]) != BENCHMARK_MANIFEST_INDEX:
+        problems.append(
+            (INDEX_FIELD, run[INDEX_FIELD], BENCHMARK_MANIFEST_INDEX)
+        )
+    if str(run[CONTROLLER_FIELD]) != str(controller):
+        problems.append((CONTROLLER_FIELD, run[CONTROLLER_FIELD], controller))
+    recorded_plan = run[PLAN_FIELD]
+    if recorded_plan is None:
+        problems.append((PLAN_FIELD, None, dict(plan)))
+    else:
+        try:
+            recorded_key = candidate_key(recorded_plan)
+        except (KeyError, TypeError):
+            recorded_key = None
+        if recorded_key != candidate_key(plan):
+            problems.append((PLAN_FIELD, recorded_key, candidate_key(plan)))
+    if problems:
+        raise SelectionError(
+            "A run does not belong to the candidate it was returned for. "
+            "Differences (field, run, expected): {}. Seed numbers alone are "
+            "not identity: family, manifest index, controller and phase "
+            "parameters must all match, or the result belongs to a different "
+            "experiment.".format(problems)
+        )
+    return True
+
+
+def assert_stage_traffic_pairing(runs_by_candidate, family):
+    """Every candidate must have met the same traffic on each seed.
+
+    Comparing candidate A on seed 2001 with candidate B on seed 2001 is only a
+    paired comparison if both saw the same realisation: the same family and
+    index, the same manifest CSV and route XML, and the same SUMO seed. Sharing
+    the number 2001 proves none of that, so it is checked from what the runs
+    themselves recorded.
+    """
+    by_seed = {}
+    for plan_key, runs in runs_by_candidate:
+        for run in runs:
+            seed = int(run[SEED_FIELD])
+            signature = tuple(
+                (field, run.get(field)) for field in PAIRING_FIELDS
+            )
+            by_seed.setdefault(seed, {}).setdefault(
+                signature, []
+            ).append(plan_key)
+    for seed in sorted(by_seed):
+        signatures = by_seed[seed]
+        if len(signatures) > 1:
+            described = [
+                {
+                    "candidates": keys[:3],
+                    "candidate_count": len(keys),
+                    "traffic": dict(signature),
+                }
+                for signature, keys in sorted(
+                    signatures.items(), key=lambda item: str(item[0])
+                )
+            ]
+            raise SelectionError(
+                "Candidates were not evaluated on the same traffic for seed "
+                "{}: {} distinct realisations appear. A paired comparison "
+                "requires the same manifest, route file and SUMO seed for "
+                "every candidate at a given seed. Realisations: {}".format(
+                    seed, len(signatures), described
+                )
+            )
+        missing = [
+            field for field, value in list(signatures)[0] if value is None
+        ]
+        if missing:
+            raise SelectionError(
+                "Runs for seed {} do not record {}, so it cannot be shown that "
+                "the candidates met the same traffic.".format(seed, missing)
+            )
+    return True
+
+
 def assert_exact_seed_set(runs, family):
     """Fail closed unless there is exactly one run per preregistered seed.
 
@@ -136,17 +277,24 @@ def assert_exact_seed_set(runs, family):
     return tuple(sorted(seeds))
 
 
-def summarise_candidate(plan, runs, family):
+def summarise_candidate(plan, runs, family, controller=None):
     """Aggregate one candidate's per-seed runs into a rankable record.
 
-    'runs' are the metrics dicts produced by run_baseline, one per seed.
+    'runs' are the metrics dicts produced by run_baseline, one per seed. When
+    a controller is named, each run's recorded identity -- family, seed, index,
+    controller and phase parameters -- must match this candidate exactly.
     """
     assert_family_allowed(family, [run.get("traffic_seed") for run in runs])
     seed_set = assert_exact_seed_set(runs, family)
+    if controller is not None:
+        for run in runs:
+            assert_run_identity(run, plan, family, controller)
     failures = [
         run for run in runs
         if run.get("clearance_status") != "CLEARED"
         or not run.get("J_primary_valid", False)
+        or not _finite(run.get(PRIMARY_FIELD))
+        or not _finite(run.get(TIME_LOSS_FIELD))
     ]
     valid = not failures and bool(runs)
     return {
@@ -300,16 +448,34 @@ STAGE_SELECTION = "selection"
 
 COARSE_CANDIDATE_COUNT = 1980
 
+# The controller each protocol's runs must have been produced by. Named here
+# rather than imported from runner, which would import search back.
+OFFSET_CONTROLLER = "optimized_fixed_offset"
+TIMING_CONTROLLER = "optimized_fixed_timing"
 
-def _evaluate_stage(evaluator, candidate_plans, family, stage):
+
+def _evaluate_stage(evaluator, candidate_plans, family, stage, controller):
     """Run one evaluation stage and turn it into checked candidate records.
 
     The evaluator only produces runs; every record is built here through
     summarise_candidate, so the exact-seed rule cannot be bypassed by an
     evaluator that returns a convenient summary of its own.
+
+    Position is not identity. Each returned run list is checked against the
+    plan it was returned for, by that run's own recorded family, seed, index,
+    controller and phase parameters, before anything is aggregated: a result
+    set returned in the wrong order, or carried over from an earlier stage,
+    fails here rather than being attached to whichever plan happened to sit at
+    that index. The traffic-pairing invariant is then checked across the whole
+    stage, because a candidate comparison is only paired if every candidate
+    met the same realisation at each seed.
     """
     assert_family_allowed(family)
+    assert_benchmark_binding(
+        family, required_seeds(family)[0], BENCHMARK_MANIFEST_INDEX
+    )
     seeds = required_seeds(family)
+    candidate_plans = list(candidate_plans)
     run_lists = evaluator(list(candidate_plans), family, list(seeds))
     if len(run_lists) != len(candidate_plans):
         raise SelectionError(
@@ -317,9 +483,24 @@ def _evaluate_stage(evaluator, candidate_plans, family, stage):
                 stage, len(run_lists), len(candidate_plans)
             )
         )
+
+    runs_by_candidate = []
+    for position, (plan, runs) in enumerate(zip(candidate_plans, run_lists)):
+        for run in runs:
+            try:
+                assert_run_identity(run, plan, family, controller)
+            except SelectionError as error:
+                raise SelectionError(
+                    "Stage {!r}, result {} of {}: {}".format(
+                        stage, position, len(candidate_plans), error
+                    )
+                )
+        runs_by_candidate.append((candidate_key(plan), list(runs)))
+    assert_stage_traffic_pairing(runs_by_candidate, family)
+
     records = []
     for plan, runs in zip(candidate_plans, run_lists):
-        record = summarise_candidate(plan, runs, family)
+        record = summarise_candidate(plan, runs, family, controller)
         record["stage"] = stage
         records.append(record)
     return records
@@ -330,6 +511,7 @@ def _stage_report(stage, family, records, retained=None):
     return {
         "stage": stage,
         "family": family,
+        "manifest_index": BENCHMARK_MANIFEST_INDEX,
         "seeds": list(required_seeds(family)),
         "candidate_count": len(records),
         "valid_count": sum(1 for record in records if record["valid"]),
@@ -391,7 +573,8 @@ def run_fixed_offset_protocol(design_evaluator, validation_evaluator):
             )
         )
     design_records = _evaluate_stage(
-        design_evaluator, candidates, DESIGN_FAMILY, STAGE_COARSE_DESIGN
+        design_evaluator, candidates, DESIGN_FAMILY, STAGE_COARSE_DESIGN,
+        OFFSET_CONTROLLER,
     )
     retained = rank_by_design(design_records, OFFSET_RETAINED)
     stages = [
@@ -401,7 +584,7 @@ def run_fixed_offset_protocol(design_evaluator, validation_evaluator):
     ]
     validation_records = _evaluate_stage(
         validation_evaluator, [record["plan"] for record in retained],
-        VALIDATION_FAMILY, STAGE_VALIDATION,
+        VALIDATION_FAMILY, STAGE_VALIDATION, OFFSET_CONTROLLER,
     )
     stages.append(
         _stage_report(STAGE_VALIDATION, VALIDATION_FAMILY, validation_records)
@@ -427,7 +610,8 @@ def run_fixed_timing_protocol(design_evaluator, validation_evaluator):
         )
     admissible = [plan for plan in coarse if candidate_is_admissible(plan)]
     coarse_records = _evaluate_stage(
-        design_evaluator, admissible, DESIGN_FAMILY, STAGE_COARSE_DESIGN
+        design_evaluator, admissible, DESIGN_FAMILY, STAGE_COARSE_DESIGN,
+        TIMING_CONTROLLER,
     )
     coarse_winners = rank_by_design(coarse_records, COARSE_RETAINED)
     if len(coarse_winners) != COARSE_RETAINED:
@@ -447,7 +631,8 @@ def run_fixed_timing_protocol(design_evaluator, validation_evaluator):
     if len(keys) != len(set(keys)):
         raise SelectionError("The fine grid contains duplicate candidates.")
     fine_records = _evaluate_stage(
-        design_evaluator, fine, DESIGN_FAMILY, STAGE_FINE_DESIGN
+        design_evaluator, fine, DESIGN_FAMILY, STAGE_FINE_DESIGN,
+        TIMING_CONTROLLER,
     )
     fine_winners = rank_by_design(fine_records, FINE_RETAINED)
     stages.append(
@@ -458,7 +643,7 @@ def run_fixed_timing_protocol(design_evaluator, validation_evaluator):
 
     validation_records = _evaluate_stage(
         validation_evaluator, [record["plan"] for record in fine_winners],
-        VALIDATION_FAMILY, STAGE_VALIDATION,
+        VALIDATION_FAMILY, STAGE_VALIDATION, TIMING_CONTROLLER,
     )
     if len(validation_records) != FINE_RETAINED:
         raise SelectionError(

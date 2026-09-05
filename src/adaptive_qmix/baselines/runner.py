@@ -36,7 +36,11 @@ from ..metrics import parse_tripinfo, scheduled_demand_metrics
 from ..provenance import build_run_manifest, sha256_file
 from ..signal_executor import EXTEND, SWITCH
 from ..traci_access import DEFAULT_MODE
-from .integrity import verify_manifest_for_run
+from .integrity import (
+    assert_paths_are_the_verified_ones,
+    manifest_paths,
+    verify_manifest_for_run,
+)
 from .executors import (
     CanonicalMaxPressureExecutor,
     PretimedScheduleExecutor,
@@ -266,6 +270,15 @@ def _baseline_manifest(repository_root, config, manifest_csv_path, controller,
         # recorded so a run can be tied to the file that actually ran.
         manifest["route_xml_sha256"] = verified_hashes["route_xml_sha256"]
         manifest["manifest_metadata_verified"] = True
+        if "sumo_seed" in verified_hashes:
+            # Recorded as verified, not merely reported: this value was proved
+            # equal to both the manifest's and the derivation's.
+            manifest["sumo_seed_verified"] = True
+            manifest["sumo_seed_derivation"] = (
+                "derive_sumo_seed({!r}, {}, {})".format(
+                    traffic_family, int(traffic_seed), int(manifest_index)
+                )
+            )
     manifest["baseline_config_sha256"] = config["_config_sha256"]
     manifest["baseline_config_path"] = config.get("_config_path")
     if qualification_config_path and os.path.isfile(qualification_config_path):
@@ -334,8 +347,20 @@ def run_baseline(traci_module, config, repository_root, controller,
             )
         manifest_prefix = str(manifest_csv_path)[: -len(".csv")]
     _metadata, verified_hashes = verify_manifest_for_run(
-        manifest_prefix, traffic_family, traffic_seed, manifest_index
+        manifest_prefix, traffic_family, traffic_seed, manifest_index,
+        sumo_seed=sumo_seed,
     )
+    # What was verified must be what SUMO is handed. The executed paths are
+    # required to be the verified prefix's own files, and the run then uses
+    # those derived paths rather than whatever was passed in, so a verified
+    # prefix can never authorise a different route file.
+    assert_paths_are_the_verified_ones(
+        manifest_prefix, manifest_csv_path, route_xml_path
+    )
+    executed = manifest_paths(manifest_prefix)
+    manifest_csv_path = executed["csv"]
+    route_xml_path = executed["route_xml"]
+    sumo_seed = int(verified_hashes["sumo_seed"])
 
     network_path = os.path.join(repository_root, config["network"]["path"])
     if controller in PRESSURE_CONTROLLERS:
@@ -474,6 +499,11 @@ def run_baseline(traci_module, config, repository_root, controller,
     # The route XML is what SUMO actually executed; the CSV is provenance.
     metrics["route_xml_sha256"] = manifest["route_xml_sha256"]
     metrics["manifest_index"] = int(manifest_index)
+    metrics["sumo_seed_verified"] = bool(
+        manifest.get("sumo_seed_verified", False)
+    )
+    metrics["executed_route_xml_path"] = route_xml_path
+    metrics["executed_manifest_csv_path"] = manifest_csv_path
     metrics["network_sha256"] = manifest["network_sha256"]
     metrics["network_git_blob"] = manifest["network_git_blob"]
     metrics["baseline_config_sha256"] = manifest["baseline_config_sha256"]

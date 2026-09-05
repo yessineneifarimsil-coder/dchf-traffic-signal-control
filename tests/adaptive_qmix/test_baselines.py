@@ -53,7 +53,11 @@ from adaptive_qmix.config import load_config
 from adaptive_qmix.environment import AdaptiveTrafficEnvironment
 from adaptive_qmix.ledger import VehicleLedger
 from adaptive_qmix.metrics import scheduled_demand_metrics
-from adaptive_qmix.traffic import generate_manifest_records, write_manifest
+from adaptive_qmix.traffic import (
+    derive_sumo_seed,
+    generate_manifest_records,
+    write_manifest,
+)
 from adaptive_qmix.signal_executor import (
     EXTEND,
     SWITCH,
@@ -1418,10 +1422,12 @@ class HeldOutGuardTests(unittest.TestCase):
         )
 
     def test_seeds_just_outside_the_held_out_block_are_allowed(self):
+        """The final-seed rule covers 3001-3010 and not one seed more."""
         for seed in (3000, 3011, 2005, 2105, 101):
+            self.assertTrue(integrity.assert_seed_allowed(seed))
             self.assertTrue(
                 integrity.assert_traffic_selection_allowed(
-                    "benchmark_design", seed, 0
+                    "development", seed, 0
                 )
             )
 
@@ -1496,12 +1502,14 @@ class ManifestIntegrityTests(unittest.TestCase):
         )
 
     def test_a_mismatched_family_is_refused(self):
+        """A legal request pointed at another family's manifest."""
         with self.assertRaises(integrity.ManifestIntegrityError) as caught:
             integrity.verify_manifest_for_run(
-                self.prefix, "benchmark_design", 101, 0
+                self.prefix, "benchmark_design", 2001, 0
             )
-        self.assertIn("family", str(caught.exception))
-        self.assertIn("never overrides", str(caught.exception))
+        message = str(caught.exception)
+        self.assertIn("family", message)
+        self.assertIn("never overrides", message)
 
     def test_a_mismatched_seed_is_refused(self):
         with self.assertRaises(integrity.ManifestIntegrityError):
@@ -1598,15 +1606,16 @@ class ManifestIntegrityTests(unittest.TestCase):
         self.assertFalse(os.path.exists(output))
 
     def test_the_cli_refuses_a_manifest_prefix_that_does_not_match(self):
+        """The request is legal; the manifest it points at is another one."""
         output = os.path.join(self.directory, "cli_run")
-        code, text = invoke_cli([
+        code, message = invoke_cli([
             "--controller", "simultaneous_fixed_time",
             "--traffic-family", "benchmark_design", "--traffic-seed", "2001",
             "--manifest-prefix", self.prefix,
             "--output-directory", output,
         ])
         self.assertNotEqual(code, 0)
-        self.assertIn("not what this run declared", text)
+        self.assertIn("not what this run declared", message)
         self.assertFalse(os.path.exists(output))
 
     def test_the_cli_refuses_a_tampered_route_xml(self):
@@ -1834,45 +1843,80 @@ class ExecutionAdmissibilityTests(unittest.TestCase):
         self.assertTrue(all(plans.candidate_is_valid(p) for p in fine))
 
 
+def synthetic_run(plan, family, seed, controller, score, failed=False):
+    """A run shaped exactly like run_baseline's metrics output."""
+    return {
+        "traffic_family": family,
+        "traffic_seed": seed,
+        "manifest_index": 0,
+        "controller": controller,
+        "phase_parameters": dict(plan),
+        "clearance_status": "CLEARANCE_FAILURE" if failed else "CLEARED",
+        "J_primary_valid": not failed,
+        search.PRIMARY_FIELD: float("nan") if failed else score,
+        search.TIME_LOSS_FIELD: float("nan") if failed else score / 2.0,
+        # Traffic-realisation provenance: identical across candidates for a
+        # given family and seed, which is what makes them paired.
+        "manifest_csv_sha256": "csv-{}-{}".format(family, seed),
+        "route_xml_sha256": "route-{}-{}".format(family, seed),
+        "sumo_seed": 900000 + seed,
+    }
+
+
+def mock_evaluator(calls, controller, scores=None, failing_keys=(),
+                   mutate=None):
+    """A mock campaign: records what it was asked, returns synthetic runs.
+
+    `mutate` lets a test corrupt the results the way a real mistake would --
+    a swapped order, a stale carry-over, a mismatched route hash -- so the
+    protocol's own checks are what the test exercises.
+    """
+    def evaluate(candidate_plans, family, seeds):
+        calls.append({
+            "family": family, "seeds": list(seeds),
+            "count": len(candidate_plans),
+            "keys": [plans.candidate_key(p) for p in candidate_plans],
+        })
+        out = []
+        for plan in candidate_plans:
+            failed = plans.candidate_key(plan) in failing_keys
+            score = 100.0 if scores is None else scores(plan)
+            out.append([
+                synthetic_run(plan, family, seed, controller, score, failed)
+                for seed in seeds
+            ])
+        if mutate is not None:
+            out = mutate(out, candidate_plans, family)
+        return out
+    return evaluate
+
+
+OFFSET_SCORE = lambda plan: float(plan["offset_s"])
+TIMING_SCORE = lambda plan: float(plan["cycle_s"] * 1000 + plan["offset_s"])
+
+
 class StructuralProtocolTests(unittest.TestCase):
     """E: the stage order is enforced by the code, not by a convention."""
 
     def setUp(self):
         self.calls = []
 
-    def _evaluator(self, scores=None, failing_keys=()):
-        """A mock campaign: records what it was asked, returns synthetic runs."""
-        def evaluate(candidate_plans, family, seeds):
-            self.calls.append({
-                "family": family, "seeds": list(seeds),
-                "count": len(candidate_plans),
-                "keys": [plans.candidate_key(p) for p in candidate_plans],
-            })
-            out = []
-            for plan in candidate_plans:
-                key = plans.candidate_key(plan)
-                failed = key in failing_keys
-                score = 100.0 if scores is None else scores(plan)
-                out.append([
-                    {
-                        "traffic_seed": seed,
-                        "clearance_status": (
-                            "CLEARANCE_FAILURE" if failed else "CLEARED"
-                        ),
-                        "J_primary_valid": not failed,
-                        search.PRIMARY_FIELD: (
-                            float("nan") if failed else score
-                        ),
-                        search.TIME_LOSS_FIELD: score / 2.0,
-                    }
-                    for seed in seeds
-                ])
-            return out
-        return evaluate
+    def _evaluator(self, scores=None, failing_keys=(), controller=None,
+                   mutate=None):
+        return mock_evaluator(
+            self.calls, controller or search.TIMING_CONTROLLER,
+            scores=scores, failing_keys=failing_keys, mutate=mutate,
+        )
+
+    def _offset_evaluator(self, **kwargs):
+        kwargs.setdefault("controller", search.OFFSET_CONTROLLER)
+        return self._evaluator(**kwargs)
 
     def test_the_offset_protocol_runs_ninety_then_ten_then_selects(self):
-        design = self._evaluator(scores=lambda p: float(p["offset_s"]))
-        validation = self._evaluator(scores=lambda p: float(p["offset_s"]))
+        design = self._offset_evaluator(scores=lambda p: float(p["offset_s"]))
+        validation = self._offset_evaluator(
+            scores=lambda p: float(p["offset_s"])
+        )
         result = search.run_fixed_offset_protocol(design, validation)
         self.assertEqual(self.calls[0]["count"], 90)
         self.assertEqual(self.calls[0]["family"], search.DESIGN_FAMILY)
@@ -1956,8 +2000,10 @@ class StructuralProtocolTests(unittest.TestCase):
         self.assertIn("frozen", result["freeze_note"])
 
     def test_the_protocol_preserves_identities_seeds_and_scores(self):
-        design = self._evaluator(scores=lambda p: float(p["offset_s"]))
-        validation = self._evaluator(scores=lambda p: float(p["offset_s"]))
+        design = self._offset_evaluator(scores=lambda p: float(p["offset_s"]))
+        validation = self._offset_evaluator(
+            scores=lambda p: float(p["offset_s"])
+        )
         result = search.run_fixed_offset_protocol(design, validation)
         stage = result["stages"][0]
         self.assertEqual(stage["candidate_count"], 90)
@@ -1975,14 +2021,12 @@ class StructuralProtocolTests(unittest.TestCase):
         def bad(candidate_plans, family, seeds):
             return [
                 [
-                    {
-                        "traffic_seed": seed, "clearance_status": "CLEARED",
-                        "J_primary_valid": True, search.PRIMARY_FIELD: 1.0,
-                        search.TIME_LOSS_FIELD: 1.0,
-                    }
+                    synthetic_run(
+                        plan, family, seed, search.OFFSET_CONTROLLER, 1.0
+                    )
                     for seed in list(seeds)[:4]
                 ]
-                for _plan in candidate_plans
+                for plan in candidate_plans
             ]
 
         with self.assertRaises(search.SelectionError) as caught:
@@ -2006,7 +2050,7 @@ class StructuralProtocolTests(unittest.TestCase):
         # Leave only nine valid candidates where ten are required.
         keep = set(list(sorted(all_keys))[:9])
         failing = all_keys - keep
-        design = self._evaluator(
+        design = self._offset_evaluator(
             scores=lambda p: float(p["offset_s"]), failing_keys=failing
         )
         with self.assertRaises(search.SelectionError) as caught:
@@ -2017,6 +2061,559 @@ class StructuralProtocolTests(unittest.TestCase):
         """Without evaluators there is nothing to execute: it is orchestration."""
         with self.assertRaises(TypeError):
             search.run_fixed_offset_protocol()
+
+
+class BenchmarkTrafficBindingTests(unittest.TestCase):
+    """1: family, seed and manifest index are bound together, or not at all.
+
+    All three feed the manifest generator, so benchmark_design seed 2001 and
+    benchmark_validation seed 2001 are entirely different traffic. Matching on
+    the number alone would silently compare two different experiments.
+    """
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def test_the_canonical_mapping_is_shared_not_restated(self):
+        """search.py imports the mapping; it does not keep its own copy."""
+        self.assertIs(search.DESIGN_SEEDS, integrity.DESIGN_SEEDS)
+        self.assertIs(search.VALIDATION_SEEDS, integrity.VALIDATION_SEEDS)
+        self.assertIs(search.FINAL_SEEDS, integrity.FINAL_SEEDS)
+        self.assertEqual(
+            integrity.BENCHMARK_SEEDS[integrity.DESIGN_FAMILY],
+            (2001, 2002, 2003, 2004, 2005),
+        )
+        self.assertEqual(
+            integrity.BENCHMARK_SEEDS[integrity.VALIDATION_FAMILY],
+            (2101, 2102, 2103, 2104, 2105),
+        )
+        self.assertEqual(integrity.BENCHMARK_MANIFEST_INDEX, 0)
+
+    def test_a_validation_seed_is_refused_under_the_design_family(self):
+        with self.assertRaises(integrity.HeldOutDataError) as caught:
+            integrity.assert_traffic_selection_allowed(
+                "benchmark_design", 2101, 0
+            )
+        message = str(caught.exception)
+        self.assertIn("does not belong to benchmark_design", message)
+        self.assertIn("belongs to benchmark_validation", message)
+
+    def test_a_design_seed_is_refused_under_the_validation_family(self):
+        with self.assertRaises(integrity.HeldOutDataError) as caught:
+            integrity.assert_traffic_selection_allowed(
+                "benchmark_validation", 2001, 0
+            )
+        self.assertIn("does not belong to benchmark_validation", str(caught.exception))
+
+    def test_a_nonzero_manifest_index_is_refused_for_a_benchmark_family(self):
+        with self.assertRaises(integrity.HeldOutDataError) as caught:
+            integrity.assert_traffic_selection_allowed(
+                "benchmark_design", 2001, 1
+            )
+        message = str(caught.exception)
+        self.assertIn("manifest index 0", message)
+        self.assertIn("different realisation", message)
+
+    def test_each_benchmark_family_accepts_its_own_seeds_at_index_zero(self):
+        for family, seeds in integrity.BENCHMARK_SEEDS.items():
+            for seed in seeds:
+                self.assertTrue(
+                    integrity.assert_traffic_selection_allowed(family, seed, 0)
+                )
+
+    def test_an_arbitrary_seed_is_refused_for_a_benchmark_family(self):
+        for seed in (101, 1, 2006, 2100, 2106):
+            with self.assertRaises(integrity.HeldOutDataError):
+                integrity.assert_traffic_selection_allowed(
+                    "benchmark_design", seed, 0
+                )
+
+    def test_development_remains_open_for_engineering_smokes(self):
+        for seed, index in ((101, 0), (7, 3), (2001, 0), (2101, 2)):
+            self.assertTrue(
+                integrity.assert_traffic_selection_allowed(
+                    "development", seed, index
+                )
+            )
+
+    def test_final_seeds_stay_forbidden_in_development_too(self):
+        with self.assertRaises(integrity.HeldOutDataError):
+            integrity.assert_traffic_selection_allowed("development", 3001, 0)
+
+    def test_the_cli_refuses_a_cross_family_benchmark_seed(self):
+        output = os.path.join(self.directory, "cross")
+        code, message = invoke_cli([
+            "--controller", "simultaneous_fixed_time",
+            "--traffic-family", "benchmark_design", "--traffic-seed", "2101",
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("does not belong to benchmark_design", message)
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_cli_refuses_a_nonzero_benchmark_manifest_index(self):
+        output = os.path.join(self.directory, "index1")
+        code, message = invoke_cli([
+            "--controller", "simultaneous_fixed_time",
+            "--traffic-family", "benchmark_design", "--traffic-seed", "2001",
+            "--manifest-index", "1",
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("manifest index 0", message)
+        self.assertFalse(os.path.exists(output))
+
+    def test_a_benchmark_manifest_with_a_foreign_seed_is_refused(self):
+        """The metadata is checked against the binding, not only the request."""
+        prefix = os.path.join(self.directory, "manifest")
+        config = load_config(BASELINE_CONFIG_PATH)
+        write_manifest(
+            generate_manifest_records(config, "benchmark_design", 2001, 0),
+            config, prefix, "benchmark_design", 2001, 0,
+        )
+        path = integrity.metadata_path_for(prefix)
+        with open(path) as handle:
+            metadata = json.load(handle)
+        metadata["seed_value"] = 2101
+        with open(path, "w") as handle:
+            json.dump(metadata, handle)
+        with self.assertRaises(integrity.HeldOutDataError):
+            integrity.verify_manifest_for_run(prefix, "benchmark_design", 2101, 0)
+
+
+class SumoSeedBindingTests(unittest.TestCase):
+    """4: the simulation stream is pinned to the traffic selection."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = load_config(BASELINE_CONFIG_PATH)
+        self.prefix = os.path.join(self.directory, "manifest")
+        self.metadata = write_manifest(
+            generate_manifest_records(self.config, "development", 101, 0),
+            self.config, self.prefix, "development", 101, 0,
+        )
+        self.derived = derive_sumo_seed("development", 101, 0)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def test_the_derived_seed_is_accepted_and_returned(self):
+        _metadata, verified = integrity.verify_manifest_for_run(
+            self.prefix, "development", 101, 0, sumo_seed=self.derived
+        )
+        self.assertEqual(verified["sumo_seed"], self.derived)
+        self.assertEqual(int(self.metadata["sumo_seed"]), self.derived)
+
+    def test_an_arbitrary_runner_seed_is_refused(self):
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            integrity.verify_manifest_for_run(
+                self.prefix, "development", 101, 0, sumo_seed=12345
+            )
+        message = str(caught.exception)
+        self.assertIn("may not choose its own simulation stream", message)
+        self.assertIn(str(self.derived), message)
+
+    def test_an_edited_metadata_seed_is_refused(self):
+        path = integrity.metadata_path_for(self.prefix)
+        with open(path) as handle:
+            metadata = json.load(handle)
+        metadata["sumo_seed"] = self.derived + 1
+        with open(path, "w") as handle:
+            json.dump(metadata, handle)
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            integrity.verify_manifest_for_run(
+                self.prefix, "development", 101, 0, sumo_seed=self.derived
+            )
+        self.assertIn("has been altered", str(caught.exception))
+
+    def test_a_missing_metadata_seed_is_refused(self):
+        path = integrity.metadata_path_for(self.prefix)
+        with open(path) as handle:
+            metadata = json.load(handle)
+        del metadata["sumo_seed"]
+        with open(path, "w") as handle:
+            json.dump(metadata, handle)
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            integrity.verify_manifest_for_run(
+                self.prefix, "development", 101, 0, sumo_seed=self.derived
+            )
+
+    def test_the_runner_refuses_an_arbitrary_seed_before_sumo(self):
+        output = os.path.join(self.directory, "run")
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            run_baseline(
+                None, self.config, REPOSITORY_ROOT, SIMULTANEOUS_FIXED_TIME,
+                self.prefix + ".csv", self.prefix + ".rou.xml",
+                "development", 101, 999999, output,
+                plan=plans.simultaneous_plan(),
+            )
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_verified_seed_is_recorded_as_verified(self):
+        _metadata, verified = integrity.verify_manifest_for_run(
+            self.prefix, "development", 101, 0, sumo_seed=self.derived
+        )
+        manifest = _baseline_manifest(
+            REPOSITORY_ROOT, self.config, self.prefix + ".csv",
+            SIMULTANEOUS_FIXED_TIME, plans.simultaneous_plan(), "development",
+            101, self.derived, "development_baseline", "subscription", "full",
+            None, verified_hashes=verified, manifest_index=0,
+        )
+        self.assertTrue(manifest["sumo_seed_verified"])
+        self.assertEqual(manifest["sumo_seed"], self.derived)
+        self.assertIn("derive_sumo_seed", manifest["sumo_seed_derivation"])
+
+
+class ExecutedPathBindingTests(unittest.TestCase):
+    """3: what was verified is what SUMO is handed."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.config = load_config(BASELINE_CONFIG_PATH)
+        self.prefix_a = os.path.join(self.directory, "manifest_a")
+        self.prefix_b = os.path.join(self.directory, "manifest_b")
+        for prefix, seed in ((self.prefix_a, 101), (self.prefix_b, 102)):
+            write_manifest(
+                generate_manifest_records(self.config, "development", seed, 0),
+                self.config, prefix, "development", seed, 0,
+            )
+        self.seed_a = derive_sumo_seed("development", 101, 0)
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _run(self, csv_path, route_path):
+        return run_baseline(
+            None, self.config, REPOSITORY_ROOT, SIMULTANEOUS_FIXED_TIME,
+            csv_path, route_path, "development", 101, self.seed_a,
+            os.path.join(self.directory, "out"),
+            plan=plans.simultaneous_plan(), manifest_prefix=self.prefix_a,
+        )
+
+    def test_a_route_from_another_manifest_is_refused(self):
+        """Verified prefix A, executed route B."""
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            self._run(self.prefix_a + ".csv", self.prefix_b + ".rou.xml")
+        message = str(caught.exception)
+        self.assertIn("not the ones that were verified", message)
+        self.assertIn("route_xml", message)
+        self.assertFalse(os.path.exists(os.path.join(self.directory, "out")))
+
+    def test_a_csv_from_another_manifest_is_refused(self):
+        with self.assertRaises(integrity.ManifestIntegrityError) as caught:
+            self._run(self.prefix_b + ".csv", self.prefix_a + ".rou.xml")
+        message = str(caught.exception)
+        self.assertIn("not the ones that were verified", message)
+        self.assertIn("csv", message)
+
+    def test_both_paths_from_another_manifest_are_refused(self):
+        with self.assertRaises(integrity.ManifestIntegrityError):
+            self._run(self.prefix_b + ".csv", self.prefix_b + ".rou.xml")
+
+    def test_the_verified_paths_pass_the_binding_check(self):
+        """They get past it and fail later, on the absent traci."""
+        with self.assertRaises(Exception) as caught:
+            self._run(self.prefix_a + ".csv", self.prefix_a + ".rou.xml")
+        self.assertNotIsInstance(
+            caught.exception, integrity.ManifestIntegrityError
+        )
+
+    def test_a_normalised_equivalent_path_is_accepted(self):
+        """Binding is on the real path, not on the spelling."""
+        awkward = os.path.join(
+            self.directory, ".", "sub", "..", "manifest_a.rou.xml"
+        )
+        self.assertTrue(
+            integrity.assert_paths_are_the_verified_ones(
+                self.prefix_a, self.prefix_a + ".csv", awkward
+            )
+        )
+
+    def test_the_binding_names_the_two_authorised_files(self):
+        paths = integrity.manifest_paths(self.prefix_a)
+        self.assertEqual(
+            sorted(paths), ["csv", "route_xml"]
+        )
+        self.assertTrue(paths["route_xml"].endswith("manifest_a.rou.xml"))
+
+
+class RunIdentityTests(unittest.TestCase):
+    """2: a run is evidence about a candidate only if it is that run."""
+
+    FAMILY = search.DESIGN_FAMILY
+    CONTROLLER = search.TIMING_CONTROLLER
+
+    def _run(self, plan, seed, **overrides):
+        run = {
+            "traffic_family": self.FAMILY,
+            "traffic_seed": seed,
+            "manifest_index": 0,
+            "controller": self.CONTROLLER,
+            "phase_parameters": dict(plan),
+            "clearance_status": "CLEARED",
+            "J_primary_valid": True,
+            search.PRIMARY_FIELD: 10.0,
+            search.TIME_LOSS_FIELD: 4.0,
+            "manifest_csv_sha256": "csv-{}".format(seed),
+            "route_xml_sha256": "route-{}".format(seed),
+            "sumo_seed": 900000 + seed,
+        }
+        run.update(overrides)
+        return run
+
+    def _runs(self, plan, **overrides):
+        return [
+            self._run(plan, seed, **overrides)
+            for seed in search.required_seeds(self.FAMILY)
+        ]
+
+    def test_a_matching_run_set_is_accepted(self):
+        plan = plans.make_plan(90, 500, 0)
+        record = search.summarise_candidate(
+            plan, self._runs(plan), self.FAMILY, self.CONTROLLER
+        )
+        self.assertTrue(record["valid"])
+
+    def test_a_run_from_the_wrong_traffic_family_is_refused(self):
+        """Correct seed number, wrong family: different traffic entirely."""
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan)
+        runs[2]["traffic_family"] = search.VALIDATION_FAMILY
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plan, runs, self.FAMILY, self.CONTROLLER
+            )
+        message = str(caught.exception)
+        self.assertIn("traffic_family", message)
+        self.assertIn("Seed numbers alone are not identity", message)
+
+    def test_a_run_with_a_nonzero_manifest_index_is_refused(self):
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan)
+        runs[0]["manifest_index"] = 1
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plan, runs, self.FAMILY, self.CONTROLLER
+            )
+        self.assertIn("manifest_index", str(caught.exception))
+
+    def test_a_run_from_another_controller_is_refused(self):
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan, controller=search.OFFSET_CONTROLLER)
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plan, runs, self.FAMILY, self.CONTROLLER
+            )
+        self.assertIn("controller", str(caught.exception))
+
+    def test_a_run_for_a_different_plan_is_refused(self):
+        plan = plans.make_plan(90, 500, 0)
+        other = plans.make_plan(70, 450, 10)
+        runs = self._runs(plan, phase_parameters=dict(other))
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plan, runs, self.FAMILY, self.CONTROLLER
+            )
+        self.assertIn("phase_parameters", str(caught.exception))
+
+    def test_a_run_without_identity_fields_is_refused(self):
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan)
+        del runs[1]["phase_parameters"]
+        with self.assertRaises(search.SelectionError) as caught:
+            search.summarise_candidate(
+                plan, runs, self.FAMILY, self.CONTROLLER
+            )
+        self.assertIn("identity cannot be established", str(caught.exception))
+
+    def test_a_nonfinite_j_primary_makes_the_candidate_invalid(self):
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan)
+        runs[0][search.PRIMARY_FIELD] = float("nan")
+        record = search.summarise_candidate(
+            plan, runs, self.FAMILY, self.CONTROLLER
+        )
+        self.assertFalse(record["valid"])
+
+    def test_a_nonfinite_time_loss_makes_the_candidate_invalid(self):
+        """The tie-break value must exist, or the tie-break is undefined."""
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan)
+        runs[3][search.TIME_LOSS_FIELD] = float("inf")
+        record = search.summarise_candidate(
+            plan, runs, self.FAMILY, self.CONTROLLER
+        )
+        self.assertFalse(record["valid"])
+
+    def test_a_run_claiming_validity_without_clearing_is_still_invalid(self):
+        plan = plans.make_plan(90, 500, 0)
+        runs = self._runs(plan)
+        runs[0]["clearance_status"] = "CLEARANCE_FAILURE"
+        record = search.summarise_candidate(
+            plan, runs, self.FAMILY, self.CONTROLLER
+        )
+        self.assertFalse(record["valid"])
+
+
+class ShuffledResultTests(unittest.TestCase):
+    """2: position is not identity, so a swapped result set must fail."""
+
+    def setUp(self):
+        self.calls = []
+
+    def test_swapping_two_candidates_results_is_refused(self):
+        """Evaluator returns A's runs for B and B's runs for A."""
+        def swap_first_two(out, candidate_plans, family):
+            out = list(out)
+            out[0], out[1] = out[1], out[0]
+            return out
+
+        evaluator = mock_evaluator(
+            self.calls, search.OFFSET_CONTROLLER, scores=OFFSET_SCORE,
+            mutate=swap_first_two,
+        )
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(evaluator, evaluator)
+        message = str(caught.exception)
+        self.assertIn("does not belong to the candidate", message)
+        self.assertIn("phase_parameters", message)
+        self.assertIn("result 0 of 90", message)
+
+    def test_a_reversed_result_set_is_refused(self):
+        def reverse(out, candidate_plans, family):
+            return list(reversed(out))
+
+        evaluator = mock_evaluator(
+            self.calls, search.OFFSET_CONTROLLER, scores=OFFSET_SCORE,
+            mutate=reverse,
+        )
+        with self.assertRaises(search.SelectionError):
+            search.run_fixed_offset_protocol(evaluator, evaluator)
+
+    def test_a_stale_result_set_from_another_stage_is_refused(self):
+        """Fine-stage results carried over from the coarse stage."""
+        state = {"first": None}
+
+        def reuse_first(out, candidate_plans, family):
+            if state["first"] is None:
+                state["first"] = list(out)
+                return out
+            # Return the coarse stage's runs, padded to the right length.
+            stale = state["first"]
+            return [stale[index % len(stale)] for index in range(len(out))]
+
+        evaluator = mock_evaluator(
+            self.calls, search.TIMING_CONTROLLER, scores=TIMING_SCORE,
+            mutate=reuse_first,
+        )
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_timing_protocol(evaluator, evaluator)
+        self.assertIn("does not belong to the candidate", str(caught.exception))
+
+    def test_the_unshuffled_protocol_still_succeeds(self):
+        evaluator = mock_evaluator(
+            self.calls, search.OFFSET_CONTROLLER, scores=OFFSET_SCORE
+        )
+        result = search.run_fixed_offset_protocol(evaluator, evaluator)
+        self.assertEqual(result["selected_plan"]["offset_s"], 0)
+
+
+class TrafficPairingTests(unittest.TestCase):
+    """5: candidates are paired only if they met the same realisation."""
+
+    def setUp(self):
+        self.calls = []
+
+    def _evaluator(self, mutate=None):
+        return mock_evaluator(
+            self.calls, search.OFFSET_CONTROLLER, scores=OFFSET_SCORE,
+            mutate=mutate,
+        )
+
+    def test_a_differing_route_hash_for_one_candidate_is_refused(self):
+        def tamper(out, candidate_plans, family):
+            out[3][0]["route_xml_sha256"] = "a-different-route-file"
+            return out
+
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(
+                self._evaluator(tamper), self._evaluator()
+            )
+        message = str(caught.exception)
+        self.assertIn("not evaluated on the same traffic", message)
+        self.assertIn("2 distinct realisations", message)
+
+    def test_a_differing_manifest_hash_for_one_candidate_is_refused(self):
+        def tamper(out, candidate_plans, family):
+            out[0][2]["manifest_csv_sha256"] = "another-manifest"
+            return out
+
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(
+                self._evaluator(tamper), self._evaluator()
+            )
+        self.assertIn("not evaluated on the same traffic", str(caught.exception))
+
+    def test_a_differing_sumo_seed_for_one_candidate_is_refused(self):
+        def tamper(out, candidate_plans, family):
+            out[5][1]["sumo_seed"] = 42
+            return out
+
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(
+                self._evaluator(tamper), self._evaluator()
+            )
+        self.assertIn("same manifest, route file and SUMO seed",
+                      str(caught.exception))
+
+    def test_missing_pairing_provenance_is_refused(self):
+        def strip(out, candidate_plans, family):
+            for runs in out:
+                for run in runs:
+                    run["route_xml_sha256"] = None
+            return out
+
+        with self.assertRaises(search.SelectionError) as caught:
+            search.run_fixed_offset_protocol(
+                self._evaluator(strip), self._evaluator()
+            )
+        self.assertIn("do not record", str(caught.exception))
+
+    def test_identical_traffic_across_candidates_passes(self):
+        result = search.run_fixed_offset_protocol(
+            self._evaluator(), self._evaluator()
+        )
+        self.assertTrue(result["frozen"])
+
+    def test_different_seeds_may_legitimately_differ(self):
+        """The invariant is per seed, not across seeds."""
+        runs_by_candidate = [
+            (
+                (90, 500, offset),
+                [
+                    synthetic_run(
+                        plans.fixed_offset_plan(offset),
+                        search.DESIGN_FAMILY, seed,
+                        search.OFFSET_CONTROLLER, 1.0,
+                    )
+                    for seed in search.DESIGN_SEEDS
+                ],
+            )
+            for offset in (0, 10, 20)
+        ]
+        self.assertTrue(
+            search.assert_stage_traffic_pairing(
+                runs_by_candidate, search.DESIGN_FAMILY
+            )
+        )
+        signatures = set(
+            run["route_xml_sha256"]
+            for _key, runs in runs_by_candidate for run in runs
+        )
+        self.assertEqual(len(signatures), len(search.DESIGN_SEEDS))
 
 
 if __name__ == "__main__":
