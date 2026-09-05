@@ -8,8 +8,12 @@ of those is absent the artefact is incomplete, and an incomplete freeze cannot
 unlock anything -- there would still be a decision left to make with the final
 data in view.
 
+Artefacts here are hash-sealed rather than cryptographically signed: a digest
+detects modification, but proves nothing about authorship. No signature
+mechanism exists and none is claimed.
+
 Unlocking is two things, not one. The freeze artefact says what was frozen;
-the unlock is a separate signed action recording who authorised it, after
+the unlock is a separate, explicit action recording who authorised it, after
 independent review. Requiring both means the artefact cannot unlock itself,
 and the reviewer's approval cannot be inferred from the mere existence of a
 file someone generated.
@@ -57,8 +61,16 @@ REQUIRED_PLAN_PROVENANCE = (
 )
 REQUIRED_CHECKPOINT_FIELDS = (
     "training_seed", "transition_index", "checkpoint_sha256",
-    "selected_on_family",
+    "selected_on_family", "selected_on_seeds",
+    "validation_mean_J_primary_s", "validation_mean_time_loss_s",
 )
+
+# The inferential unit is the training seed, so every method carries ten
+# independently selected policies -- one per training seed -- and not a single
+# representative. Freezing one would silently discard nine of the ten
+# measurements the whole statistical design rests on.
+REQUIRED_TRAINING_SEEDS = statistics.TRAINING_SEEDS
+REQUIRED_SELECTION_SEEDS = statistics.LEARNER_VALIDATION_SEEDS
 
 
 class FreezeError(RuntimeError):
@@ -91,7 +103,7 @@ def freeze_schema():
             "the campaign stage machine at or past {}".format(
                 stages.PRE_FINAL_AUDIT
             ),
-            "a separate explicit unlock action, signed, after independent "
+            "a separate explicit unlock action, recorded, after independent "
             "review",
         ],
         "unlock_implemented": False,
@@ -160,6 +172,103 @@ def _missing_plan_problems(label, entry):
     return problems
 
 
+def _normalise_seed_keys(entries):
+    """Accept integer or string training-seed keys, which JSON round-trips."""
+    normalised = {}
+    for key, value in entries.items():
+        try:
+            normalised[int(key)] = value
+        except (TypeError, ValueError):
+            normalised[key] = value
+    return normalised
+
+
+def _checkpoint_problems(method, entries):
+    """Exactly ten independently selected policies, one per training seed."""
+    label = "selected_checkpoints.{}".format(method)
+    if not entries:
+        return ["{} is missing".format(label)]
+    if not isinstance(entries, dict):
+        return [
+            "{} must map each training seed to its own selected checkpoint; "
+            "one checkpoint per method would discard nine of the ten "
+            "measurements the design rests on".format(label)
+        ]
+    if "transition_index" in entries or "checkpoint_sha256" in entries:
+        # A single flat checkpoint record rather than one per training seed.
+        return [
+            "{} is one checkpoint record; it must map each training seed to "
+            "its own selected checkpoint. One per method would discard nine "
+            "of the ten measurements the design rests on".format(label)
+        ]
+    entries = _normalise_seed_keys(entries)
+    problems = []
+    seeds = sorted(key for key in entries if isinstance(key, int))
+    foreign = sorted(key for key in entries if not isinstance(key, int))
+    if foreign:
+        problems.append(
+            "{} has non-numeric training seeds {}".format(label, foreign)
+        )
+    missing = sorted(set(REQUIRED_TRAINING_SEEDS) - set(seeds))
+    extra = sorted(set(seeds) - set(REQUIRED_TRAINING_SEEDS))
+    if missing:
+        problems.append(
+            "{} is missing training seeds {}".format(label, missing)
+        )
+    if extra:
+        problems.append(
+            "{} carries foreign training seeds {}".format(label, extra)
+        )
+    if len(seeds) != len(set(seeds)):
+        problems.append("{} repeats a training seed".format(label))
+
+    for seed in seeds:
+        entry = entries[seed]
+        entry_label = "{}.{}".format(label, seed)
+        if not isinstance(entry, dict):
+            problems.append("{} is not a checkpoint record".format(entry_label))
+            continue
+        for field in REQUIRED_CHECKPOINT_FIELDS:
+            if field not in entry or entry[field] in (None, "", []):
+                problems.append(
+                    "{}.{} is missing".format(entry_label, field)
+                )
+        declared = entry.get("training_seed")
+        if declared is not None and int(declared) != int(seed):
+            problems.append(
+                "{}.training_seed is {}, which is not the key it is filed "
+                "under".format(entry_label, declared)
+            )
+        family = entry.get("selected_on_family")
+        if family and family != statistics.LEARNER_VALIDATION_FAMILY:
+            problems.append(
+                "{} was selected on {!r}; only {!r} may select a "
+                "checkpoint".format(
+                    entry_label, family, statistics.LEARNER_VALIDATION_FAMILY
+                )
+            )
+        selection_seeds = entry.get("selected_on_seeds")
+        if selection_seeds is not None:
+            actual = tuple(sorted(int(value) for value in selection_seeds))
+            if actual != REQUIRED_SELECTION_SEEDS:
+                problems.append(
+                    "{}.selected_on_seeds is {}; selection requires exactly "
+                    "{}".format(
+                        entry_label, list(actual),
+                        list(REQUIRED_SELECTION_SEEDS),
+                    )
+                )
+        index = entry.get("transition_index")
+        if index is not None and int(index) not in (
+            statistics.CHECKPOINT_TRANSITIONS
+        ):
+            problems.append(
+                "{}.transition_index {} is not a preregistered "
+                "checkpoint".format(entry_label, index)
+            )
+    return problems
+
+
 def freeze_problems(artefact):
     """Everything that would stop this artefact from authorising an unlock."""
     problems = []
@@ -178,27 +287,7 @@ def freeze_problems(artefact):
 
     checkpoints = artefact.get("selected_checkpoints") or {}
     for method in LEARNED_METHODS:
-        entry = checkpoints.get(method)
-        if not entry:
-            problems.append(
-                "selected_checkpoints.{} is missing".format(method)
-            )
-            continue
-        for field in REQUIRED_CHECKPOINT_FIELDS:
-            if field not in entry or entry[field] in (None, ""):
-                problems.append(
-                    "selected_checkpoints.{}.{} is missing".format(
-                        method, field
-                    )
-                )
-        family = entry.get("selected_on_family")
-        if family and family != statistics.LEARNER_VALIDATION_FAMILY:
-            problems.append(
-                "selected_checkpoints.{} was selected on {!r}; only {!r} may "
-                "select a checkpoint".format(
-                    method, family, statistics.LEARNER_VALIDATION_FAMILY
-                )
-            )
+        problems.extend(_checkpoint_problems(method, checkpoints.get(method)))
 
     if artefact.get("statistical_protocol_sha256") != (
         statistics.protocol_sha256()
@@ -285,7 +374,7 @@ def assert_final_test_unlock(directory, state_directory=None):
             "cannot be shown to have happened"
         )
     raise UnlockRefused(
-        "final_test remains locked. The unlock is a separate, signed action "
+        "final_test remains locked. The unlock is a separate, explicit action "
         "to be implemented only after independent review, and it is "
         "deliberately not implemented in this batch. Outstanding "
         "preconditions: {}".format(outstanding or ["none; awaiting review"])

@@ -105,12 +105,14 @@ def validate_config(config):
 
 
 def require_scientific_run_allowed(config):
-    """An official run needs the frozen declaration AND an explicit unlock.
+    """DEPRECATED as an authorisation gate. Not consulted by any entry point.
 
-    The old blocker keyed on the string "provisional_", which meant any other
-    string would have passed. It now requires the positive declaration from
-    adaptive_qmix.protocol.semantics, whose durations are verified to be
-    exactly 5 / 3 / 2, so a run cannot become official by renaming a field.
+    Official training is authorised by the verified campaign state (see
+    adaptive_qmix.protocol.authorization), because starting the campaign must
+    not require editing the configuration whose hash the campaign is pinned
+    to. This function is retained only to verify the frozen semantics
+    declaration, and it is no longer called to decide whether a run may
+    proceed.
     """
     try:
         semantics_module.assert_primary_semantics_frozen(config)
@@ -121,7 +123,9 @@ def require_scientific_run_allowed(config):
     if not bool(config.get("scientific_run_allowed", False)):
         raise ScientificRunBlocked(
             "Official run blocked: the primary semantics is frozen, but "
-            "scientific_run_allowed is still false. Unlocking is a separate, "
-            "explicit action taken after the pre-final audit."
+            "scientific_run_allowed is still false. NOTE: this flag is "
+            "deprecated and is not what authorises official training; see "
+            "adaptive_qmix.protocol.authorization, which requires the "
+            "verified campaign state instead."
         )
 

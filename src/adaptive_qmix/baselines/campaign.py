@@ -36,8 +36,19 @@ from .integrity import (
     sha256_file,
     verify_manifest_for_run,
 )
-from .plans import candidate_key
-from .search import FINAL_FAMILY, FINAL_SEEDS, required_seeds
+from .plans import candidate_key, coarse_timing_candidates, \
+    fine_timing_candidates, fixed_offset_candidates
+from .search import (
+    COARSE_RETAINED,
+    DESIGN_FAMILY,
+    FINAL_FAMILY,
+    FINAL_SEEDS,
+    FINE_RETAINED,
+    OFFSET_RETAINED,
+    VALIDATION_FAMILY,
+    required_seeds,
+)
+from ..protocol import stages as protocol_stages
 
 
 CAMPAIGN_VERSION = "baseline-campaign-1.0"
@@ -410,3 +421,188 @@ def write_ledger(directory, entries):
             "entries": entries,
         }, handle, indent=2, sort_keys=True)
     return {"csv": csv_path, "json": json_path}
+
+
+# ---------------------------------------------------------------------------
+# Campaign stage graph.
+#
+# The search protocol is frozen; this is the order its stages must execute in,
+# and what each one is allowed to consume. A validation stage never takes a
+# shortlist somebody typed: it reads the hash-sealed artefact the preceding
+# stage produced, so the ten candidates it evaluates are provably the ten that
+# ranked best on design rather than ten chosen afterwards.
+#
+# The fine timing stage is a DESIGN-family stage. It refines the neighbourhood
+# of the coarse winners and is ranked on benchmark_design, exactly like the
+# coarse stage; only the last stage of each track uses benchmark_validation.
+# ---------------------------------------------------------------------------
+
+OFFSET_DESIGN = "offset_design"
+OFFSET_VALIDATION = "offset_validation"
+TIMING_COARSE_DESIGN = "timing_coarse_design"
+TIMING_FINE_DESIGN = "timing_fine_design"
+TIMING_VALIDATION = "timing_validation"
+
+CAMPAIGN_STAGES = {
+    OFFSET_DESIGN: {
+        "controller": "optimized_fixed_offset",
+        "family": DESIGN_FAMILY,
+        "requires": None,
+        "retain": OFFSET_RETAINED,
+        "protocol_stage": protocol_stages.BASELINE_DESIGN,
+        "candidates": "all 90 fixed offsets",
+    },
+    OFFSET_VALIDATION: {
+        "controller": "optimized_fixed_offset",
+        "family": VALIDATION_FAMILY,
+        "requires": OFFSET_DESIGN,
+        "retain": None,
+        "protocol_stage": protocol_stages.BASELINE_VALIDATION,
+        "candidates": "the design shortlist",
+    },
+    TIMING_COARSE_DESIGN: {
+        "controller": "optimized_fixed_timing",
+        "family": DESIGN_FAMILY,
+        "requires": None,
+        "retain": COARSE_RETAINED,
+        "protocol_stage": protocol_stages.BASELINE_DESIGN,
+        "candidates": "the 1980 coarse candidates",
+    },
+    TIMING_FINE_DESIGN: {
+        "controller": "optimized_fixed_timing",
+        "family": DESIGN_FAMILY,
+        "requires": TIMING_COARSE_DESIGN,
+        "retain": FINE_RETAINED,
+        "protocol_stage": protocol_stages.BASELINE_DESIGN,
+        "candidates": "the fine neighbourhood of the five coarse winners",
+    },
+    TIMING_VALIDATION: {
+        "controller": "optimized_fixed_timing",
+        "family": VALIDATION_FAMILY,
+        "requires": TIMING_FINE_DESIGN,
+        "retain": None,
+        "protocol_stage": protocol_stages.BASELINE_VALIDATION,
+        "candidates": "the fine shortlist",
+    },
+}
+
+SHORTLIST_SUFFIX = ".shortlist.json"
+
+
+class StageSequenceError(RuntimeError):
+    pass
+
+
+def shortlist_path(directory, stage):
+    if stage not in CAMPAIGN_STAGES:
+        raise StageSequenceError("Unknown campaign stage {!r}.".format(stage))
+    return os.path.join(directory, stage + SHORTLIST_SUFFIX)
+
+
+def write_shortlist_artefact(directory, stage, plans, provenance):
+    """Hash-seal the candidates a stage retained, for the next stage to read."""
+    spec = CAMPAIGN_STAGES[stage]
+    if spec["retain"] is not None and len(plans) != spec["retain"]:
+        raise StageSequenceError(
+            "Stage {!r} must retain exactly {} candidates; got {}. The "
+            "shortlist size is part of the frozen protocol.".format(
+                stage, spec["retain"], len(plans)
+            )
+        )
+    payload = {
+        "campaign_version": CAMPAIGN_VERSION,
+        "stage": stage,
+        "controller": spec["controller"],
+        "family": spec["family"],
+        "plans": [dict(plan) for plan in plans],
+        "candidate_keys": [list(candidate_key(plan)) for plan in plans],
+        "provenance": dict(provenance),
+    }
+    artefact = dict(payload)
+    artefact["payload_sha256"] = _sha256_payload(payload)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+    path = shortlist_path(directory, stage)
+    temporary = path + ".partial"
+    with open(temporary, "w") as handle:
+        json.dump(artefact, handle, indent=2, sort_keys=True)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+    return path
+
+
+def read_shortlist_artefact(directory, stage):
+    """Read the preceding stage's shortlist, refusing anything unverified."""
+    path = shortlist_path(directory, stage)
+    if not os.path.isfile(path):
+        raise StageSequenceError(
+            "Stage {!r} produced no shortlist artefact at {}. A later stage "
+            "may not proceed on a shortlist that was never "
+            "generated.".format(stage, path)
+        )
+    with open(path, "r") as handle:
+        artefact = json.load(handle)
+    recorded = artefact.get("payload_sha256")
+    payload = dict(
+        (key, value) for key, value in artefact.items()
+        if key != "payload_sha256"
+    )
+    if recorded != _sha256_payload(payload):
+        raise StageSequenceError(
+            "The shortlist artefact for stage {!r} has been modified since it "
+            "was written. A validation stage runs the candidates design "
+            "selected, not candidates edited afterwards.".format(stage)
+        )
+    if artefact.get("stage") != stage:
+        raise StageSequenceError(
+            "Artefact at {} declares stage {!r}.".format(
+                path, artefact.get("stage")
+            )
+        )
+    spec = CAMPAIGN_STAGES[stage]
+    if artefact.get("controller") != spec["controller"]:
+        raise StageSequenceError(
+            "Shortlist for {!r} was produced by controller {!r}, not "
+            "{!r}.".format(stage, artefact.get("controller"),
+                           spec["controller"])
+        )
+    if spec["retain"] is not None and len(artefact["plans"]) != spec["retain"]:
+        raise StageSequenceError(
+            "Shortlist for {!r} holds {} candidates; the protocol retains "
+            "{}.".format(stage, len(artefact["plans"]), spec["retain"])
+        )
+    return artefact
+
+
+def candidates_for_stage(stage, shortlist_directory):
+    """What a stage runs, derived structurally rather than supplied by hand."""
+    spec = CAMPAIGN_STAGES[stage]
+    required = spec["requires"]
+    if required is None:
+        if stage == OFFSET_DESIGN:
+            return fixed_offset_candidates(), None
+        return coarse_timing_candidates(), None
+    artefact = read_shortlist_artefact(shortlist_directory, required)
+    if stage == TIMING_FINE_DESIGN:
+        # The fine neighbourhood is regenerated from the verified winners, so
+        # it cannot be widened by editing a file.
+        return fine_timing_candidates(artefact["plans"]), artefact
+    return [dict(plan) for plan in artefact["plans"]], artefact
+
+
+def assert_campaign_stage_allowed(stage, shortlist_directory,
+                                  state_directory=None):
+    """Refuse a stage until its predecessor's shortlist exists and verifies."""
+    if stage not in CAMPAIGN_STAGES:
+        raise StageSequenceError("Unknown campaign stage {!r}.".format(stage))
+    spec = CAMPAIGN_STAGES[stage]
+    required = spec["requires"]
+    if required is not None:
+        # Raises with the reason if absent, tampered or the wrong shape.
+        read_shortlist_artefact(shortlist_directory, required)
+    if state_directory is not None:
+        protocol_stages.assert_stage_allowed(
+            state_directory, spec["protocol_stage"]
+        )
+    return True

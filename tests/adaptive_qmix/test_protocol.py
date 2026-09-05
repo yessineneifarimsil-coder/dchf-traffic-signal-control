@@ -22,7 +22,8 @@ from adaptive_qmix.config import (
     require_scientific_run_allowed, validate_config,
 )
 from adaptive_qmix.protocol import (
-    behaviour, decision, freeze, semantics, stages, statistics,
+    authorization, behaviour, decision, freeze, semantics, stages,
+    statistics,
 )
 
 
@@ -134,6 +135,29 @@ class FrozenPrimarySemanticsTests(unittest.TestCase):
             )
 
 
+def clean_reviews(pathology=(), methods=("qmix", "vdn", "idqn"),
+                  omit=()):
+    """Structured behavioural reviews for every learned method and seed."""
+    report = dict(
+        (name, {"value": 1.0}) for name in behaviour.REQUIRED_REPORT_NAMES
+    )
+    reviews = {}
+    for method in methods:
+        per_seed = {}
+        for seed in statistics.TRAINING_SEEDS:
+            if (method, seed) in omit:
+                continue
+            per_seed[seed] = behaviour.record_review(
+                "{}_seed{}".format(method, seed), report, "reviewer",
+                behaviour.CONCLUSION_PATHOLOGY
+                if (method, seed) in pathology
+                else behaviour.CONCLUSION_CLEAN,
+                training_seed=seed, method=method,
+            )
+        reviews[method] = per_seed
+    return reviews
+
+
 class GoNoGoDefinitionTests(unittest.TestCase):
     """B: the decision rule is written down, serialised and hashed."""
 
@@ -212,7 +236,7 @@ class GoNoGoDefinitionTests(unittest.TestCase):
     def test_go_requires_every_deciding_interval_below_zero(self):
         verdict = decision.evaluate_go_no_go(
             {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5)},
-            validity_passed=True, behaviour_review_recorded=True,
+            validity_passed=True, behaviour_reviews=clean_reviews(),
         )
         self.assertEqual(verdict["verdict"], "GO")
         self.assertEqual(verdict["reasons"], [])
@@ -220,7 +244,7 @@ class GoNoGoDefinitionTests(unittest.TestCase):
     def test_one_interval_touching_zero_is_no_go(self):
         verdict = decision.evaluate_go_no_go(
             {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, 0.2)},
-            validity_passed=True, behaviour_review_recorded=True,
+            validity_passed=True, behaviour_reviews=clean_reviews(),
         )
         self.assertEqual(verdict["verdict"], "NO-GO")
         self.assertIn("delta_J_IDQN", verdict["reasons"][0])
@@ -229,7 +253,7 @@ class GoNoGoDefinitionTests(unittest.TestCase):
         verdict = decision.evaluate_go_no_go(
             {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5),
              "delta_J_MP": (2.0, 8.0)},
-            validity_passed=True, behaviour_review_recorded=True,
+            validity_passed=True, behaviour_reviews=clean_reviews(),
         )
         self.assertEqual(verdict["verdict"], "GO")
         self.assertIn("delta_J_MP", verdict["reported_only"])
@@ -237,18 +261,20 @@ class GoNoGoDefinitionTests(unittest.TestCase):
     def test_failed_validity_or_missing_behaviour_review_is_no_go(self):
         intervals = {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5)}
         self.assertEqual(
-            decision.evaluate_go_no_go(intervals, False, True)["verdict"],
+            decision.evaluate_go_no_go(
+                intervals, False, clean_reviews()
+            )["verdict"],
             "NO-GO",
         )
         self.assertEqual(
-            decision.evaluate_go_no_go(intervals, True, False)["verdict"],
+            decision.evaluate_go_no_go(intervals, True, {})["verdict"],
             "NO-GO",
         )
 
     def test_a_missing_deciding_comparison_cannot_be_decided(self):
         with self.assertRaises(decision.DecisionProtocolError):
             decision.evaluate_go_no_go(
-                {"delta_J_OFT": (-5.0, -1.0)}, True, True
+                {"delta_J_OFT": (-5.0, -1.0)}, True, clean_reviews()
             )
 
 
@@ -564,7 +590,7 @@ class StatisticalProtocolTests(unittest.TestCase):
     def test_the_bootstrap_recovers_a_clear_separation(self):
         treatment = self._panel(10.0)
         comparator = self._panel(14.0)
-        result = statistics.hierarchical_paired_bootstrap(
+        result = statistics.paired_crossed_bootstrap(
             treatment, comparator, replicates=500
         )
         self.assertAlmostEqual(result["observed_mean_difference"], -4.0, 6)
@@ -575,7 +601,7 @@ class StatisticalProtocolTests(unittest.TestCase):
 
     def test_the_bootstrap_does_not_separate_identical_panels(self):
         panel = self._panel(10.0)
-        result = statistics.hierarchical_paired_bootstrap(
+        result = statistics.paired_crossed_bootstrap(
             panel, panel, replicates=500
         )
         self.assertAlmostEqual(result["observed_mean_difference"], 0.0, 9)
@@ -585,14 +611,14 @@ class StatisticalProtocolTests(unittest.TestCase):
         treatment = self._panel(10.0)
         comparator = self._panel(12.0, seeds=tuple(range(201, 211)))
         with self.assertRaises(statistics.StatisticsError) as caught:
-            statistics.hierarchical_paired_bootstrap(treatment, comparator)
+            statistics.paired_crossed_bootstrap(treatment, comparator)
         self.assertIn("Unpaired training seeds", str(caught.exception))
 
     def test_mismatched_evaluation_seeds_are_refused(self):
         treatment = self._panel(10.0)
         comparator = self._panel(12.0, episodes=tuple(range(3001, 3009)))
         with self.assertRaises(statistics.StatisticsError) as caught:
-            statistics.hierarchical_paired_bootstrap(treatment, comparator)
+            statistics.paired_crossed_bootstrap(treatment, comparator)
         self.assertIn("Unpaired evaluation seeds", str(caught.exception))
 
     def test_a_non_finite_metric_never_reaches_the_bootstrap(self):
@@ -600,16 +626,16 @@ class StatisticalProtocolTests(unittest.TestCase):
         comparator = self._panel(12.0)
         comparator[101][3001] = float("nan")
         with self.assertRaises(statistics.StatisticsError) as caught:
-            statistics.hierarchical_paired_bootstrap(treatment, comparator)
+            statistics.paired_crossed_bootstrap(treatment, comparator)
         self.assertIn("excluded by the validity gates", str(caught.exception))
 
     def test_the_bootstrap_is_deterministic(self):
         treatment = self._panel(10.0)
         comparator = self._panel(11.0)
-        first = statistics.hierarchical_paired_bootstrap(
+        first = statistics.paired_crossed_bootstrap(
             treatment, comparator, replicates=200
         )
-        second = statistics.hierarchical_paired_bootstrap(
+        second = statistics.paired_crossed_bootstrap(
             treatment, comparator, replicates=200
         )
         self.assertEqual(first["ci_low"], second["ci_low"])
@@ -782,13 +808,26 @@ class FreezeAndUnlockTests(unittest.TestCase):
         }
 
     @staticmethod
-    def _checkpoints():
+    def _checkpoint(seed, **overrides):
+        entry = {
+            "training_seed": seed, "transition_index": 250000,
+            "checkpoint_sha256": "a" * 64,
+            "selected_on_family": "learner_validation",
+            "selected_on_seeds": list(statistics.LEARNER_VALIDATION_SEEDS),
+            "validation_mean_J_primary_s": 11.5,
+            "validation_mean_time_loss_s": 19.0,
+        }
+        entry.update(overrides)
+        return entry
+
+    @classmethod
+    def _checkpoints(cls):
+        """Ten independently selected policies per method, one per seed."""
         return dict(
-            (method, {
-                "training_seed": 101, "transition_index": 250000,
-                "checkpoint_sha256": "a" * 64,
-                "selected_on_family": "learner_validation",
-            })
+            (method, dict(
+                (seed, cls._checkpoint(seed))
+                for seed in statistics.TRAINING_SEEDS
+            ))
             for method in decision.LEARNED_METHODS
         )
 
@@ -849,7 +888,7 @@ class FreezeAndUnlockTests(unittest.TestCase):
 
     def test_a_checkpoint_without_a_hash_blocks_the_freeze(self):
         checkpoints = self._checkpoints()
-        checkpoints["qmix"]["checkpoint_sha256"] = ""
+        checkpoints["qmix"][101]["checkpoint_sha256"] = ""
         artefact = freeze.build_freeze_artefact(
             "adaptive-sha", "baseline-sha", "network-sha", "network-blob",
             self._plan_entry(45), self._plan_entry(20), checkpoints,
@@ -859,7 +898,7 @@ class FreezeAndUnlockTests(unittest.TestCase):
 
     def test_a_checkpoint_selected_on_final_test_blocks_the_freeze(self):
         checkpoints = self._checkpoints()
-        checkpoints["qmix"]["selected_on_family"] = "final_test"
+        checkpoints["qmix"][107]["selected_on_family"] = "final_test"
         artefact = freeze.build_freeze_artefact(
             "adaptive-sha", "baseline-sha", "network-sha", "network-blob",
             self._plan_entry(45), self._plan_entry(20), checkpoints,
@@ -933,6 +972,514 @@ class FreezeAndUnlockTests(unittest.TestCase):
                 if "final_test" in name:
                     found.append(os.path.join(root, name))
         self.assertEqual(found, [])
+
+
+class PerTrainingSeedCheckpointTests(unittest.TestCase):
+    """1: ten independently selected policies per method, not one."""
+
+    def _checkpoints(self, **mutate):
+        base = dict(
+            (method, dict(
+                (seed, FreezeAndUnlockTests._checkpoint(seed))
+                for seed in statistics.TRAINING_SEEDS
+            ))
+            for method in decision.LEARNED_METHODS
+        )
+        base.update(mutate)
+        return base
+
+    def _artefact(self, checkpoints):
+        return freeze.build_freeze_artefact(
+            "adaptive-sha", "baseline-sha", "network-sha", "network-blob",
+            FreezeAndUnlockTests._plan_entry(45),
+            FreezeAndUnlockTests._plan_entry(20), checkpoints,
+        )
+
+    def test_ten_per_method_is_complete(self):
+        artefact = self._artefact(self._checkpoints())
+        self.assertTrue(freeze.assert_freeze_complete(artefact))
+        for method in decision.LEARNED_METHODS:
+            self.assertEqual(
+                len(artefact["selected_checkpoints"][method]), 10, method
+            )
+
+    def test_a_single_checkpoint_per_method_is_incomplete(self):
+        """The old shape would discard nine of the ten measurements."""
+        single = dict(
+            (method, FreezeAndUnlockTests._checkpoint(101))
+            for method in decision.LEARNED_METHODS
+        )
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(single))
+        self.assertIn("must map each training seed", str(caught.exception))
+
+    def test_a_missing_training_seed_is_incomplete(self):
+        checkpoints = self._checkpoints()
+        del checkpoints["qmix"][110]
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(checkpoints))
+        self.assertIn("missing training seeds [110]", str(caught.exception))
+
+    def test_a_foreign_training_seed_is_incomplete(self):
+        checkpoints = self._checkpoints()
+        del checkpoints["vdn"][110]
+        checkpoints["vdn"][999] = FreezeAndUnlockTests._checkpoint(999)
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(checkpoints))
+        message = str(caught.exception)
+        self.assertIn("foreign training seeds [999]", message)
+        self.assertIn("missing training seeds [110]", message)
+
+    def test_a_record_filed_under_the_wrong_seed_is_incomplete(self):
+        """A duplicate policy hiding under another seed's key."""
+        checkpoints = self._checkpoints()
+        checkpoints["idqn"][105] = FreezeAndUnlockTests._checkpoint(104)
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(checkpoints))
+        self.assertIn("not the key it is filed under", str(caught.exception))
+
+    def test_every_required_checkpoint_field_is_demanded(self):
+        for field in ("training_seed", "transition_index", "checkpoint_sha256",
+                      "selected_on_family", "selected_on_seeds",
+                      "validation_mean_J_primary_s",
+                      "validation_mean_time_loss_s"):
+            checkpoints = self._checkpoints()
+            del checkpoints["qmix"][103][field]
+            with self.assertRaises(freeze.FreezeError, msg=field) as caught:
+                freeze.assert_freeze_complete(self._artefact(checkpoints))
+            self.assertIn(field, str(caught.exception))
+
+    def test_wrong_selection_seeds_block_the_freeze(self):
+        checkpoints = self._checkpoints()
+        checkpoints["qmix"][102]["selected_on_seeds"] = [2201, 2202, 2203]
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(checkpoints))
+        self.assertIn("selection requires exactly", str(caught.exception))
+
+    def test_an_unlisted_transition_index_blocks_the_freeze(self):
+        checkpoints = self._checkpoints()
+        checkpoints["vdn"][108]["transition_index"] = 123456
+        with self.assertRaises(freeze.FreezeError) as caught:
+            freeze.assert_freeze_complete(self._artefact(checkpoints))
+        self.assertIn("not a preregistered checkpoint", str(caught.exception))
+
+    def test_string_seed_keys_survive_a_json_round_trip(self):
+        artefact = self._artefact(self._checkpoints())
+        restored = json.loads(json.dumps(artefact))
+        self.assertTrue(freeze.assert_freeze_complete(restored))
+
+
+class BehaviourGatingTests(unittest.TestCase):
+    """2: a pathology-observed review must not pass as a GO gate."""
+
+    INTERVALS = {"delta_J_OFT": (-5.0, -1.0), "delta_J_IDQN": (-4.0, -0.5)}
+
+    def test_recorded_and_clean_passes_the_behaviour_gate(self):
+        verdict = decision.evaluate_go_no_go(
+            self.INTERVALS, True, clean_reviews()
+        )
+        self.assertEqual(verdict["verdict"], "GO")
+        self.assertTrue(verdict["behaviour_review_complete"])
+        self.assertFalse(verdict["behaviour_pathology_observed"])
+
+    def test_recorded_pathology_blocks_go_despite_good_intervals(self):
+        verdict = decision.evaluate_go_no_go(
+            self.INTERVALS, True, clean_reviews(pathology=[("qmix", 106)])
+        )
+        self.assertEqual(verdict["verdict"], "NO-GO")
+        self.assertTrue(verdict["behaviour_review_complete"])
+        self.assertTrue(verdict["behaviour_pathology_observed"])
+        self.assertIn("pathology was observed", verdict["reasons"][0])
+        self.assertIn("106", verdict["reasons"][0])
+        # The intervals were fine; the gate is what stopped it.
+        for finding in verdict["deciding"].values():
+            self.assertTrue(finding["entirely_below_zero"])
+
+    def test_a_missing_qmix_review_blocks_go(self):
+        verdict = decision.evaluate_go_no_go(
+            self.INTERVALS, True, clean_reviews(omit=[("qmix", 103)])
+        )
+        self.assertEqual(verdict["verdict"], "NO-GO")
+        self.assertFalse(verdict["behaviour_review_complete"])
+        self.assertIn("incomplete", verdict["reasons"][0])
+        self.assertIn("103", verdict["reasons"][0])
+
+    def test_completeness_and_conclusion_are_separate_facts(self):
+        """A review that found a problem is complete AND blocking."""
+        summary = behaviour.summarise_reviews(
+            clean_reviews(pathology=[("qmix", 101)]),
+            statistics.TRAINING_SEEDS, "qmix",
+        )
+        self.assertTrue(summary["gating_review_complete"])
+        self.assertTrue(summary["gating_pathology_observed"])
+        self.assertEqual(
+            summary["methods"]["qmix"]["pathology_training_seeds"], [101]
+        )
+
+    def test_comparator_pathology_is_reported_but_does_not_gate(self):
+        verdict = decision.evaluate_go_no_go(
+            self.INTERVALS, True,
+            clean_reviews(pathology=[("idqn", 102), ("vdn", 109)]),
+        )
+        self.assertEqual(verdict["verdict"], "GO")
+        self.assertEqual(
+            verdict["comparator_pathology"], {"idqn": [102], "vdn": [109]}
+        )
+        self.assertNotIn("idqn", " ".join(verdict["reasons"]))
+
+    def test_comparator_reviews_remain_mandatory_to_report(self):
+        verdict = decision.evaluate_go_no_go(
+            self.INTERVALS, True, clean_reviews(omit=[("vdn", 104)])
+        )
+        # QMIX is complete, so the verdict stands, but the gap is surfaced.
+        self.assertEqual(verdict["verdict"], "GO")
+        self.assertIn("vdn", verdict["comparator_review_incomplete"])
+
+    def test_an_invalid_conclusion_is_not_a_completed_review(self):
+        reviews = clean_reviews()
+        reviews["qmix"][105]["conclusion"] = "probably fine"
+        verdict = decision.evaluate_go_no_go(self.INTERVALS, True, reviews)
+        self.assertEqual(verdict["verdict"], "NO-GO")
+        self.assertFalse(verdict["behaviour_review_complete"])
+
+    def test_reviews_may_be_supplied_as_a_list(self):
+        reviews = dict(
+            (method, list(per_seed.values()))
+            for method, per_seed in clean_reviews().items()
+        )
+        verdict = decision.evaluate_go_no_go(self.INTERVALS, True, reviews)
+        self.assertEqual(verdict["verdict"], "GO")
+
+    def test_the_go_rule_states_the_behaviour_requirement(self):
+        self.assertIn("behavioural review", decision.GO_NO_GO["go_rule"])
+        self.assertIn("none of those reviews concluded pathology",
+                      decision.GO_NO_GO["go_rule"])
+
+
+class CrossedBootstrapTests(unittest.TestCase):
+    """5: one row draw and one column draw per replicate, Cartesian."""
+
+    @staticmethod
+    def _panel(offset, seeds=None, episodes=None):
+        seeds = seeds or statistics.TRAINING_SEEDS
+        episodes = episodes or statistics.FINAL_SEEDS
+        return dict(
+            (seed, dict(
+                (episode, float(offset + 0.01 * (seed % 7) + 0.001 * episode))
+                for episode in episodes
+            ))
+            for seed in seeds
+        )
+
+    def test_the_protocol_names_the_crossed_design(self):
+        self.assertEqual(
+            statistics.RESAMPLING_DESIGN, "paired crossed two-factor bootstrap"
+        )
+        self.assertEqual(
+            statistics.PROTOCOL["resampling"], statistics.RESAMPLING_DESIGN
+        )
+        self.assertIn("crossed", statistics.PROTOCOL["design"])
+        self.assertFalse(hasattr(statistics, "hierarchical_paired_bootstrap"))
+
+    def test_the_same_traffic_columns_apply_to_every_sampled_row(self):
+        """The crossed structure, checked on the draws actually used."""
+        draws = []
+        statistics.paired_crossed_bootstrap(
+            self._panel(10.0), self._panel(12.0), replicates=25,
+            draw_log=draws,
+        )
+        self.assertEqual(len(draws), 25)
+        for draw in draws:
+            self.assertEqual(len(draw["rows"]), 10)
+            self.assertEqual(len(draw["columns"]), 10)
+            # One column draw per replicate, not one per row: the sampled
+            # matrix is the Cartesian product of the two index vectors.
+            self.assertIsInstance(draw["columns"][0], int)
+        distinct_column_draws = set(
+            tuple(draw["columns"]) for draw in draws
+        )
+        self.assertGreater(len(distinct_column_draws), 1,
+                           "columns must actually be resampled")
+
+    def test_the_replicate_mean_is_the_cartesian_sampled_matrix(self):
+        import numpy as np
+        differences = np.arange(9, dtype=np.float64).reshape(3, 3)
+        rows = np.array([0, 0, 2])
+        columns = np.array([1, 1, 2])
+        # Every sampled row uses the same sampled columns.
+        expected = np.mean([
+            differences[r][c] for r in rows for c in columns
+        ])
+        self.assertAlmostEqual(
+            statistics.crossed_replicate_mean(differences, rows, columns),
+            float(expected),
+        )
+
+    def test_a_learned_comparator_is_paired_on_training_seeds(self):
+        built = statistics.difference_matrix(
+            self._panel(10.0), self._panel(13.0)
+        )
+        self.assertEqual(built["comparator_kind"], statistics.COMPARATOR_LEARNED)
+        self.assertEqual(
+            built["comparator_training_seeds"],
+            list(statistics.TRAINING_SEEDS),
+        )
+        self.assertEqual(built["differences"].shape, (10, 10))
+
+    def test_a_deterministic_comparator_is_one_value_per_traffic_seed(self):
+        baseline = dict(
+            (episode, 14.0 + 0.001 * episode)
+            for episode in statistics.FINAL_SEEDS
+        )
+        built = statistics.difference_matrix(self._panel(10.0), baseline)
+        self.assertEqual(
+            built["comparator_kind"], statistics.COMPARATOR_DETERMINISTIC
+        )
+        self.assertIsNone(built["comparator_training_seeds"])
+        self.assertEqual(built["differences"].shape, (10, 10))
+
+    def test_a_deterministic_baseline_is_not_ten_trained_samples(self):
+        """Its value is reused down the training-seed axis, not replicated."""
+        baseline = dict(
+            (episode, 14.0) for episode in statistics.FINAL_SEEDS
+        )
+        treatment = self._panel(10.0)
+        built = statistics.difference_matrix(treatment, baseline)
+        column = built["differences"][:, 0]
+        expected = [
+            treatment[seed][statistics.FINAL_SEEDS[0]] - 14.0
+            for seed in statistics.TRAINING_SEEDS
+        ]
+        for actual, want in zip(column, expected):
+            self.assertAlmostEqual(actual, want)
+
+    def test_a_deterministic_comparator_missing_a_traffic_seed_is_refused(self):
+        baseline = dict(
+            (episode, 14.0) for episode in statistics.FINAL_SEEDS[:-1]
+        )
+        with self.assertRaises(statistics.StatisticsError) as caught:
+            statistics.difference_matrix(self._panel(10.0), baseline)
+        self.assertIn("exactly one value for each", str(caught.exception))
+
+    def test_a_mislabelled_comparator_kind_is_refused(self):
+        baseline = dict(
+            (episode, 14.0) for episode in statistics.FINAL_SEEDS
+        )
+        with self.assertRaises(statistics.StatisticsError):
+            statistics.difference_matrix(
+                self._panel(10.0), baseline,
+                comparator_kind=statistics.COMPARATOR_LEARNED,
+            )
+        with self.assertRaises(statistics.StatisticsError):
+            statistics.difference_matrix(
+                self._panel(10.0), self._panel(12.0),
+                comparator_kind=statistics.COMPARATOR_DETERMINISTIC,
+            )
+
+    def test_the_summary_reports_the_comparator_kind_and_sd_axis(self):
+        baseline = dict(
+            (episode, 14.0 + 0.01 * episode)
+            for episode in statistics.FINAL_SEEDS
+        )
+        summary = statistics.summarise_comparison(
+            "delta_J_OFT", self._panel(10.0), baseline, 10, replicates=200
+        )
+        self.assertEqual(
+            summary["comparator_kind"], statistics.COMPARATOR_DETERMINISTIC
+        )
+        self.assertEqual(summary["comparator_sd_axis"], "traffic_seed")
+        self.assertEqual(summary["resampling"], statistics.RESAMPLING_DESIGN)
+
+
+class TrainingSuccessDefinitionTests(unittest.TestCase):
+    """6: success is a process property, never a performance one."""
+
+    @staticmethod
+    def _record(seed, **overrides):
+        record = {
+            "training_seed": seed,
+            "transitions_completed": 360000,
+            "completed_under_contract": True,
+            "checkpoints_present": list(statistics.CHECKPOINT_TRANSITIONS),
+            "selected_checkpoint": {
+                "transition_index": 250000,
+                "selected_on_family": "learner_validation",
+                "selected_on_seeds": list(
+                    statistics.LEARNER_VALIDATION_SEEDS
+                ),
+            },
+        }
+        record.update(overrides)
+        return record
+
+    def test_a_complete_run_counts_as_successful(self):
+        self.assertTrue(statistics.training_seed_succeeded(self._record(101)))
+
+    def test_a_short_run_does_not_count(self):
+        self.assertFalse(statistics.training_seed_succeeded(
+            self._record(101, transitions_completed=350000)
+        ))
+
+    def test_a_run_that_broke_contract_does_not_count(self):
+        self.assertFalse(statistics.training_seed_succeeded(
+            self._record(101, completed_under_contract=False)
+        ))
+
+    def test_a_missing_checkpoint_does_not_count(self):
+        self.assertFalse(statistics.training_seed_succeeded(
+            self._record(
+                101,
+                checkpoints_present=list(
+                    statistics.CHECKPOINT_TRANSITIONS[:-1]
+                ),
+            )
+        ))
+
+    def test_a_checkpoint_selected_elsewhere_does_not_count(self):
+        record = self._record(101)
+        record["selected_checkpoint"]["selected_on_family"] = "final_test"
+        self.assertFalse(statistics.training_seed_succeeded(record))
+
+    def test_wrong_selection_seeds_do_not_count(self):
+        record = self._record(101)
+        record["selected_checkpoint"]["selected_on_seeds"] = [2201, 2202]
+        self.assertFalse(statistics.training_seed_succeeded(record))
+
+    def test_success_is_never_defined_by_final_test_performance(self):
+        definition = statistics.TRAINING_SUCCESS_DEFINITION
+        self.assertIn("never defined using final-test performance",
+                      definition["explicitly_not"])
+        self.assertIn(
+            "fraction_of_training_seeds_outperforming_comparator",
+            definition["explicitly_not"],
+        )
+        for criterion in definition["criteria"]:
+            self.assertNotIn("final_test", criterion)
+
+    def test_counting_requires_exactly_the_ten_training_seeds(self):
+        records = [self._record(seed) for seed in statistics.TRAINING_SEEDS]
+        self.assertEqual(statistics.count_training_successes(records), 10)
+        records[3]["completed_under_contract"] = False
+        self.assertEqual(statistics.count_training_successes(records), 9)
+        with self.assertRaises(statistics.StatisticsError):
+            statistics.count_training_successes(records[:9])
+
+
+class OfficialTrainingAuthorizationTests(unittest.TestCase):
+    """4: stage 4 is authorised by evidence, not by editing the config."""
+
+    def setUp(self):
+        self.state = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.state, ignore_errors=True)
+
+    def _complete_through_freeze(self):
+        for stage in (stages.BASELINE_DESIGN, stages.BASELINE_VALIDATION,
+                      stages.FREEZE_BASELINE_PLANS):
+            stages.write_stage_artefact(self.state, stage, {"stage": stage})
+
+    def test_development_and_feasibility_need_no_authorization(self):
+        for run_kind in ("development", "compute_feasibility"):
+            self.assertIsNone(authorization.authorize_run(run_kind))
+            self.assertIsNone(authorization.authorize_run(run_kind, None))
+
+    def test_official_training_without_a_state_directory_is_refused(self):
+        with self.assertRaises(
+            authorization.TrainingAuthorizationError
+        ) as caught:
+            authorization.authorize_run("official_training")
+        self.assertIn("requires a campaign-state directory",
+                      str(caught.exception))
+
+    def test_official_training_before_the_baseline_freeze_is_refused(self):
+        stages.write_stage_artefact(
+            self.state, stages.BASELINE_DESIGN, {"ok": True}
+        )
+        with self.assertRaises(
+            authorization.TrainingAuthorizationError
+        ) as caught:
+            authorization.authorize_run("official_training", self.state)
+        self.assertIn("freeze_baseline_plans", str(caught.exception))
+
+    def test_official_training_after_the_freeze_is_authorised(self):
+        self._complete_through_freeze()
+        evidence = authorization.authorize_run("official_training", self.state)
+        self.assertEqual(
+            evidence["authorising_stage"], stages.FREEZE_BASELINE_PLANS
+        )
+        self.assertEqual(len(evidence["authorising_artefact_sha256"]), 64)
+        self.assertEqual(
+            evidence["stage_protocol_version"], stages.PROTOCOL_VERSION
+        )
+        self.assertFalse(evidence["final_test_unlocked"])
+
+    def test_a_tampered_freeze_artefact_withdraws_authorization(self):
+        self._complete_through_freeze()
+        path = stages.artefact_path(self.state, stages.FREEZE_BASELINE_PLANS)
+        with open(path) as handle:
+            artefact = json.load(handle)
+        artefact["payload"]["stage"] = "something else"
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(authorization.TrainingAuthorizationError):
+            authorization.authorize_run("official_training", self.state)
+
+    def test_authorization_does_not_consult_the_deprecated_flag(self):
+        self._complete_through_freeze()
+        evidence = authorization.authorize_run("official_training", self.state)
+        self.assertIn("not consulted", evidence["deprecated_flag_note"])
+        self.assertIn(
+            "NOT authoritative", authorization.DEPRECATION_NOTE
+        )
+        self.assertNotIn(
+            "scientific_run_allowed",
+            open(os.path.join(
+                REPOSITORY_ROOT, "src", "adaptive_qmix", "training.py"
+            )).read(),
+        )
+
+    def test_authorising_training_does_not_unlock_final_test(self):
+        self._complete_through_freeze()
+        evidence = authorization.authorize_run("official_training", self.state)
+        self.assertFalse(evidence["final_test_unlocked"])
+        self.assertIn("unlocked separately", evidence["final_test_note"])
+        with self.assertRaises(freeze.UnlockRefused):
+            freeze.assert_final_test_unlock(self.state, self.state)
+
+    def test_the_deprecated_flag_no_longer_needs_flipping(self):
+        """Stage-4 training never requires mutating the scientific config."""
+        config = load_config(QUALIFICATION_CONFIG_PATH)
+        self.assertFalse(config.get("scientific_run_allowed", False))
+        self._complete_through_freeze()
+        # Authorised despite the flag being false, and the config untouched.
+        self.assertIsNotNone(
+            authorization.authorize_run("official_training", self.state)
+        )
+        self.assertEqual(
+            load_config(QUALIFICATION_CONFIG_PATH)["_config_sha256"],
+            config["_config_sha256"],
+        )
+
+
+class HashSealedWordingTests(unittest.TestCase):
+    """8: artefacts are hash-sealed, and nothing claims a signature."""
+
+    def test_stage_artefacts_are_described_as_hash_sealed(self):
+        self.assertIn("Hash-sealed, not cryptographically signed",
+                      stages.__doc__)
+        self.assertIn("hash-sealed completion artefact", stages.__doc__)
+
+    def test_the_freeze_module_makes_the_same_distinction(self):
+        self.assertIn("hash-sealed rather than cryptographically signed",
+                      freeze.__doc__)
+
+    def test_no_module_claims_a_signature_mechanism(self):
+        for module in (stages, freeze, decision, statistics, behaviour,
+                       authorization):
+            for name in dir(module):
+                self.assertNotIn("sign", name.lower().replace("design", ""),
+                                 "{}.{}".format(module.__name__, name))
 
 
 if __name__ == "__main__":

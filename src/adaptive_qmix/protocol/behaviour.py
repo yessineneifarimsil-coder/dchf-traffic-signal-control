@@ -18,6 +18,14 @@ distributions:
 
 The quantitative distributions are always reported, whatever the review
 concludes, so a reader can disagree with the reviewer.
+
+Two facts, never one. "Reviewed" and "reviewed clean" are separate: a review
+that FOUND pathology has been completed, and collapsing both into a single
+recorded flag is precisely how such a policy could pass a gate. Every selected
+policy of the gating method needs its own review, and any one of them
+concluding pathology makes GO impossible however good the averages are.
+Comparator reviews are mandatory to report, and comparator pathology is
+surfaced rather than quietly becoming a point in the gating method's favour.
 """
 
 from __future__ import absolute_import
@@ -152,26 +160,118 @@ def assert_reports_complete(report):
     return True
 
 
-def record_review(policy_identifier, report, reviewer, conclusion, notes=""):
+CONCLUSION_CLEAN = "no_pathology_observed"
+CONCLUSION_PATHOLOGY = "pathology_observed"
+CONCLUSIONS = (CONCLUSION_CLEAN, CONCLUSION_PATHOLOGY)
+
+
+def summarise_reviews(reviews_by_method, required_training_seeds,
+                      gating_method):
+    """Completeness and conclusions, kept as two separate facts.
+
+    "Reviewed" and "reviewed clean" are different things, and collapsing them
+    into one boolean is exactly how a policy with observed pathology could be
+    waved through: a review that found a problem would have set the same flag
+    as one that did not. So this reports, per method, which policies were
+    reviewed and which concluded pathology, and it names the gating method
+    separately from the comparators.
+
+    Comparator pathology is surfaced, never silently converted into a success
+    criterion for the gating method: a comparator behaving badly does not make
+    QMIX good, and a comparator behaving badly is itself worth reporting.
+    """
+    required = sorted(int(seed) for seed in required_training_seeds)
+    summary = {"gating_method": gating_method, "methods": {}}
+    for method in sorted(reviews_by_method):
+        reviews = _normalise_reviews(reviews_by_method[method])
+        reviewed = sorted(reviews)
+        missing = sorted(set(required) - set(reviewed))
+        foreign = sorted(set(reviewed) - set(required))
+        invalid = sorted(
+            seed for seed, review in reviews.items()
+            if review.get("conclusion") not in CONCLUSIONS
+        )
+        pathology = sorted(
+            seed for seed, review in reviews.items()
+            if review.get("conclusion") == CONCLUSION_PATHOLOGY
+        )
+        summary["methods"][method] = {
+            "reviewed_training_seeds": reviewed,
+            "missing_training_seeds": missing,
+            "foreign_training_seeds": foreign,
+            "invalid_conclusions": invalid,
+            "pathology_training_seeds": pathology,
+            "review_complete": not missing and not foreign and not invalid,
+            "any_pathology_observed": bool(pathology),
+        }
+    for method in sorted(reviews_by_method):
+        summary["methods"][method].setdefault("review_complete", False)
+
+    gating = summary["methods"].get(gating_method)
+    summary["gating_review_complete"] = bool(
+        gating and gating["review_complete"]
+    )
+    summary["gating_pathology_observed"] = bool(
+        gating and gating["any_pathology_observed"]
+    )
+    summary["comparator_pathology"] = dict(
+        (method, item["pathology_training_seeds"])
+        for method, item in summary["methods"].items()
+        if method != gating_method and item["any_pathology_observed"]
+    )
+    summary["comparator_review_incomplete"] = sorted(
+        method for method, item in summary["methods"].items()
+        if method != gating_method and not item["review_complete"]
+    )
+    summary["comparator_note"] = (
+        "Comparator behavioural findings are reported, never treated as a "
+        "success criterion for {}.".format(gating_method)
+    )
+    return summary
+
+
+def _normalise_reviews(reviews):
+    """Accept a list of records or a {training seed: record} mapping."""
+    if isinstance(reviews, dict):
+        return dict(
+            (int(seed), review) for seed, review in reviews.items()
+        )
+    normalised = {}
+    for review in reviews or []:
+        seed = review.get("training_seed")
+        if seed is None:
+            raise BehaviourGateError(
+                "A behavioural review must name its training seed."
+            )
+        normalised[int(seed)] = review
+    return normalised
+
+
+def record_review(policy_identifier, report, reviewer, conclusion, notes="",
+                  training_seed=None, method=None):
     """A recorded human judgement against the preregistered review rule.
 
     The conclusion is a judgement, not a computation, which is exactly why it
     has to be written down with who made it and on what evidence.
     """
     assert_reports_complete(report)
-    if conclusion not in ("no_pathology_observed", "pathology_observed"):
+    if conclusion not in CONCLUSIONS:
         raise BehaviourGateError(
-            "Review conclusion must be 'no_pathology_observed' or "
-            "'pathology_observed'; got {!r}.".format(conclusion)
+            "Review conclusion must be one of {}; got {!r}.".format(
+                list(CONCLUSIONS), conclusion
+            )
         )
     if not str(reviewer).strip():
         raise BehaviourGateError("A review must name its reviewer.")
     return {
         "gate_version": GATE_VERSION,
         "policy": str(policy_identifier),
+        "method": None if method is None else str(method),
+        "training_seed": None if training_seed is None else int(training_seed),
         "review_rule": REVIEW_RULE,
         "reviewer": str(reviewer),
         "conclusion": conclusion,
+        "review_complete": True,
         "notes": str(notes),
         "reported": dict(report),
         "reviewed_before_performance": True,

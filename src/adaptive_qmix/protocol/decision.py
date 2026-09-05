@@ -5,7 +5,7 @@ which comparisons decide, which direction counts as success, which are
 reported but do not decide, and what is deliberately absent.
 
     PRIMARY      dJ_OFT  = J_QMIX - J_optimized_fixed_timing
-                 GO requires the hierarchical paired 95% CI to lie entirely
+                 GO requires the paired crossed 95% CI to lie entirely
                  below zero.
 
     COOPERATION  dJ_IDQN = J_QMIX - J_IDQN
@@ -38,6 +38,8 @@ from __future__ import absolute_import
 
 import hashlib
 import json
+
+from . import behaviour, statistics
 
 
 PROTOCOL_VERSION = "go-no-go-1.0"
@@ -79,7 +81,7 @@ COMPARISONS = (
         "treatment": QMIX,
         "comparator": OPTIMIZED_FIXED_TIMING,
         "statistic": "J_QMIX - J_optimized_fixed_timing",
-        "go_criterion": "hierarchical paired 95% CI entirely below zero",
+        "go_criterion": "paired crossed 95% CI entirely below zero",
         "rationale": (
             "the primary question: does the adaptive controller beat the best "
             "classical plan the same search budget can find"
@@ -91,7 +93,7 @@ COMPARISONS = (
         "treatment": QMIX,
         "comparator": IDQN,
         "statistic": "J_QMIX - J_IDQN",
-        "go_criterion": "hierarchical paired 95% CI entirely below zero",
+        "go_criterion": "paired crossed 95% CI entirely below zero",
         "rationale": (
             "cooperation: without this, a win over a fixed plan would not "
             "show that joint learning contributed anything"
@@ -163,12 +165,20 @@ GO_NO_GO = {
     "comparisons": [dict(item) for item in COMPARISONS],
     "deciding_comparisons": list(DECIDING_COMPARISONS),
     "go_rule": (
-        "GO if and only if EVERY deciding comparison's hierarchical paired "
-        "95% CI lies entirely below zero, AND every hard validity gate passes, "
-        "AND the behavioural safety review has been completed and recorded."
+        "GO if and only if EVERY deciding comparison's paired crossed "
+        "two-factor 95% CI lies entirely below zero, AND every hard validity "
+        "gate passes, AND every selected QMIX policy has a completed "
+        "behavioural review, AND none of those reviews concluded pathology."
     ),
     "no_effect_size_threshold": NO_EFFECT_SIZE_THRESHOLD,
     "gate_order": GATE_ORDER_NOTE,
+    "behaviour_gate": (
+        "Every selected QMIX training-seed policy must carry its own "
+        "behavioural review. Any one concluding pathology makes GO "
+        "impossible, whatever the intervals show. Comparator reviews are "
+        "mandatory to report; comparator pathology never becomes a QMIX "
+        "success criterion."
+    ),
     "max_pressure_is_not_a_gate": True,
     "p5_is_not_an_official_controller": True,
 }
@@ -202,12 +212,20 @@ def comparison(name):
 
 
 def evaluate_go_no_go(interval_by_comparison, validity_passed,
-                      behaviour_review_recorded):
-    """Apply the frozen rule to already-computed CIs.
+                      behaviour_reviews):
+    """Apply the frozen rule to already-computed CIs and behavioural reviews.
 
     'interval_by_comparison' maps a comparison name to (low, high). Only the
     deciding comparisons are consulted for the verdict; the rest are carried
     through so the record shows what was reported alongside.
+
+    'behaviour_reviews' maps each method to its per-training-seed review
+    records, and is summarised rather than reduced to a flag. Every selected
+    QMIX policy must be reviewed, and ANY of them concluding pathology makes
+    GO impossible however far below zero the intervals sit -- an average that
+    good while a movement starves is a reason to look harder, not to ship.
+    Comparator reviews are required to be reported; comparator pathology is
+    recorded and never becomes a point in QMIX's favour.
     """
     missing = [
         name for name in DECIDING_COMPARISONS
@@ -228,16 +246,39 @@ def evaluate_go_no_go(interval_by_comparison, validity_passed,
     criteria_met = all(
         item["entirely_below_zero"] for item in findings.values()
     )
+
+    review_summary = behaviour.summarise_reviews(
+        behaviour_reviews or {}, statistics.TRAINING_SEEDS, QMIX
+    )
+    review_complete = review_summary["gating_review_complete"]
+    pathology = review_summary["gating_pathology_observed"]
+
     verdict = (
         "GO" if (
-            criteria_met and validity_passed and behaviour_review_recorded
+            criteria_met and validity_passed and review_complete
+            and not pathology
         ) else "NO-GO"
     )
     reasons = []
     if not validity_passed:
         reasons.append("hard validity gates did not pass")
-    if not behaviour_review_recorded:
-        reasons.append("behavioural safety review was not recorded")
+    if not review_complete:
+        gating = review_summary["methods"].get(QMIX, {})
+        reasons.append(
+            "the behavioural safety review of {} is incomplete (missing "
+            "training seeds {}, invalid conclusions {})".format(
+                QMIX, gating.get("missing_training_seeds", "all"),
+                gating.get("invalid_conclusions", []),
+            )
+        )
+    if pathology:
+        reasons.append(
+            "behavioural pathology was observed for {} training seeds {}; a "
+            "good network-average J_primary does not override it".format(
+                QMIX,
+                review_summary["methods"][QMIX]["pathology_training_seeds"],
+            )
+        )
     for name, item in sorted(findings.items()):
         if not item["entirely_below_zero"]:
             reasons.append(
@@ -254,6 +295,12 @@ def evaluate_go_no_go(interval_by_comparison, validity_passed,
             if name not in DECIDING_COMPARISONS
         ),
         "validity_passed": bool(validity_passed),
-        "behaviour_review_recorded": bool(behaviour_review_recorded),
+        "behaviour_review": review_summary,
+        "behaviour_review_complete": review_complete,
+        "behaviour_pathology_observed": pathology,
+        "comparator_pathology": review_summary["comparator_pathology"],
+        "comparator_review_incomplete": (
+            review_summary["comparator_review_incomplete"]
+        ),
         "reasons": reasons,
     }

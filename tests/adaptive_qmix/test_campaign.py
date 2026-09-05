@@ -21,6 +21,7 @@ from adaptive_qmix.baselines.runner import (
 )
 from adaptive_qmix.baselines.search import DESIGN_FAMILY, DESIGN_SEEDS
 from adaptive_qmix.config import load_config
+from adaptive_qmix.protocol import stages as protocol_stages
 
 
 BASELINE_CONFIG_PATH = os.path.join(
@@ -535,6 +536,336 @@ class ParallelismUtilityTests(unittest.TestCase):
                       "J_primary_mean_scheduled_waiting_burden_s",
                       "route_xml_sha256", "sumo_seed"):
             self.assertIn(field, module.COMPARED_FIELDS, field)
+
+
+class CampaignStageGraphTests(unittest.TestCase):
+    """3: the stage order is structural, and shortlists are hash-sealed."""
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        self.state = os.path.join(self.directory, "state")
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _write_offset_shortlist(self, count=10):
+        return campaign.write_shortlist_artefact(
+            self.directory, campaign.OFFSET_DESIGN,
+            [plans.fixed_offset_plan(offset) for offset in range(count)],
+            {"ranked_on": "benchmark_design"},
+        )
+
+    def _write_coarse_shortlist(self, count=5):
+        return campaign.write_shortlist_artefact(
+            self.directory, campaign.TIMING_COARSE_DESIGN,
+            [plans.make_plan(90, 500, offset * 5) for offset in range(count)],
+            {"ranked_on": "benchmark_design"},
+        )
+
+    def test_the_fine_timing_stage_is_a_design_family_stage(self):
+        """It refines on benchmark_design; only the last stage validates."""
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_FINE_DESIGN]["family"],
+            "benchmark_design",
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_COARSE_DESIGN]["family"],
+            "benchmark_design",
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_VALIDATION]["family"],
+            "benchmark_validation",
+        )
+
+    def test_the_track_order_is_coarse_then_fine_then_validation(self):
+        self.assertIsNone(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_COARSE_DESIGN]["requires"]
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_FINE_DESIGN]["requires"],
+            campaign.TIMING_COARSE_DESIGN,
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_VALIDATION]["requires"],
+            campaign.TIMING_FINE_DESIGN,
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.OFFSET_VALIDATION]["requires"],
+            campaign.OFFSET_DESIGN,
+        )
+
+    def test_the_retained_counts_are_the_frozen_ones(self):
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.OFFSET_DESIGN]["retain"], 10
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_COARSE_DESIGN]["retain"],
+            5,
+        )
+        self.assertEqual(
+            campaign.CAMPAIGN_STAGES[campaign.TIMING_FINE_DESIGN]["retain"], 10
+        )
+
+    def test_a_design_stage_generates_from_the_frozen_grid(self):
+        candidates, source = campaign.candidates_for_stage(
+            campaign.OFFSET_DESIGN, self.directory
+        )
+        self.assertEqual(len(candidates), 90)
+        self.assertIsNone(source)
+        candidates, source = campaign.candidates_for_stage(
+            campaign.TIMING_COARSE_DESIGN, self.directory
+        )
+        self.assertEqual(len(candidates), 1980)
+        self.assertIsNone(source)
+
+    def test_a_validation_stage_consumes_the_verified_shortlist(self):
+        self._write_offset_shortlist()
+        candidates, source = campaign.candidates_for_stage(
+            campaign.OFFSET_VALIDATION, self.directory
+        )
+        self.assertEqual(len(candidates), 10)
+        self.assertEqual(source["stage"], campaign.OFFSET_DESIGN)
+
+    def test_the_fine_stage_regenerates_from_the_verified_winners(self):
+        """So the neighbourhood cannot be widened by editing a file."""
+        self._write_coarse_shortlist()
+        candidates, source = campaign.candidates_for_stage(
+            campaign.TIMING_FINE_DESIGN, self.directory
+        )
+        expected = plans.fine_timing_candidates(source["plans"])
+        self.assertEqual(
+            [plans.candidate_key(p) for p in candidates],
+            [plans.candidate_key(p) for p in expected],
+        )
+
+    def test_validation_before_design_is_refused(self):
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.assert_campaign_stage_allowed(
+                campaign.OFFSET_VALIDATION, self.directory
+            )
+        self.assertIn("produced no shortlist artefact", str(caught.exception))
+
+    def test_timing_validation_before_the_fine_stage_is_refused(self):
+        self._write_coarse_shortlist()
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.assert_campaign_stage_allowed(
+                campaign.TIMING_VALIDATION, self.directory
+            )
+        self.assertIn(campaign.TIMING_FINE_DESIGN, str(caught.exception))
+
+    def test_a_tampered_shortlist_is_refused(self):
+        path = self._write_offset_shortlist()
+        with open(path) as handle:
+            artefact = json.load(handle)
+        artefact["plans"][0]["offset_s"] = 77
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.read_shortlist_artefact(
+                self.directory, campaign.OFFSET_DESIGN
+            )
+        self.assertIn("modified since it was written", str(caught.exception))
+
+    def test_a_shortlist_of_the_wrong_size_is_refused(self):
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            self._write_offset_shortlist(count=7)
+        self.assertIn("must retain exactly 10", str(caught.exception))
+
+    def test_a_shortlist_from_another_controller_is_refused(self):
+        path = self._write_offset_shortlist()
+        with open(path) as handle:
+            artefact = json.load(handle)
+        artefact["controller"] = "optimized_fixed_timing"
+        payload = dict(
+            (k, v) for k, v in artefact.items() if k != "payload_sha256"
+        )
+        artefact["payload_sha256"] = campaign._sha256_payload(payload)
+        with open(path, "w") as handle:
+            json.dump(artefact, handle)
+        with self.assertRaises(campaign.StageSequenceError) as caught:
+            campaign.read_shortlist_artefact(
+                self.directory, campaign.OFFSET_DESIGN
+            )
+        self.assertIn("produced by controller", str(caught.exception))
+
+    def test_the_protocol_stage_guard_is_consulted_too(self):
+        self._write_offset_shortlist()
+        with self.assertRaises(protocol_stages.StageOrderError):
+            campaign.assert_campaign_stage_allowed(
+                campaign.OFFSET_VALIDATION, self.directory, self.state
+            )
+        protocol_stages.write_stage_artefact(
+            self.state, protocol_stages.BASELINE_DESIGN, {"done": True}
+        )
+        self.assertTrue(campaign.assert_campaign_stage_allowed(
+            campaign.OFFSET_VALIDATION, self.directory, self.state
+        ))
+
+    def test_each_stage_maps_to_its_protocol_stage(self):
+        for stage, spec in campaign.CAMPAIGN_STAGES.items():
+            expected = (
+                protocol_stages.BASELINE_VALIDATION
+                if spec["family"] == "benchmark_validation"
+                else protocol_stages.BASELINE_DESIGN
+            )
+            self.assertEqual(spec["protocol_stage"], expected, stage)
+
+
+class CampaignCliStageTests(unittest.TestCase):
+    """3: a real CLI invocation, not just the library, enforces the order."""
+
+    SCRIPT = os.path.join(
+        REPOSITORY_ROOT, "scripts", "adaptive_qmix",
+        "run_baseline_campaign.py",
+    )
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _invoke(self, arguments):
+        import subprocess
+        import sys
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.path.join(REPOSITORY_ROOT, "src")
+        completed = subprocess.run(
+            [sys.executable, self.SCRIPT] + list(arguments),
+            cwd=REPOSITORY_ROOT, env=environment,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        return completed.returncode, completed.stdout.decode("utf-8", "replace")
+
+    def test_the_cli_offers_no_arbitrary_shortlist_option(self):
+        """An unauthenticated candidate list must not be acceptable input."""
+        code, text = self._invoke(["--help"])
+        self.assertEqual(code, 0)
+        self.assertNotIn("--shortlist ", text)
+        self.assertIn("--stage", text)
+
+    def test_the_cli_refuses_validation_before_design(self):
+        output = os.path.join(self.directory, "out")
+        code, text = self._invoke([
+            "--stage", "offset_validation", "--output-root", output,
+            "--campaign-state", os.path.join(self.directory, "state"),
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("produced no shortlist artefact", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_cli_refuses_timing_validation_before_the_fine_stage(self):
+        output = os.path.join(self.directory, "out2")
+        state = os.path.join(self.directory, "state2")
+        campaign.write_shortlist_artefact(
+            state, campaign.TIMING_COARSE_DESIGN,
+            [plans.make_plan(90, 500, index * 5) for index in range(5)],
+            {"ranked_on": "benchmark_design"},
+        )
+        code, text = self._invoke([
+            "--stage", "timing_validation", "--output-root", output,
+            "--campaign-state", state,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("timing_fine_design", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_cli_requires_a_campaign_state_for_a_real_run(self):
+        output = os.path.join(self.directory, "out3")
+        code, text = self._invoke([
+            "--stage", "offset_design", "--output-root", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("--campaign-state is required", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_a_dry_run_of_the_first_stage_is_allowed(self):
+        code, text = self._invoke([
+            "--stage", "offset_design",
+            "--output-root", os.path.join(self.directory, "dry"),
+            "--dry-run",
+        ])
+        self.assertEqual(code, 0)
+        self.assertIn("candidates : 90", text)
+        self.assertIn("frozen grid", text)
+
+    def test_a_dry_run_of_the_fine_stage_uses_the_verified_shortlist(self):
+        state = os.path.join(self.directory, "state4")
+        campaign.write_shortlist_artefact(
+            state, campaign.TIMING_COARSE_DESIGN,
+            [plans.make_plan(90, 500, index * 5) for index in range(5)],
+            {"ranked_on": "benchmark_design"},
+        )
+        code, text = self._invoke([
+            "--stage", "timing_fine_design",
+            "--output-root", os.path.join(self.directory, "dry2"),
+            "--shortlist-directory", state, "--dry-run",
+        ])
+        self.assertEqual(code, 0)
+        self.assertIn("verified shortlist of timing_coarse_design", text)
+        self.assertIn("family     : benchmark_design", text)
+
+
+class TrainingCliAuthorizationTests(unittest.TestCase):
+    """4: the training CLI refuses an unauthorised official run."""
+
+    SCRIPT = os.path.join(
+        REPOSITORY_ROOT, "scripts", "adaptive_qmix", "train_adaptive.py"
+    )
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def _invoke(self, arguments):
+        import subprocess
+        import sys
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.path.join(REPOSITORY_ROOT, "src")
+        completed = subprocess.run(
+            [sys.executable, self.SCRIPT] + list(arguments),
+            cwd=REPOSITORY_ROOT, env=environment,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        return completed.returncode, completed.stdout.decode("utf-8", "replace")
+
+    def test_official_training_without_a_campaign_state_is_refused(self):
+        output = os.path.join(self.directory, "run")
+        code, text = self._invoke([
+            "--method", "qmix", "--training-seed", "101",
+            "--run-kind", "official_training",
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("requires a campaign-state directory", text)
+        self.assertFalse(
+            os.path.exists(output),
+            "an unauthorised run must not create its output directory",
+        )
+
+    def test_official_training_before_the_baseline_freeze_is_refused(self):
+        state = os.path.join(self.directory, "state")
+        protocol_stages.write_stage_artefact(
+            state, protocol_stages.BASELINE_DESIGN, {"ok": True}
+        )
+        output = os.path.join(self.directory, "run2")
+        code, text = self._invoke([
+            "--method", "qmix", "--training-seed", "101",
+            "--run-kind", "official_training", "--campaign-state", state,
+            "--output-directory", output,
+        ])
+        self.assertNotEqual(code, 0)
+        self.assertIn("freeze_baseline_plans", text)
+        self.assertFalse(os.path.exists(output))
+
+    def test_the_cli_exposes_the_campaign_state_option(self):
+        code, text = self._invoke(["--help"])
+        self.assertEqual(code, 0)
+        collapsed = " ".join(text.split())
+        self.assertIn("--campaign-state", collapsed)
+        self.assertIn("freeze_baseline_plans", collapsed)
 
 
 if __name__ == "__main__":

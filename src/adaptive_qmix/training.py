@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import json
 import os
 
-from .config import require_scientific_run_allowed
+from .protocol.authorization import authorize_run
 from .environment import AdaptiveTrafficEnvironment
 from .feasibility import FeasibilityMeter, write_feasibility_report
 from .learner import MultiAgentLearner, epsilon_at_transition
@@ -53,11 +53,15 @@ def train_learned_controller(
     device="cpu",
     traci_access_mode=DEFAULT_MODE,
     lane_state_logging=LANE_LOG_DECISION,
+    campaign_state_directory=None,
 ):
     if run_kind not in RUN_KINDS:
         raise ValueError("Unknown run kind: {}".format(run_kind))
-    if run_kind == "official_training":
-        require_scientific_run_allowed(config)
+    # Official training is campaign stage 4, authorised by the verified
+    # campaign state showing the baseline plans frozen -- not by a mutable
+    # flag in the scientific configuration, whose value is part of the frozen
+    # hash. Development and compute feasibility are unaffected.
+    authorization = authorize_run(run_kind, campaign_state_directory)
     deterministic_seed = configure_python_and_torch(training_seed, deterministic=True)
     budget = int(config["training"]["interaction_budget"])
     if transition_limit is not None:
@@ -96,6 +100,14 @@ def train_learned_controller(
     run_manifest["deterministic_python_torch_seed"] = deterministic_seed
     run_manifest["interaction_budget_this_run"] = budget
     run_manifest["official_scientific_result"] = run_kind == "official_training"
+    if authorization is not None:
+        run_manifest["training_authorization"] = authorization
+        run_manifest["stage_protocol_version"] = (
+            authorization["stage_protocol_version"]
+        )
+        run_manifest["authorising_artefact_sha256"] = (
+            authorization["authorising_artefact_sha256"]
+        )
 
     learner = MultiAgentLearner(method, training_seed, config["training"], device)
     replay = JointReplayBuffer(

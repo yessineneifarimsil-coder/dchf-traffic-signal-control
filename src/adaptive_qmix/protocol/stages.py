@@ -3,9 +3,14 @@
 Ordering is what keeps the protocol honest. Selecting a checkpoint before the
 baselines are frozen, or evaluating on final_test before the audit, would each
 let a later choice be informed by an earlier result. So each stage produces a
-signed completion artefact, and a stage refuses to start until every earlier
+hash-sealed completion artefact, and a stage refuses to start until every
+earlier
 artefact exists AND still hashes to what it recorded. An artefact edited after
 the fact fails verification rather than quietly authorising the next stage.
+
+Hash-sealed, not cryptographically signed: the artefact carries a digest of
+its own payload, which detects modification but proves nothing about who wrote
+it. There is no signature mechanism, and none is claimed.
 
     1  baseline_design                        evaluate the candidate grids
     2  baseline_validation                    validate the shortlists
