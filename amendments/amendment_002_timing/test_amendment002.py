@@ -1,15 +1,12 @@
-"""Tests for the Amendment-002 driver, against the frozen code it imports.
-
-Run with the frozen checkout on the path:
+"""Tests for the revised Amendment-002 driver, against the frozen code.
 
     set AQ_FROZEN_REPOSITORY=C:\\Users\\LENOVO\\QMIX_Traffic_Coordination
-    python -m unittest test_amendment002 -v
+    python -B -m unittest test_amendment002 -v
 
 Nothing here starts SUMO. The end-to-end case builds an original campaign, a
-boundary audit and the amendment on disk with a stub runner whose outcome is a
-function of the EXECUTED plan only, which is the property the executed-plan
-collapse relies on, and then drives every stage through the frozen campaign,
-search and protocol modules.
+boundary audit and the amendment on disk with a stub runner whose outcome
+depends only on the REALIZED plan, and drives every stage through the frozen
+campaign, search and protocol modules.
 """
 
 from __future__ import absolute_import
@@ -30,7 +27,6 @@ if not os.environ.get("AQ_FROZEN_REPOSITORY"):
 import amendment002 as A  # noqa: E402
 from adaptive_qmix.baselines import campaign, search  # noqa: E402
 from adaptive_qmix.baselines import plans as P  # noqa: E402
-from adaptive_qmix.baselines.integrity import sha256_file  # noqa: E402
 from adaptive_qmix.config import load_config  # noqa: E402
 from adaptive_qmix.protocol import authorization  # noqa: E402
 from adaptive_qmix.protocol import stages as protocol_stages  # noqa: E402
@@ -40,6 +36,8 @@ AUDIT_WINNERS = [(20, 650, 10), (25, 650, 0), (25, 700, 0), (20, 550, 10),
                  (20, 600, 10)]
 ORIGINAL_WINNERS = [(40, 650, 25), (40, 700, 25), (40, 650, 20),
                     (40, 700, 20), (40, 700, 15)]
+RUNTIME = {"python": "3.7.16", "numpy": "1.21.6", "pytorch": "1.13.1+cpu",
+           "sumo": "Eclipse SUMO sumo Version 1.25.0"}
 
 
 def _plans(keys):
@@ -47,110 +45,115 @@ def _plans(keys):
 
 
 class GridTests(unittest.TestCase):
-    """The numbers the amendment rests on, recomputed from frozen code."""
 
-    def test_parameterised_generator_is_the_frozen_one_at_the_old_clip(self):
+    def test_generator_is_the_frozen_one_at_the_old_clip(self):
         for winners in (ORIGINAL_WINNERS, AUDIT_WINNERS):
             for invalid in (False, True):
-                ours = A.fine_candidates(_plans(winners), (40, 140), invalid)
-                theirs = P.fine_timing_candidates(_plans(winners), invalid)
-                self.assertEqual(ours, theirs)
+                self.assertEqual(
+                    A.fine_candidates(_plans(winners), (40, 140), invalid),
+                    P.fine_timing_candidates(_plans(winners), invalid))
 
-    def test_amended_counts_under_the_frozen_key_rule(self):
-        fine = A.fine_candidates(_plans(AUDIT_WINNERS))
-        every = A.fine_candidates(_plans(AUDIT_WINNERS), include_invalid=True)
-        audit = set(map(A.key_of, A.audit_coarse_candidates()))
-        keys = [A.key_of(p) for p in fine]
-        self.assertEqual(len(keys), 834)
-        self.assertEqual(len(set(keys)), 834)
-        self.assertEqual(len(every) - len(fine), 60)
-        self.assertEqual(sum(k in audit for k in keys), 99)
-        self.assertEqual(sum(k not in audit for k in keys), 735)
-        self.assertEqual(sorted({p["cycle_s"] for p in fine}),
-                         [20, 25, 30, 35])
-
-    def test_834_keys_are_486_executed_plans_396_of_them_new(self):
-        fine = A.fine_candidates(_plans(AUDIT_WINNERS))
-        audit = set(map(A.key_of, A.audit_coarse_candidates()))
-        classes = A.plan_classes(fine, prior_keys=audit)
-        self.assertEqual(len(classes), 486)
-        reused = [c for c in classes if A.key_of(c["representative"]) in audit]
-        self.assertEqual(len(reused), 90)
-        self.assertEqual(len(classes) - len(reused), 396)
-        # A class with an audit member is never re-simulated.
-        for item in classes:
-            members = set(map(A.key_of, item["members"]))
-            if members & audit:
-                self.assertIn(A.key_of(item["representative"]), audit)
-
-    def test_collapse_is_a_no_op_on_the_original_campaign(self):
+    def test_realized_identity_changes_nothing_at_c40_and_above(self):
         coarse = P.coarse_timing_candidates()
-        self.assertEqual(len(A.plan_classes(coarse)), 1980)
         fine = P.fine_timing_candidates(_plans(ORIGINAL_WINNERS))
-        self.assertEqual(len(fine), 621)
-        self.assertEqual(len(A.plan_classes(fine)), 621)
+        offsets = P.fixed_offset_candidates()
+        self.assertEqual(len(A.label_groups(coarse)), 1980)
+        self.assertEqual((len(fine), len(A.label_groups(fine))), (621, 621))
+        self.assertEqual(len(A.label_groups(offsets)), 90)
+        self.assertEqual(len(A.label_groups(coarse + fine)),
+                         len({A.key_of(p) for p in coarse + fine}))
 
-    def test_two_audit_winners_are_one_plan_and_add_nothing(self):
+    def test_accepted_findings(self):
+        audit = A.audit_coarse_candidates()
+        self.assertEqual((len(audit), len(A.label_groups(audit))), (208, 195))
+        fine = A.fine_candidates(_plans(AUDIT_WINNERS))
+        self.assertEqual((len(fine), len(A.label_groups(fine))), (834, 486))
         a, b = _plans([(20, 550, 10), (20, 600, 10)])
-        self.assertEqual(A.executed_identity(a), A.executed_identity(b))
-        four = set(map(A.key_of, A.fine_candidates(_plans(AUDIT_WINNERS[:4]))))
-        five = set(map(A.key_of, A.fine_candidates(_plans(AUDIT_WINNERS))))
-        self.assertEqual(four, five)
-        self.assertEqual(len(A.audit_coarse_candidates()), 208)
-        self.assertEqual(len(A.plan_classes(A.audit_coarse_candidates())), 195)
+        self.assertEqual(A.realized_key(a), (20, 8, 6, 10))
+        self.assertEqual(A.realized_key(a), A.realized_key(b))
 
-    def test_the_lower_clip_does_no_work_the_min_green_rule_does_not(self):
-        clipped = A.fine_candidates(_plans(AUDIT_WINNERS))
-        unclipped = A.fine_candidates(_plans(AUDIT_WINNERS), (1, 1000))
-        self.assertEqual(clipped, unclipped)
-        for plan in clipped:
+    def test_structural_floor_grid(self):
+        report = A.floor_report()
+        self.assertEqual(report["labels"], 68)
+        self.assertEqual(report["realized_plans"], 40)
+        self.assertEqual(report["runs"], 200)
+        for cycle in A.FLOOR_CYCLES_S:
+            self.assertEqual(A.floor_offsets(cycle), [0, 5, 10, 15])
+        self.assertEqual(
+            [report["per_cycle"][c]["realized_plans"] for c in (16, 17, 18,
+                                                                19)],
+            [4, 8, 12, 16])
+        for plan in A.floor_candidates():
             P.validate_plan(plan)
             self.assertTrue(P.candidate_is_valid(plan))
-            self.assertGreaterEqual(min(plan["green_H_s"],
-                                        plan["green_V_s"]), 5)
+        self.assertEqual(A.STRUCTURAL_MIN_CYCLE_S, 16)
+
+    def test_fine_rule_for_a_sub20_centre(self):
+        cycles = {p["cycle_s"] for p in A.fine_candidates(
+            [P.make_plan(18, 500, 10)])}
+        self.assertEqual(cycles, {18, 23, 28})
+        lattice = _plans(AUDIT_WINNERS)
+        self.assertEqual(A.fine_candidates(lattice),
+                         A.fine_candidates(lattice, (20, 140)))
+
+    def test_active_constraints(self):
+        self.assertEqual(A.active_constraints(P.make_plan(20, 650, 10)),
+                         ["gV=5"])
+        self.assertEqual(A.active_constraints(P.make_plan(16, 500, 0)),
+                         ["cycle floor C=16", "gV=5", "gH=5"])
 
 
 # ---------------------------------------------------------------------------
 # End to end.
 # ---------------------------------------------------------------------------
 
-def _stub_j(identity):
-    cycle, g_h, g_v, _yellow, offset = identity
-    table = {
-        (20, 9, 5, 3, 10): 3.0,     # (20,650,10)
-        (25, 12, 7, 3, 0): 3.1,     # (25,650,0)
-        (25, 13, 6, 3, 0): 3.2,     # (25,700,0)
-        (20, 8, 6, 3, 10): 3.3,     # (20,550,10) == (20,600,10)
-        (25, 11, 8, 3, 5): 3.4,     # (25,600,5): first distinct runner-up
-        (40, 22, 12, 3, 25): 5.0,   # the original campaign's winners
-        (40, 24, 10, 3, 25): 5.1,
-        (40, 22, 12, 3, 20): 5.2,
-        (40, 24, 10, 3, 20): 5.3,
-        (40, 24, 10, 3, 15): 5.4,
-    }
-    if identity in table:
-        return table[identity]
+TABLE = {
+    (20, 9, 5, 10): 3.0,     # (20,650,10)
+    (18, 5, 7, 10): 3.05,    # floor (18,400,10) == (18,450,10)
+    (25, 12, 7, 0): 3.1,     # (25,650,0)
+    (25, 13, 6, 0): 3.2,     # (25,700,0)
+    (20, 8, 6, 10): 3.3,     # (20,550,10) == (20,600,10)
+    (40, 22, 12, 25): 5.0,   # the original campaign's winners
+    (40, 24, 10, 25): 5.1,
+    (40, 22, 12, 20): 5.2,
+    (40, 24, 10, 20): 5.3,
+    (40, 24, 10, 15): 5.4,
+}
+FLOOR_FAILURE = (16, 5, 5, 0)
+
+
+def _stub_j(realized):
+    if realized in TABLE:
+        return TABLE[realized]
+    cycle, g_h, g_v, offset = realized
     return 10.0 + 0.01 * cycle + 0.001 * abs(g_h - 2 * g_v) + 1e-5 * offset
 
 
+def _run_manifest(**overrides):
+    manifest = {"git_commit": A.FROZEN_COMMIT, "git_status_porcelain": "",
+                "git_describe": "8c14f32", "runtime": dict(RUNTIME)}
+    manifest.update(overrides)
+    return manifest
+
+
 class StubRunner(object):
-    def __init__(self, fail_identities=()):
+    def __init__(self, fail=()):
         self.calls = []
-        self.fail = set(fail_identities)
+        self.fail = set(fail)
         self.hashes = {}
 
     def _sha(self, path):
         if path not in self.hashes:
-            self.hashes[path] = sha256_file(path)
+            self.hashes[path] = A._sha256_file(path)
         return self.hashes[path]
 
     def __call__(self, traci_module, config, repository_root, controller,
                  manifest_csv_path, route_xml_path, family, seed, sumo_seed,
                  output_directory, plan=None, manifest_index=0, **kwargs):
-        identity = A.executed_identity(plan)
-        self.calls.append((P.candidate_key(plan), family, int(seed)))
-        cleared = identity not in self.fail
-        value = _stub_j(identity) + 0.001 * (int(seed) % 100)
+        realized = A.realized_key(plan)
+        self.calls.append((P.candidate_key(plan), realized, family, int(seed)))
+        cleared = realized not in self.fail
+        value = _stub_j(realized) + 0.001 * (int(seed) % 100)
         metrics = {
             "controller": controller,
             "clearance_status": "CLEARED" if cleared else "CLEARANCE_FAILURE",
@@ -166,22 +169,57 @@ class StubRunner(object):
         with open(os.path.join(output_directory,
                                campaign.METRICS_FILENAME), "w") as handle:
             json.dump(metrics, handle, sort_keys=True)
+        with open(os.path.join(output_directory,
+                               A.RUN_MANIFEST_FILENAME), "w") as handle:
+            json.dump(_run_manifest(), handle, sort_keys=True)
         return metrics
 
 
+def _snapshot(root):
+    state = {}
+    for directory, _dirs, files in os.walk(root):
+        for name in files:
+            path = os.path.join(directory, name)
+            state[path] = (os.path.getsize(path), os.path.getmtime(path))
+    return state
+
+
+class _Patched(object):
+    """Temporarily replace a module attribute."""
+
+    def __init__(self, name, value):
+        self.name, self.value = name, value
+
+    def __enter__(self):
+        self.saved = getattr(A, self.name)
+        setattr(A, self.name, self.value)
+
+    def __exit__(self, *exc):
+        setattr(A, self.name, self.saved)
+
+
 class EndToEnd(unittest.TestCase):
-    """One world, built once: original campaign, audit, amendment."""
+    """One world: original campaign, boundary audit, withdrawn root, amendment."""
 
     @classmethod
     def setUpClass(cls):
         cls._fsync = os.fsync
         os.fsync = lambda _fd: None      # speed only; atomic rename unchanged
         cls.base = tempfile.mkdtemp()
+        withdrawn = os.path.join(cls.base, "withdrawn")
+        os.makedirs(withdrawn)
+        for name in A.WITHDRAWN_FILES:
+            with open(os.path.join(withdrawn, name), "w") as handle:
+                handle.write("withdrawn " + name + "\n")
         cls.layout = A.Layout(
             os.path.join(cls.base, "original"),
             os.path.join(cls.base, "audit"),
             os.path.join(cls.base, "amendment"),
+            withdrawn_root=withdrawn,
         )
+        cls.document = os.path.join(cls.base, "ADDENDUM.md")
+        with open(cls.document, "w") as handle:
+            handle.write("sealed addendum\n")
         cls.config = load_config(cls.layout.config_path)
         cls.adaptive = load_config(cls.layout.adaptive_config_path)
         L, config, repo = cls.layout, cls.config, A.REPOSITORY_ROOT
@@ -193,10 +231,8 @@ class EndToEnd(unittest.TestCase):
         def execute(controller, plans, family, runs):
             campaign.execute_campaign(
                 stub, controller, plans, family, config, runs,
-                L.original_manifests, repo, allow_manifest_generation=False,
-            )
+                L.original_manifests, repo, allow_manifest_generation=False)
 
-        # Original offset track, through the frozen finaliser.
         execute("optimized_fixed_offset", P.fixed_offset_candidates(),
                 search.DESIGN_FAMILY, L.original_runs)
         campaign.finalise_stage(campaign.OFFSET_DESIGN, L.original_runs,
@@ -209,131 +245,170 @@ class EndToEnd(unittest.TestCase):
         campaign.finalise_stage(campaign.OFFSET_VALIDATION, L.original_runs,
                                 L.original_manifests, L.original_artefacts,
                                 config, repo)
-        # Original timing coarse stage, through the frozen finaliser.
         execute(A.CONTROLLER, P.coarse_timing_candidates(),
                 search.DESIGN_FAMILY, L.original_runs)
         campaign.finalise_stage(campaign.TIMING_COARSE_DESIGN,
                                 L.original_runs, L.original_manifests,
                                 L.original_artefacts, config, repo)
-        # A stand-in for the original freeze that Amendment 002 supersedes.
         os.makedirs(L.original_state)
-        with open(protocol_stages.artefact_path(
-                L.original_state, protocol_stages.FREEZE_BASELINE_PLANS),
-                "w") as handle:
+        cls.original_freeze = protocol_stages.artefact_path(
+            L.original_state, protocol_stages.FREEZE_BASELINE_PLANS)
+        with open(cls.original_freeze, "w") as handle:
             json.dump({"payload": {
                 "optimized_fixed_offset": {"selected_key": list(
                     P.candidate_key(offsets[0]))},
                 "optimized_fixed_timing": {"selected_key": [40, 650, 23]},
             }}, handle)
-        # Boundary audit, 208 x 5 on design traffic only.
         execute(A.CONTROLLER, A.audit_coarse_candidates(),
                 search.DESIGN_FAMILY, L.audit_runs)
-        cls.world = stub
+        best = [_stub_j((20, 9, 5, 10)) + 0.001 * s for s in range(1, 6)]
+        cls.patch = _Patched("REPORTED_BEST_BELOW_40", (
+            (20, 650, 10), sum(best) / 5.0))
+        cls.patch.__enter__()
+        cls.protected = [L.original_root, L.audit_root, withdrawn]
+        cls.protected_before = dict(
+            (root, _snapshot(root)) for root in cls.protected)
 
     @classmethod
     def tearDownClass(cls):
+        cls.patch.__exit__()
         os.fsync = cls._fsync
         shutil.rmtree(cls.base, ignore_errors=True)
 
-    # Tests run in name order; each stage builds on the previous one.
+    def _precheck(self, **kwargs):
+        return A.precheck(self.layout, self.config, RUNTIME, **kwargs)
 
-    def test_1_precheck_counts_and_writes_nothing(self):
-        before = set(os.listdir(self.base))
-        result = A.precheck(self.layout, self.config)
-        coarse, fine = result["coarse"], result["fine"]
-        self.assertEqual(coarse["key_count"], 2188)
-        self.assertEqual(coarse["run_count"], 10940)
-        self.assertEqual(len(coarse["records"]), 1980 + 195)
-        self.assertGreaterEqual(coarse["alias_checks"], 13 * 5)
-        self.assertEqual(coarse["frozen_rule_top_five"], AUDIT_WINNERS)
-        winners = [tuple(r["key"]) for r in coarse["winners"]]
-        self.assertEqual(winners, AUDIT_WINNERS[:4] + [(25, 600, 5)])
-        expected = A.fine_candidates(_plans(winners))
-        self.assertEqual(fine["fine_key_count"], len(expected))
-        self.assertEqual(fine["executed_plan_count"],
-                         len(A.plan_classes(expected)))
-        self.assertEqual(fine["new_run_count"], 5 * fine["new_plan_count"])
-        self.assertEqual(fine["reused_plan_count"] + fine["new_plan_count"],
-                         fine["executed_plan_count"])
-        self.assertEqual(set(os.listdir(self.base)), before)
-        A._print_counts(result)
+    # Stages run in name order and build on each other.
+
+    def test_01_precheck_verifies_and_writes_nothing(self):
+        before = _snapshot(self.base)
+        result = self._precheck()
+        existing = result["existing"]
+        self.assertEqual(existing["labels"], 2188)
+        self.assertEqual(existing["runs"], 10940)
+        self.assertEqual(existing["realized_plans"], 2175)
+        self.assertEqual(len(existing["aliases"]["groups"]), 13)
+        self.assertEqual(existing["aliases"]["checks"], 13 * 5)
+        self.assertEqual(existing["aliases"]["max_abs_difference"], 0.0)
+        self.assertEqual(tuple(existing["leader"]["key"]), (20, 650, 10))
+        self.assertEqual(result["floor"]["runs"], 200)
+        self.assertEqual(result["no_op"]["original_coarse"], (1980, 1980))
+        A.print_precheck(result)
+        self.assertEqual(_snapshot(self.base), before)
         self.assertFalse(os.path.exists(self.layout.amendment_root))
 
-    def test_2_finalise_coarse_seals_a_frozen_readable_artefact(self):
-        A.finalise_coarse(self.layout, self.config)
-        artefact = campaign.read_shortlist_artefact(
-            self.layout.artefacts, campaign.TIMING_COARSE_DESIGN)
-        self.assertEqual([tuple(k) for k in artefact["candidate_keys"]],
-                         AUDIT_WINNERS[:4] + [(25, 600, 5)])
+    def test_02_floor_needs_a_sealed_addendum_first(self):
         with self.assertRaises(A.AmendmentError):
-            A.finalise_coarse(self.layout, self.config)
+            A.run_stage(self.layout, self.config, A.STAGE_FLOOR, StubRunner())
+        with self.assertRaises(A.AmendmentError):
+            A.prepare_floor(self.layout, self.config, None, RUNTIME)
+        A.prepare_floor(self.layout, self.config, self.document, RUNTIME)
+        with self.assertRaises(A.AmendmentError):
+            A.prepare_floor(self.layout, self.config, self.document, RUNTIME)
 
-    def test_3_run_fine_simulates_only_new_plans_and_records_failures(self):
-        order = A.read_work_order(self.layout)
-        new = order["fine"]["new_work"]
-        failing = A.executed_identity(new[-1])
-        stub = StubRunner(fail_identities=[failing])
-        for shard in range(3):
-            A.run_stage(self.layout, self.config, "fine", stub,
-                        shard_index=shard, shard_count=3)
-        called = set(key for key, _f, _s in stub.calls)
-        self.assertEqual(len(stub.calls), 5 * len(new))
-        self.assertEqual(called, set(map(A.key_of, new)))
-        earlier = A.designations(self.layout)
-        self.assertFalse(called & set(earlier))
-        # A resumed shard neither reruns a cleared run nor a verified failure.
-        again = StubRunner(fail_identities=[failing])
-        A.run_stage(self.layout, self.config, "fine", again)
-        self.assertEqual(again.calls, [])
-        EndToEnd.failing = failing
+    def test_03_floor_runs_40_plans_on_design_only_failures_once(self):
+        stub = StubRunner(fail=[FLOOR_FAILURE])
+        for shard in range(2):
+            A.run_stage(self.layout, self.config, A.STAGE_FLOOR, stub,
+                        shard_index=shard, shard_count=2)
+        self.assertEqual(len(stub.calls), 200)
+        self.assertEqual(len({c[1] for c in stub.calls}), 40)
+        self.assertEqual({c[2] for c in stub.calls}, {search.DESIGN_FAMILY})
+        self.assertTrue(all(c[1][0] < 20 for c in stub.calls))
+        again = StubRunner(fail=[FLOOR_FAILURE])
+        A.run_stage(self.layout, self.config, A.STAGE_FLOOR, again)
+        self.assertEqual(again.calls, [])      # cleared and failed: none rerun
 
-    def test_4_finalise_fine_keeps_ten_distinct_plans(self):
-        result = A.finalise_fine(self.layout, self.config)
-        retained = result["retained"]
-        self.assertEqual(len(retained), 10)
-        self.assertEqual(len({tuple(r["identity"]) for r in retained}), 10)
-        invalid = [r for r in result["records"] if not r["valid"]]
-        self.assertEqual([tuple(r["identity"]) for r in invalid],
-                         [EndToEnd.failing])
+    def test_04_validation_is_closed_before_the_fine_stage(self):
+        with self.assertRaises(Exception):
+            A.run_stage(self.layout, self.config, A.STAGE_VALIDATION,
+                        StubRunner())
+        evidence = A.Evidence(self.layout, self.config, A.EvaluatedIndex())
+        with self.assertRaises(A.AmendmentError):
+            evidence.manifests(search.VALIDATION_FAMILY)
+
+    def test_05_floor_enters_the_ranking_before_the_top_five(self):
+        result = A.finalise_coarse(self.layout, self.config, RUNTIME)
+        winners = [tuple(r["key"]) for r in result["winners"]]
+        self.assertEqual(winners, [(20, 650, 10), (18, 400, 10), (25, 650, 0),
+                                   (25, 700, 0), (20, 550, 10)])
+        self.assertEqual(len({tuple(r["identity"]) for r in result["winners"]}),
+                         5)
+        invalid = [tuple(r["identity"]) for r in result["records"]
+                   if not r["valid"]]
+        self.assertEqual(invalid, [FLOOR_FAILURE])
+        cycles = {c["identity"][0] for c in result["fine"]["classes"]}
+        self.assertTrue({18, 23, 28} <= cycles)
         campaign.read_shortlist_artefact(self.layout.artefacts,
-                                         campaign.TIMING_FINE_DESIGN)
+                                         campaign.TIMING_COARSE_DESIGN)
+        with self.assertRaises(A.AmendmentError):
+            A.finalise_coarse(self.layout, self.config, RUNTIME)
+
+    def test_06_fine_simulates_each_new_realized_plan_once(self):
+        order = A.read_fine_order(self.layout)
+        index = A.evaluated_index(self.layout, include_floor=True)
+        stub = StubRunner()
+        for shard in range(3):
+            A.run_stage(self.layout, self.config, A.STAGE_FINE, stub,
+                        shard_index=shard, shard_count=3)
+        realized = [c[1] for c in stub.calls]
+        self.assertEqual(len(stub.calls), 5 * order["new_plans"])
+        self.assertEqual(len(set(realized)), order["new_plans"])
+        self.assertFalse(set(realized) & set(index.by_realized))
+        self.assertEqual(order["realized_plans"],
+                         order["reused_plans"] + order["new_plans"])
+
+    def test_07_fine_top_ten_are_distinct_realized_plans(self):
+        result = A.finalise_fine(self.layout, self.config, RUNTIME)
+        self.assertEqual(len(result["retained"]), 10)
+        self.assertEqual(
+            len({tuple(r["identity"]) for r in result["retained"]}), 10)
         self.assertTrue(result["global_stage"]["written"])
 
-    def test_5_validation_selects_with_the_frozen_tie_break(self):
+    def test_08_validation_uses_only_this_amendments_runs(self):
         stub = StubRunner()
-        A.run_stage(self.layout, self.config, "validation", stub)
+        A.run_stage(self.layout, self.config, A.STAGE_VALIDATION, stub)
         self.assertEqual(len(stub.calls), 50)
-        self.assertEqual({f for _k, f, _s in stub.calls},
+        self.assertEqual({c[2] for c in stub.calls},
                          {search.VALIDATION_FAMILY})
-        result = A.finalise_validation(self.layout, self.config)
+        result = A.finalise_validation(self.layout, self.config, RUNTIME)
         self.assertEqual(tuple(result["selected"]["key"]), (20, 650, 10))
-        artefact = campaign.read_selected_plan_artefact(
-            self.layout.artefacts, campaign.TIMING_VALIDATION)
-        self.assertEqual(artefact["selected_key"], [20, 650, 10])
 
-    def test_6_freeze_authorises_training_from_the_new_state_only(self):
+    def test_09_one_freeze_in_a_new_state_that_records_what_it_supersedes(self):
         result = A.freeze(self.layout, self.config, self.adaptive)
-        payload = result["payload"]
-        self.assertEqual(payload["optimized_fixed_timing"]["selected_key"],
-                         [20, 650, 10])
-        self.assertEqual(
-            payload["protocol_amendment_002"]["supersedes"][
-                "optimized_fixed_timing_key"], [40, 650, 23])
+        amendment = result["payload"]["protocol_amendment_002"]
+        self.assertEqual(amendment["driver_sha256"], A.DRIVER_SHA256)
+        self.assertEqual(amendment["supersedes"]["optimized_fixed_timing_key"],
+                         [40, 650, 23])
+        self.assertEqual(amendment["supersedes"]["artefact_sha256"],
+                         A._sha256_file(self.original_freeze))
         evidence = authorization.authorization_evidence(self.layout.state)
-        self.assertEqual(
-            evidence["frozen_baseline_plans"]["optimized_fixed_timing"],
-            [20, 650, 10])
         self.assertEqual(evidence["authorising_artefact_sha256"],
                          result["artefact_sha256"])
         with self.assertRaises(A.AmendmentError):
             A.freeze(self.layout, self.config, self.adaptive)
 
-    def test_7_learners_authorised_by_the_old_freeze_are_excluded(self):
-        freeze_sha = sha256_file(protocol_stages.artefact_path(
-            self.layout.state, protocol_stages.FREEZE_BASELINE_PLANS))
+    def test_10_training_is_launched_only_against_the_amended_freeze(self):
+        command = A.training_command(self.layout, "qmix", 101)
+        self.assertIn("--campaign-state", command)
+        self.assertEqual(command[command.index("--campaign-state") + 1],
+                         self.layout.state)
+        self.assertEqual(command[command.index("--run-kind") + 1],
+                         "official_training")
+        with self.assertRaises(A.AmendmentError):
+            A.training_command(self.layout, "qmix", 101, os.path.join(
+                self.layout.original_root, "learners", "qmix", "seed101"))
+        taken = os.path.join(self.layout.learners, "vdn", "seed102")
+        os.makedirs(taken)
+        with self.assertRaises(A.AmendmentError):
+            A.training_command(self.layout, "vdn", 102)
+
+    def test_11_learner_evidence_from_the_old_freeze_is_excluded(self):
+        required = A.amended_freeze_sha256(self.layout)
         root = os.path.join(self.base, "learners")
-        for name, sha in (("seed101_pre", "0" * 64), ("seed101", freeze_sha),
-                          ("seed102", freeze_sha)):
+        for name, sha in (("seed101_pre_amendment",
+                           A._sha256_file(self.original_freeze)),
+                          ("seed101", required), ("seed102", required)):
             os.makedirs(os.path.join(root, name))
             with open(os.path.join(root, name, "run_manifest.json"), "w") as h:
                 json.dump({"official_scientific_result": True,
@@ -342,70 +417,204 @@ class EndToEnd(unittest.TestCase):
         result = A.verify_learners(self.layout, root)
         self.assertEqual(len(result["accepted"]), 2)
         self.assertEqual([os.path.basename(e["directory"])
-                          for e in result["excluded"]], ["seed101_pre"])
+                          for e in result["excluded"]],
+                         ["seed101_pre_amendment"])
 
-    def test_8_tampering_is_refused(self):
-        # An edited work order.
-        with open(self.layout.work_order, "r") as handle:
-            order = json.load(handle)
-        order["fine"]["new_plan_count"] += 1
-        backup = self.layout.work_order + ".bak"
-        shutil.copyfile(self.layout.work_order, backup)
-        with open(self.layout.work_order, "w") as handle:
-            json.dump(order, handle)
+    def test_12_protected_roots_were_never_written(self):
+        for root in self.protected:
+            self.assertEqual(_snapshot(root), self.protected_before[root])
         with self.assertRaises(A.AmendmentError):
-            A.read_work_order(self.layout)
-        shutil.move(backup, self.layout.work_order)
-        # An edited copy of the offset artefact.
-        name = A.COPIED_ARTEFACTS[1]
-        target = os.path.join(self.layout.artefacts, name)
-        shutil.copyfile(target, target + ".bak")
-        with open(target, "a") as handle:
-            handle.write(" ")
+            self.layout.assert_writable(os.path.join(
+                self.layout.original_artefacts, "x.json"))
         with self.assertRaises(A.AmendmentError):
-            A.verify_offset_copies(self.layout)
-        shutil.move(target + ".bak", target)
+            A.Layout(self.layout.original_root, self.layout.audit_root,
+                     self.layout.withdrawn_root,
+                     withdrawn_root=os.path.join(self.base, "elsewhere"))
 
-    def test_9_leakage_and_alias_disagreement_are_refused(self):
-        final = os.path.join(self.layout.amendment_root, "manifests")
-        os.makedirs(final)
-        open(os.path.join(final, "final_test_seed3001.csv"), "w").close()
+    def test_13_archive_copies_the_withdrawn_files_read_only(self):
+        before = _snapshot(self.layout.withdrawn_root)
         with self.assertRaises(A.AmendmentError):
-            A.scan_for_leakage(self.layout)
-        shutil.rmtree(final)
-        validation = os.path.join(self.layout.audit_runs, "x",
-                                  "benchmark_validation_seed2101")
-        os.makedirs(validation)
+            A.archive_withdrawn(self.layout.withdrawn_root, os.path.join(
+                self.layout.withdrawn_root, "archive"))
+        archive = os.path.join(self.base, "WITHDRAWN_v1")
+        result = A.archive_withdrawn(self.layout.withdrawn_root, archive)
+        self.assertEqual(len(result["files"]), 2)
+        self.assertTrue(os.path.isfile(os.path.join(archive,
+                                                    "README_WITHDRAWN.md")))
+        self.assertEqual(_snapshot(self.layout.withdrawn_root), before)
         with self.assertRaises(A.AmendmentError):
-            A.scan_for_leakage(self.layout)
-        shutil.rmtree(os.path.dirname(validation))
-        A.scan_for_leakage(self.layout)
-        # Two keys of one executed plan that disagree break the collapse.
-        plan = P.make_plan(20, 600, 10)
-        directory = campaign.run_directory_for(
-            self.layout.audit_runs, A.CONTROLLER, plan,
-            search.DESIGN_FAMILY, 2001)
+            A.archive_withdrawn(self.layout.withdrawn_root, archive)
+
+    def test_14_edited_orders_and_another_driver_are_refused(self):
+        for path in (self.layout.floor_order, self.layout.fine_order):
+            backup = path + ".bak"
+            shutil.copyfile(path, backup)
+            with open(path) as handle:
+                order = json.load(handle)
+            order["amendment_version"] = "edited"
+            with open(path, "w") as handle:
+                json.dump(order, handle)
+            with self.assertRaises(A.AmendmentError):
+                A.run_stage(self.layout, self.config, A.STAGE_FINE,
+                            StubRunner())
+            shutil.move(backup, path)
+        with _Patched("DRIVER_SHA256", "0" * 64):
+            with self.assertRaises(A.AmendmentError):
+                A.run_stage(self.layout, self.config, A.STAGE_FINE,
+                            StubRunner())
+
+
+class PrecheckFailures(unittest.TestCase):
+    """Each check fails closed on its own defect, and says which one."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls._fsync = os.fsync
+        os.fsync = lambda _fd: None
+        cls.base = tempfile.mkdtemp()
+        cls.layout = A.Layout(
+            os.path.join(cls.base, "original"),
+            os.path.join(cls.base, "audit"),
+            os.path.join(cls.base, "amendment"),
+            withdrawn_root=os.path.join(cls.base, "withdrawn"),
+        )
+        cls.config = load_config(cls.layout.config_path)
+        L, config, repo = cls.layout, cls.config, A.REPOSITORY_ROOT
+        stub = StubRunner()
+        campaign.prepare_seed_manifests(L.original_manifests, config,
+                                        search.DESIGN_FAMILY)
+        campaign.execute_campaign(
+            stub, A.CONTROLLER, P.coarse_timing_candidates(),
+            search.DESIGN_FAMILY, config, L.original_runs,
+            L.original_manifests, repo, allow_manifest_generation=False)
+        campaign.finalise_stage(campaign.TIMING_COARSE_DESIGN,
+                                L.original_runs, L.original_manifests,
+                                L.original_artefacts, config, repo)
+        campaign.execute_campaign(
+            stub, A.CONTROLLER, A.audit_coarse_candidates(),
+            search.DESIGN_FAMILY, config, L.audit_runs,
+            L.original_manifests, repo, allow_manifest_generation=False)
+        best = [_stub_j((20, 9, 5, 10)) + 0.001 * s for s in range(1, 6)]
+        cls.patch = _Patched("REPORTED_BEST_BELOW_40", (
+            (20, 650, 10), sum(best) / 5.0))
+        cls.patch.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.patch.__exit__()
+        os.fsync = cls._fsync
+        shutil.rmtree(cls.base, ignore_errors=True)
+
+    def _audit_run(self, key, seed=2001):
+        return campaign.run_directory_for(
+            self.layout.audit_runs, A.CONTROLLER, P.make_plan(*key),
+            search.DESIGN_FAMILY, seed)
+
+    def _fails(self, fragment, runtime=RUNTIME):
+        with self.assertRaises(A.AmendmentError) as caught:
+            A.precheck(self.layout, self.config, runtime)
+        self.assertIn(fragment, str(caught.exception))
+
+    def _edit_json(self, path, change):
+        with open(path) as handle:
+            saved = handle.read()
+        data = json.loads(saved)
+        change(data)
+        with open(path, "w") as handle:
+            json.dump(data, handle, sort_keys=True)
+        return saved
+
+    def test_passes_clean(self):
+        A.precheck(self.layout, self.config, RUNTIME)
+
+    def test_label_disagreement_beyond_1e12_stops(self):
+        directory = self._audit_run((20, 600, 10))
         metrics_path = os.path.join(directory, campaign.METRICS_FILENAME)
         marker_path = os.path.join(directory, campaign.MARKER_FILENAME)
-        saved = []
-        for path in (metrics_path, marker_path):
-            with open(path) as handle:
-                saved.append(handle.read())
-        with open(metrics_path) as handle:
-            metrics = json.load(handle)
-        metrics[search.PRIMARY_FIELD] += 1e-9
-        with open(metrics_path, "w") as handle:
-            json.dump(metrics, handle, sort_keys=True)
         with open(marker_path) as handle:
-            marker = json.load(handle)
+            saved_marker = handle.read()
+        for delta, fails in ((1e-13, False), (1e-9, True)):
+            saved = self._edit_json(metrics_path, lambda m: m.update({
+                search.PRIMARY_FIELD: m[search.PRIMARY_FIELD] + delta}))
+            marker = json.loads(saved_marker)
+            marker.pop("marker_sha256")
+            marker["metrics_sha256"] = A._sha256_file(metrics_path)
+            campaign.write_completion_marker(directory, marker)
+            if fails:
+                self._fails("realize the same plan")
+            else:
+                result = A.precheck(self.layout, self.config, RUNTIME)
+                self.assertGreater(
+                    result["existing"]["aliases"]["max_abs_difference"], 0)
+            with open(metrics_path, "w") as handle:
+                handle.write(saved)
+            with open(marker_path, "w") as handle:
+                handle.write(saved_marker)
+
+    def test_a_dirty_tree_at_run_time_fails(self):
+        path = os.path.join(self._audit_run((25, 650, 0), 2003),
+                            A.RUN_MANIFEST_FILENAME)
+        saved = self._edit_json(path, lambda m: m.update(
+            {"git_status_porcelain": " M src/x.py"}))
+        self._fails("not clean")
+        with open(path, "w") as handle:
+            handle.write(saved)
+
+    def test_another_software_stack_fails(self):
+        path = os.path.join(self._audit_run((30, 500, 5), 2002),
+                            A.RUN_MANIFEST_FILENAME)
+        saved = self._edit_json(path, lambda m: m["runtime"].update(
+            {"sumo": "Eclipse SUMO sumo Version 1.24.0"}))
+        self._fails("software stacks")
+        with open(path, "w") as handle:
+            handle.write(saved)
+        self._fails("this process runs", runtime=dict(RUNTIME, numpy="1.24"))
+
+    def test_another_source_commit_fails(self):
+        directory = self._audit_run((35, 400, 20), 2004)
+        path = os.path.join(directory, campaign.MARKER_FILENAME)
+        with open(path) as handle:
+            saved = handle.read()
+        marker = json.loads(saved)
         marker.pop("marker_sha256")
-        marker["metrics_sha256"] = sha256_file(metrics_path)
+        marker["environment"]["source_commit"] = "f" * 40
         campaign.write_completion_marker(directory, marker)
+        self._fails("different environment")
+        with open(path, "w") as handle:
+            handle.write(saved)
+
+    def test_a_missing_audit_run_fails(self):
+        directory = self._audit_run((20, 550, 0), 2005)
+        path = os.path.join(directory, campaign.MARKER_FILENAME)
+        shutil.move(path, path + ".bak")
+        self._fails("do not verify")
+        shutil.move(path + ".bak", path)
+
+    def test_a_sub20_run_that_predates_the_addendum_fails(self):
+        stray = os.path.join(self.layout.audit_runs,
+                             A.CONTROLLER + "__C018_f500_D000")
+        os.makedirs(stray)
+        self._fails("C < 20 runs exist")
+        os.rmdir(stray)
+
+    def test_validation_traffic_in_the_audit_fails(self):
+        stray = os.path.join(self.layout.audit_runs, "x",
+                             "benchmark_validation_seed2101")
+        os.makedirs(stray)
+        self._fails("Held-out or validation")
+        shutil.rmtree(os.path.dirname(stray))
+
+    def test_a_different_audit_report_fails(self):
+        with _Patched("REPORTED_BEST_BELOW_40", ((20, 650, 10), 3.0)):
+            self._fails("audit reported")
+
+    def test_an_amendment_root_holding_the_withdrawn_files_is_refused(self):
+        root = os.path.join(self.base, "old_amendment")
+        os.makedirs(root)
+        open(os.path.join(root, A.WITHDRAWN_FILES[0]), "w").close()
         with self.assertRaises(A.AmendmentError):
-            A.evaluate_coarse(self.layout, self.config)
-        for path, text in zip((metrics_path, marker_path), saved):
-            with open(path, "w") as handle:
-                handle.write(text)
+            A.Layout(self.layout.original_root, self.layout.audit_root, root,
+                     withdrawn_root=os.path.join(self.base, "w"))
 
 
 if __name__ == "__main__":

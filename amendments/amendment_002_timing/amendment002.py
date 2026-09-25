@@ -1,37 +1,45 @@
-"""Protocol Amendment 002: re-run the optimized-fixed-timing track, and only it.
+"""Protocol Amendment 002 (revised): re-run the optimized-fixed-timing track.
 
-This driver never modifies the frozen code. It imports the frozen package from
-a checkout pinned at FROZEN_COMMIT and reuses its ranking, selection, marker
-verification, artefact and freeze functions. Only three things are new here,
-and each is documented in PROTOCOL_AMENDMENT_002_ADDENDUM.md before any run:
+Provenance strategy (a). Every stage runs from a clean checkout of
+FROZEN_COMMIT. This driver is an external file. It never modifies the frozen
+code or any original, boundary-audit or fixed-offset artefact. Its own SHA-256
+is recorded in every new run's outcome marker, in both work orders, in every
+artefact it derives and in the freeze. From the floor work order on, every
+stage refuses to run under a different driver hash.
 
-  1. The fine cycle clip is [20, 140] instead of [40, 140]. Nothing else in the
-     fine geometry changes.
+What is new relative to the frozen protocol is written in
+PROTOCOL_AMENDMENT_002_ADDENDUM.md, which must be hashed into the floor work
+order before any C < 20 run exists:
 
-  2. Candidates are counted as EXECUTED PLANS. At C >= 40 every (C, split,
-     Delta) key executes a different signal plan, so this is a no-op on the
-     original campaign. At C <= 35 a 0.025 or 0.05 split step is smaller than
-     one second of green, so several keys round half-up to the same greens and
-     run the identical plan: two of the five audit "winners" are one plan, and
-     the 834 amended fine keys are only 486 plans. Retention (coarse top 5,
-     fine top 10) counts plans, and each plan is simulated once.
+  R1  A candidate is a REALIZED plan (C, g_H, g_V, Delta mod C). Split labels
+      that round to the same greens are one candidate. Every top 5 and top 10
+      counts realized plans. Each realized plan is simulated once. Labels of
+      one plan that already have runs must agree to 1e-12, or the stage stops.
+  R2  Structural-floor audit: C in {16, 17, 18, 19}, the frozen coarse splits,
+      Delta in {0, 5, 10, ...} with Delta < C, the frozen rounding and the
+      frozen min-green rule, on design seeds only. It enters the combined
+      coarse ranking before any top 5 is taken.
+  R3  The fine rule is unchanged except the cycle clip, which becomes [16, 140].
+  R4  A run that finishes with CLEARANCE_FAILURE gets a sealed terminal outcome
+      marker and is never re-simulated. Its plan is INVALID (frozen rule).
+  R5  The freeze goes in a new state directory, and there is only ever one
+      freeze. Official training is launched only against it, and learner
+      evidence is accepted only if the amended freeze authorised it.
 
-  3. A run that finishes but does not clear gets a hash-sealed failure marker.
-     The frozen campaign writes no marker for it, so the frozen finaliser can
-     only refuse the whole stage; here the candidate is simply INVALID, which
-     is the frozen search rule.
+Stages, in order:
 
-Stages, in order. Nothing here can open final_test or learner_validation.
-
-    precheck              read-only: verify evidence, print every count
-    finalise-coarse       combined 1980 + 208 coarse artefact, work order
-    run-fine              execute the new fine runs (shardable)
-    finalise-fine         fine top 10, global baseline_design
-    run-validation        top 10 x benchmark_validation 2101-2105 (shardable)
-    finalise-validation   select with the frozen tie-break
-    freeze                amended freeze_baseline_plans, in a NEW state dir
-    verify-learners       which official learner runs the amended freeze
-                          authorised; everything else is excluded
+    precheck              read-only; verifies all existing evidence
+    prepare-floor         seal the floor work order (needs the addendum)
+    run-floor             40 realized plans x design 2001-2005 (shardable)
+    finalise-coarse       1980 + 208 + floor, top 5 realized plans, fine order
+    run-fine              the new fine realized plans (shardable)
+    finalise-fine         fine top 10 realized plans; global baseline_design
+    run-validation        top 10 x benchmark_validation 2101-2105
+    finalise-validation   frozen select_timing_plan
+    freeze                amended freeze_baseline_plans, new state directory
+    train-official        frozen train_adaptive.py against the amended freeze
+    verify-learners       accept only runs the amended freeze authorised
+    archive-withdrawn     copy the withdrawn Amendment-002 files, read-only
 """
 
 from __future__ import print_function
@@ -39,6 +47,7 @@ from __future__ import print_function
 import argparse
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -47,18 +56,36 @@ import sys
 
 FROZEN_COMMIT = "8c14f32988e92ddc6b1421d70258f5fbd2f2cc4d"
 DEFAULT_REPOSITORY = r"C:\Users\LENOVO\QMIX_Traffic_Coordination"
-DEFAULT_ORIGINAL_ROOT = (
-    r"D:\QMIX_Results\qualification_300m_medium_official"
-)
+DEFAULT_ORIGINAL_ROOT = r"D:\QMIX_Results\qualification_300m_medium_official"
 DEFAULT_AUDIT_ROOT = (
     r"D:\QMIX_Results\qualification_300m_medium_boundary_audit_20260920"
 )
-DEFAULT_AMENDMENT_ROOT = (
+# The withdrawn Amendment 002 lives here and is never written to or executed.
+DEFAULT_WITHDRAWN_ROOT = (
     r"D:\QMIX_Results\qualification_300m_medium_timing_amendment_20260920"
 )
+DEFAULT_AMENDMENT_ROOT = (
+    r"D:\QMIX_Results\qualification_300m_medium_timing_amendment002r"
+)
+DEFAULT_ARCHIVE_DIRECTORY = (
+    r"D:\QMIX_Results\WITHDRAWN_timing_amendment_002_v1_20260920"
+)
+WITHDRAWN_FILES = ("amended_timing_campaign.py", "protocol_amendment_002.md")
 AMENDMENT_001_SHA256 = (
     "edb9ec98281b6a9588fae96cfdf982eb90984b830b7fa815ad058160b3ba020a"
 )
+
+
+def _sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+DRIVER_PATH = os.path.abspath(__file__)
+DRIVER_SHA256 = _sha256_file(DRIVER_PATH)
 
 
 def _repository_from_argv(argv):
@@ -77,32 +104,41 @@ if os.path.join(REPOSITORY_ROOT, "src") not in sys.path:
 from adaptive_qmix.baselines import campaign  # noqa: E402
 from adaptive_qmix.baselines import plans as frozen_plans  # noqa: E402
 from adaptive_qmix.baselines import search  # noqa: E402
-from adaptive_qmix.baselines.integrity import sha256_file  # noqa: E402
 from adaptive_qmix.config import load_config  # noqa: E402
 from adaptive_qmix.protocol import stages as protocol_stages  # noqa: E402
 
 
-AMENDMENT_VERSION = "timing-amendment-002-1.0"
+AMENDMENT_VERSION = "timing-amendment-002r-1.0"
 
 CONTROLLER = search.TIMING_CONTROLLER
 DESIGN_FAMILY = search.DESIGN_FAMILY
 VALIDATION_FAMILY = search.VALIDATION_FAMILY
 
-AMENDED_CYCLE_BOUNDS_S = (20, 140)
 AUDIT_CYCLES_S = (20, 25, 30, 35)
+FLOOR_CYCLES_S = (16, 17, 18, 19)
+AMENDED_CYCLE_BOUNDS_S = (16, 140)
+STRUCTURAL_MIN_CYCLE_S = 2 * frozen_plans.MIN_GREEN_S + frozen_plans.LOST_TIME_S
 
 ORIGINAL_COARSE_COUNT = 1980
 AUDIT_COARSE_ADMISSIBLE_COUNT = 208
+OFFSET_CANDIDATE_COUNT = 90
 
-# What the boundary audit reported under the frozen key-level rule. The
-# combined evidence on disk must reproduce it, or it is not the evidence the
-# reopen decision was taken on.
+IDENTITY_TOLERANCE = 1e-12
+
+# What the boundary audit reported. The verified evidence must reproduce both,
+# or it is not the evidence the reopen decision was taken on.
 REPORTED_FROZEN_RULE_TOP_FIVE = [
     (20, 650, 10), (25, 650, 0), (25, 700, 0), (20, 550, 10), (20, 600, 10),
 ]
+REPORTED_BEST_BELOW_40 = ((20, 650, 10), 3.0422142857142855)
 
-FAILURE_MARKER_FILENAME = "campaign_run.failed.json"
-WORK_ORDER_FILENAME = "amendment002_work_order.json"
+# Recorded by the frozen runner in each run's run_manifest.json.
+RUNTIME_FIELDS = ("python", "numpy", "pytorch", "sumo")
+
+OUTCOME_MARKER_FILENAME = "amendment002_outcome.json"
+RUN_MANIFEST_FILENAME = "run_manifest.json"
+FLOOR_ORDER_FILENAME = "amendment002_floor_order.json"
+FINE_ORDER_FILENAME = "amendment002_fine_order.json"
 COPIED_ARTEFACTS = (
     campaign.shortlist_path("", campaign.OFFSET_DESIGN),
     campaign.selected_plan_path("", campaign.OFFSET_VALIDATION),
@@ -112,44 +148,61 @@ ROOT_ORIGINAL = "original"
 ROOT_AUDIT = "audit"
 ROOT_AMENDMENT = "amendment"
 
+STAGE_FLOOR = "floor"
+STAGE_FINE = "fine"
+STAGE_VALIDATION = "validation"
+
 
 class AmendmentError(RuntimeError):
     pass
 
 
 # ---------------------------------------------------------------------------
-# Grids. Pure functions of the frozen constants.
+# Realized plans and grids. Pure functions of the frozen constants.
 # ---------------------------------------------------------------------------
 
 key_of = frozen_plans.candidate_key
 
 
-def executed_identity(plan):
-    """What SUMO is actually given. Split labels do not reach the executor."""
-    return (
-        int(plan["cycle_s"]), int(plan["green_H_s"]), int(plan["green_V_s"]),
-        int(plan["yellow_s"]), int(plan["offset_s"]),
-    )
+def realized_key(plan):
+    """What the executor is given. Split labels never reach it."""
+    if int(plan["yellow_s"]) != frozen_plans.YELLOW_S:
+        raise AmendmentError("Plan {} has a non-frozen yellow.".format(plan))
+    cycle = int(plan["cycle_s"])
+    return (cycle, int(plan["green_H_s"]), int(plan["green_V_s"]),
+            int(plan["offset_s"]) % cycle)
+
+
+def _grid(cycles, include_invalid=False):
+    candidates = []
+    for cycle_s in cycles:
+        for split in frozen_plans.COARSE_SPLIT_THOUSANDTHS:
+            for offset_s in floor_offsets(cycle_s):
+                plan = frozen_plans.make_plan(cycle_s, split, offset_s)
+                if include_invalid or frozen_plans.candidate_is_valid(plan):
+                    candidates.append(plan)
+    return candidates
+
+
+def floor_offsets(cycle_s):
+    """Delta in {0, 5, 10, ...} with Delta < C: the frozen coarse generator."""
+    return list(range(0, int(cycle_s), frozen_plans.COARSE_OFFSET_STEP_S))
 
 
 def audit_coarse_candidates():
-    """The Amendment-001 grid: C in 20..35, the frozen splits and offsets."""
-    candidates = []
-    for cycle_s in AUDIT_CYCLES_S:
-        for split in frozen_plans.COARSE_SPLIT_THOUSANDTHS:
-            for offset_s in range(0, cycle_s, frozen_plans.COARSE_OFFSET_STEP_S):
-                plan = frozen_plans.make_plan(cycle_s, split, offset_s)
-                if frozen_plans.candidate_is_valid(plan):
-                    candidates.append(plan)
-    return candidates
+    return _grid(AUDIT_CYCLES_S)
+
+
+def floor_candidates(include_invalid=False):
+    return _grid(FLOOR_CYCLES_S, include_invalid)
 
 
 def fine_candidates(winners, cycle_bounds=AMENDED_CYCLE_BOUNDS_S,
                     include_invalid=False):
     """frozen plans.fine_timing_candidates with the cycle clip as a parameter.
 
-    Line for line the frozen generator; with cycle_bounds=(40, 140) it returns
-    exactly what the frozen function returns, in the same order (tested).
+    With cycle_bounds=(40, 140) this returns exactly what the frozen function
+    returns, in the same order (tested).
     """
     seen = set()
     candidates = []
@@ -187,34 +240,91 @@ def fine_candidates(winners, cycle_bounds=AMENDED_CYCLE_BOUNDS_S,
     return candidates
 
 
-def plan_classes(plans, prior_keys=frozenset()):
-    """Group keys that execute the same plan.
-
-    The representative is chosen structurally, never by score: the lowest key
-    among members that an earlier preregistered grid already evaluated, else
-    the lowest key. Aliases score identically, so the choice changes which
-    runs are needed, not what is ranked.
-    """
+def label_groups(plans):
+    """Realized key -> its labels, lowest first."""
     groups = {}
     for plan in plans:
-        groups.setdefault(executed_identity(plan), []).append(dict(plan))
-    classes = []
-    for identity, members in groups.items():
+        groups.setdefault(realized_key(plan), []).append(dict(plan))
+    for members in groups.values():
         members.sort(key=key_of)
-        representative = min(
-            members, key=lambda p: (key_of(p) not in prior_keys, key_of(p))
-        )
+    return groups
+
+
+def active_constraints(plan):
+    """Which structural limits a realized plan sits on."""
+    active = []
+    if int(plan["cycle_s"]) == STRUCTURAL_MIN_CYCLE_S:
+        active.append("cycle floor C=16")
+    if int(plan["green_V_s"]) == frozen_plans.MIN_GREEN_S:
+        active.append("gV=5")
+    if int(plan["green_H_s"]) == frozen_plans.MIN_GREEN_S:
+        active.append("gH=5")
+    return active
+
+
+def describe(plan):
+    cycle, g_h, g_v, offset = realized_key(plan)
+    return "C={} gH={} gV={} D={} (label {}) active: {}".format(
+        cycle, g_h, g_v, offset, key_of(plan),
+        ", ".join(active_constraints(plan)) or "none",
+    )
+
+
+class EvaluatedIndex(object):
+    """Every label an earlier preregistered stage evaluated, and where.
+
+    Built from the grids and sealed artefacts, never by scanning for runs, so
+    which runs are reused is fixed before any score is read.
+    """
+
+    def __init__(self):
+        self.root_of = {}
+        self.by_realized = {}
+
+    def add(self, plans, root):
+        for plan in plans:
+            key = key_of(plan)
+            if key in self.root_of and self.root_of[key] != root:
+                raise AmendmentError(
+                    "Label {} is claimed by both {} and {}.".format(
+                        key, self.root_of[key], root
+                    )
+                )
+            self.root_of[key] = root
+            members = self.by_realized.setdefault(realized_key(plan), [])
+            if key not in [key_of(m) for m in members]:
+                members.append(dict(plan))
+                members.sort(key=key_of)
+        return self
+
+    def representative(self, realized):
+        members = self.by_realized.get(realized)
+        return None if not members else members[0]
+
+
+def plan_classes(plans, index):
+    """Collapse labels to realized plans; reuse any earlier evaluation of one.
+
+    The representative is the lowest label an earlier stage already evaluated
+    for that realized plan -- even if that label is not in this stage's grid --
+    or, if none exists, the lowest label in the grid. Chosen structurally,
+    never by score.
+    """
+    classes = []
+    for realized, members in label_groups(plans).items():
+        earlier = index.representative(realized)
         classes.append({
-            "identity": identity,
-            "representative": representative,
+            "identity": realized,
+            "representative": dict(earlier or members[0]),
             "members": members,
+            "evidence": "earlier" if earlier is not None else "new",
         })
     classes.sort(key=lambda item: key_of(item["representative"]))
     return classes
 
 
 # ---------------------------------------------------------------------------
-# Hash-sealed files.
+# Sealed files and path guards.
 # ---------------------------------------------------------------------------
 
 def _sha256_payload(payload):
@@ -225,7 +335,21 @@ def _sha256_payload(payload):
     ).hexdigest()
 
 
-def _write_sealed(path, payload, seal_field="payload_sha256"):
+def _norm(path):
+    return os.path.normcase(os.path.abspath(path))
+
+
+def _inside(child, parent):
+    child, parent = _norm(child), _norm(parent)
+    return child == parent or child.startswith(parent.rstrip(os.sep) + os.sep)
+
+
+def _write_sealed(layout, path, payload, seal_field="payload_sha256",
+                  refuse_existing=False):
+    layout.assert_writable(path)
+    if refuse_existing and os.path.exists(path):
+        raise AmendmentError("{} already exists; it is written once.".format(
+            path))
     sealed = dict(payload)
     sealed[seal_field] = _sha256_payload(payload)
     directory = os.path.dirname(path)
@@ -253,18 +377,27 @@ def _read_sealed(path, seal_field="payload_sha256"):
     return payload
 
 
+def _read_json(path):
+    try:
+        with open(path, "r") as handle:
+            return json.load(handle)
+    except (IOError, OSError, ValueError):
+        return None
+
+
 # ---------------------------------------------------------------------------
-# Layout and evidence.
+# Layout.
 # ---------------------------------------------------------------------------
 
 class Layout(object):
     def __init__(self, original_root, audit_root, amendment_root,
-                 audit_runs=None, config_path=None, adaptive_config_path=None,
+                 withdrawn_root=DEFAULT_WITHDRAWN_ROOT, audit_runs=None,
                  repository_root=REPOSITORY_ROOT):
         self.repository_root = os.path.abspath(repository_root)
         self.original_root = os.path.abspath(original_root)
         self.audit_root = os.path.abspath(audit_root)
         self.amendment_root = os.path.abspath(amendment_root)
+        self.withdrawn_root = os.path.abspath(withdrawn_root)
         self.original_runs = os.path.join(self.original_root, "runs")
         self.original_manifests = os.path.join(self.original_root, "manifests")
         self.original_artefacts = os.path.join(self.original_root, "artefacts")
@@ -277,21 +410,47 @@ class Layout(object):
         self.runs = os.path.join(self.amendment_root, "runs")
         self.artefacts = os.path.join(self.amendment_root, "artefacts")
         self.state = os.path.join(self.amendment_root, "campaign_state")
-        self.work_order = os.path.join(self.artefacts, WORK_ORDER_FILENAME)
-        self.config_path = config_path or os.path.join(
+        self.learners = os.path.join(self.amendment_root, "learners")
+        self.floor_order = os.path.join(self.artefacts, FLOOR_ORDER_FILENAME)
+        self.fine_order = os.path.join(self.artefacts, FINE_ORDER_FILENAME)
+        self.config_path = os.path.join(
             self.repository_root, "config", "adaptive_qmix",
             "baselines_300m_medium.json",
         )
-        self.adaptive_config_path = adaptive_config_path or os.path.join(
+        self.adaptive_config_path = os.path.join(
             self.repository_root, "config", "adaptive_qmix",
             "qualification_300m_medium.json",
         )
-        if len(set([self.original_root, self.audit_root,
-                    self.amendment_root])) != 3:
+        protected = [self.original_root, self.audit_root, self.withdrawn_root,
+                     self.repository_root]
+        for other in protected:
+            if _inside(self.amendment_root, other) or _inside(
+                    other, self.amendment_root):
+                raise AmendmentError(
+                    "The amendment root {} overlaps protected root {}.".format(
+                        self.amendment_root, other
+                    )
+                )
+        if os.path.isdir(self.amendment_root):
+            present = [name for name in WITHDRAWN_FILES if os.path.exists(
+                os.path.join(self.amendment_root, name))]
+            if present:
+                raise AmendmentError(
+                    "{} holds the withdrawn Amendment 002 ({}); it may not be "
+                    "used as the execution root.".format(
+                        self.amendment_root, present
+                    )
+                )
+
+    def assert_writable(self, path):
+        """Nothing is ever written outside the amendment root."""
+        if not _inside(path, self.amendment_root):
             raise AmendmentError(
-                "The original, audit and amendment roots must be three "
-                "different directories."
+                "Refusing to write {}: outside the amendment root {}.".format(
+                    path, self.amendment_root
+                )
             )
+        return True
 
     def runs_for(self, designation):
         return {
@@ -302,7 +461,6 @@ class Layout(object):
 
 
 def verify_repository(layout, require_clean=True):
-    """The frozen code, and nothing else, must be what is imported."""
     def git(*args):
         return subprocess.check_output(
             ["git"] + list(args), cwd=layout.repository_root
@@ -322,81 +480,119 @@ def verify_repository(layout, require_clean=True):
                     dirty
                 )
             )
+    if _inside(DRIVER_PATH, layout.repository_root):
+        raise AmendmentError(
+            "The driver must be an external file, not inside the execution "
+            "checkout."
+        )
     return head
 
 
-def failure_marker_problems(run_directory, plan, family, seed, manifest,
-                            environment):
-    """Like campaign.completion_problems, for a verified clearance failure."""
-    path = os.path.join(run_directory, FAILURE_MARKER_FILENAME)
-    marker = _read_sealed(path, seal_field="marker_sha256") if (
-        os.path.isfile(path)
-    ) else None
+def current_runtime():
+    """The software stack this process would simulate with."""
+    from adaptive_qmix.provenance import runtime_versions
+    runtime = runtime_versions("cpu")
+    return dict((field, runtime.get(field)) for field in RUNTIME_FIELDS)
+
+
+# ---------------------------------------------------------------------------
+# Evidence.
+# ---------------------------------------------------------------------------
+
+def _outcome_marker_problems(directory, plan, family, seed, manifest,
+                             environment, expected_order):
+    marker = _read_sealed(
+        os.path.join(directory, OUTCOME_MARKER_FILENAME),
+        seal_field="marker_sha256",
+    )
     if marker is None:
-        return ["no failure marker"]
+        return ["no amendment outcome marker"], None
     problems = []
     expected = {
         "controller": CONTROLLER,
         "candidate_key": list(key_of(plan)),
+        "realized_key": list(realized_key(plan)),
         "traffic_family": family,
         "traffic_seed": int(seed),
         "manifest_csv_sha256": manifest["manifest_csv_sha256"],
         "route_xml_sha256": manifest["route_xml_sha256"],
         "sumo_seed": int(manifest["sumo_seed"]),
         "environment": dict(environment),
-        "clearance_status": "CLEARANCE_FAILURE",
+        "driver_sha256": DRIVER_SHA256,
+        "frozen_commit": FROZEN_COMMIT,
     }
+    expected.update(expected_order)
     for field, value in sorted(expected.items()):
         found = marker.get(field)
-        if field == "candidate_key" and found is not None:
-            found = list(found)
         if found != value:
-            problems.append("failure marker {} is {!r}, needs {!r}".format(
+            problems.append("outcome marker {} is {!r}, needs {!r}".format(
                 field, found, value))
-    metrics_path = os.path.join(run_directory, campaign.METRICS_FILENAME)
+    metrics_path = os.path.join(directory, campaign.METRICS_FILENAME)
     if not os.path.isfile(metrics_path):
-        return problems + ["evaluation_metrics.json is absent"]
-    if marker.get("metrics_sha256") != sha256_file(metrics_path):
+        return problems + ["evaluation_metrics.json is absent"], marker
+    if marker.get("metrics_sha256") != _sha256_file(metrics_path):
         problems.append("evaluation_metrics.json changed after the marker")
-    return problems
+    metrics = _read_json(metrics_path) or {}
+    if metrics.get("clearance_status") != marker.get("outcome"):
+        problems.append("outcome marker disagrees with the metrics")
+    return problems, marker
 
 
-def write_failure_marker(run_directory, plan, family, seed, manifest,
-                         environment, metrics):
-    metrics_path = os.path.join(run_directory, campaign.METRICS_FILENAME)
-    return _write_sealed(
-        os.path.join(run_directory, FAILURE_MARKER_FILENAME),
-        {
-            "amendment_version": AMENDMENT_VERSION,
-            "controller": CONTROLLER,
-            "candidate_key": list(key_of(plan)),
-            "plan": dict(plan),
-            "traffic_family": family,
-            "traffic_seed": int(seed),
-            "manifest_csv_sha256": manifest["manifest_csv_sha256"],
-            "route_xml_sha256": manifest["route_xml_sha256"],
-            "sumo_seed": int(manifest["sumo_seed"]),
-            "metrics_sha256": sha256_file(metrics_path),
-            "clearance_status": metrics.get("clearance_status"),
-            "environment": dict(environment),
-        },
-        seal_field="marker_sha256",
-    )
+def _run_manifest_problems(directory):
+    manifest = _read_json(os.path.join(directory, RUN_MANIFEST_FILENAME))
+    if manifest is None:
+        return ["run_manifest.json is absent or unreadable"], None
+    problems = []
+    if manifest.get("git_commit") != FROZEN_COMMIT:
+        problems.append("run_manifest git_commit is {!r}".format(
+            manifest.get("git_commit")))
+    if manifest.get("git_status_porcelain") != "":
+        problems.append("the tree was not clean when this run was made "
+                        "(git_status_porcelain {!r})".format(
+                            manifest.get("git_status_porcelain")))
+    if str(manifest.get("git_describe") or "").endswith("-dirty"):
+        problems.append("git_describe marks the tree dirty")
+    runtime = manifest.get("runtime") or {}
+    stack = tuple((field, runtime.get(field)) for field in RUNTIME_FIELDS)
+    if any(value is None for _field, value in stack):
+        problems.append("run_manifest does not record {}".format(
+            [field for field, value in stack if value is None]))
+    return problems, stack
 
 
 class Evidence(object):
-    """Verified runs, each read from the one root designated for its key."""
+    """Verified runs, each read from the one root designated for its label.
 
-    def __init__(self, layout, config, designations):
+    Old runs must pass the frozen completion_problems with the full
+    environment identity, source_commit included. New runs must also carry
+    this driver's outcome marker. Every run must record the frozen commit, a
+    clean tree and the software stack; all runs entering one ranking must share
+    one stack, and it must be the current one.
+    """
+
+    def __init__(self, layout, config, index, order=None,
+                 allow_validation=False, runtime=None, floor_keys=()):
         self.layout = layout
         self.config = config
-        self.designations = dict(designations)
+        self.index = index
+        self.order = dict(order or {})
+        # Floor runs reused by a later stage carry the stage they were made in.
+        self.floor_keys = set(tuple(k) for k in floor_keys)
+        self.allow_validation = allow_validation
         self.environment = campaign.environment_identity(
             config, layout.repository_root
         )
+        self.runtime = runtime
+        self.stacks = {}
         self._manifests = {}
 
     def manifests(self, family):
+        if family == VALIDATION_FAMILY and not self.allow_validation:
+            raise AmendmentError(
+                "benchmark_validation is closed until the fine stage is "
+                "finalised."
+            )
+        search.assert_family_allowed(family)
         if family not in self._manifests:
             self._manifests[family] = campaign.load_seed_manifests(
                 self.layout.original_manifests, self.config, family
@@ -404,31 +600,45 @@ class Evidence(object):
         return self._manifests[family]
 
     def designation(self, plan):
-        return self.designations.get(key_of(plan), ROOT_AMENDMENT)
+        return self.index.root_of.get(key_of(plan), ROOT_AMENDMENT)
 
     def run(self, plan, family, seed):
-        """(metrics, None) for a verified run, or (None, problems)."""
         manifest = self.manifests(family)[int(seed)]
+        root = self.designation(plan)
         directory = campaign.run_directory_for(
-            self.layout.runs_for(self.designation(plan)), CONTROLLER, plan,
-            family, seed,
+            self.layout.runs_for(root), CONTROLLER, plan, family, seed,
         )
-        problems = campaign.completion_problems(
+        problem = {"candidate_key": list(key_of(plan)),
+                   "traffic_seed": int(seed), "run_directory": directory}
+        complete = campaign.completion_problems(
             directory, CONTROLLER, plan, family, seed,
             manifest["manifest_csv_sha256"], manifest["route_xml_sha256"],
             manifest["sumo_seed"], self.environment,
         )
-        if not problems:
-            return campaign._load_metrics(directory), None
-        failure = failure_marker_problems(
-            directory, plan, family, seed, manifest, self.environment
-        )
-        if not failure:
-            return campaign._load_metrics(directory), None
-        return None, {
-            "candidate_key": list(key_of(plan)), "traffic_seed": int(seed),
-            "run_directory": directory, "problems": problems,
-        }
+        if root == ROOT_AMENDMENT:
+            expected = dict(self.order)
+            if key_of(plan) in self.floor_keys:
+                expected["stage"] = STAGE_FLOOR
+            outcome, marker = _outcome_marker_problems(
+                directory, plan, family, seed, manifest, self.environment,
+                expected,
+            )
+            if outcome:
+                problem["problems"] = outcome
+                return None, problem
+            if marker["outcome"] == "CLEARED" and complete:
+                problem["problems"] = complete
+                return None, problem
+        elif complete:
+            problem["problems"] = complete
+            return None, problem
+        faults, stack = _run_manifest_problems(directory)
+        if faults:
+            problem["problems"] = faults
+            return None, problem
+        self.stacks.setdefault(stack, 0)
+        self.stacks[stack] += 1
+        return campaign._load_metrics(directory), None
 
     def runs(self, plan, family):
         runs, problems = [], []
@@ -440,75 +650,119 @@ class Evidence(object):
                 runs.append(metrics)
         return runs, problems
 
+    def assert_one_stack(self):
+        if len(self.stacks) != 1:
+            raise AmendmentError(
+                "Runs entering one ranking were made under {} different "
+                "software stacks: {}".format(len(self.stacks), self.stacks))
+        stack = dict(list(self.stacks)[0])
+        if self.runtime is not None and stack != self.runtime:
+            raise AmendmentError(
+                "The evidence was made under {} but this process runs {}."
+                .format(stack, self.runtime))
+        return stack
 
-def _outcome(run):
-    return (
-        run.get("clearance_status"),
-        run.get(search.PRIMARY_FIELD),
-        run.get(search.TIME_LOSS_FIELD),
-    )
+
+def _same(a, b):
+    if a is None or b is None:
+        return a is b
+    a, b = float(a), float(b)
+    if math.isnan(a) or math.isnan(b):
+        return math.isnan(a) and math.isnan(b)
+    return abs(a - b) <= IDENTITY_TOLERANCE
 
 
-def score_classes(evidence, classes, family, check_aliases=True):
-    """One frozen search record per executed plan, aliases cross-checked.
+def score_classes(evidence, classes, family):
+    """One frozen search record per realized plan, labels cross-checked.
 
-    Every member that has a designated earlier root is read, and its per-seed
-    outcome must equal the representative's exactly. That is the empirical
-    check that a split label cannot change a run; if it ever fails, the
-    collapse is wrong and the stage stops.
+    Every other label of the same realized plan that an earlier stage
+    evaluated is read, and its per-seed outcome must match the
+    representative's to 1e-12. If any does not, the collapse is wrong and the
+    stage stops.
     """
-    records, problems, alias_checks = [], [], 0
-    pairing = []
+    records, problems, pairing = [], [], []
+    alias_report = {"groups": [], "checks": 0, "max_abs_difference": 0.0,
+                    "label_records": {}}
     for item in classes:
         representative = item["representative"]
         runs, missing = evidence.runs(representative, family)
         problems.extend(missing)
         if missing:
             continue
-        for member in item["members"]:
-            if key_of(member) == key_of(representative) or not check_aliases:
+        others = [plan for plan in evidence.index.by_realized.get(
+            item["identity"], []) if key_of(plan) != key_of(representative)]
+        for other in others:
+            other_runs, other_missing = evidence.runs(other, family)
+            if other_missing:
+                problems.extend(other_missing)
                 continue
-            if evidence.designation(member) == ROOT_AMENDMENT:
-                continue
-            member_runs, member_missing = evidence.runs(member, family)
-            if member_missing:
-                problems.extend(member_missing)
-                continue
-            for mine, theirs in zip(runs, member_runs):
-                alias_checks += 1
-                if _outcome(mine) != _outcome(theirs):
+            alias_report["label_records"][key_of(other)] = (
+                search.summarise_candidate(other, other_runs, family,
+                                           CONTROLLER))
+            for mine, theirs in zip(runs, other_runs):
+                alias_report["checks"] += 1
+                for field in (search.PRIMARY_FIELD, search.TIME_LOSS_FIELD):
+                    a, b = mine.get(field), theirs.get(field)
+                    if a is not None and b is not None and not (
+                        math.isnan(float(a)) or math.isnan(float(b))
+                    ):
+                        alias_report["max_abs_difference"] = max(
+                            alias_report["max_abs_difference"],
+                            abs(float(a) - float(b)),
+                        )
+                identical = (
+                    mine.get("clearance_status") == theirs.get(
+                        "clearance_status")
+                    and bool(mine.get("J_primary_valid")) == bool(
+                        theirs.get("J_primary_valid"))
+                    and _same(mine.get(search.PRIMARY_FIELD),
+                              theirs.get(search.PRIMARY_FIELD))
+                    and _same(mine.get(search.TIME_LOSS_FIELD),
+                              theirs.get(search.TIME_LOSS_FIELD))
+                )
+                if not identical:
                     raise AmendmentError(
-                        "Keys {} and {} execute the same plan {} but "
-                        "recorded different outcomes on seed {}: {} versus "
-                        "{}. A split label must not change a run; the "
-                        "executed-plan collapse is invalid.".format(
-                            key_of(representative), key_of(member),
+                        "Labels {} and {} realize the same plan {} but "
+                        "differ on seed {} beyond {}: {} versus {}. The "
+                        "realized-plan collapse is invalid; stage "
+                        "stopped.".format(
+                            key_of(representative), key_of(other),
                             item["identity"], mine.get("traffic_seed"),
-                            _outcome(mine), _outcome(theirs),
+                            IDENTITY_TOLERANCE,
+                            [mine.get(f) for f in (search.PRIMARY_FIELD,
+                                                   search.TIME_LOSS_FIELD)],
+                            [theirs.get(f) for f in (search.PRIMARY_FIELD,
+                                                     search.TIME_LOSS_FIELD)],
                         )
                     )
+        if others:
+            alias_report["groups"].append(
+                [list(key_of(representative))]
+                + [list(key_of(o)) for o in others]
+            )
         record = search.summarise_candidate(
             representative, runs, family, CONTROLLER
         )
-        record["members"] = [list(key_of(m)) for m in item["members"]]
+        alias_report["label_records"][key_of(representative)] = record
         record["identity"] = list(item["identity"])
+        record["labels"] = [list(key_of(m)) for m in item["members"]]
         records.append(record)
         pairing.append((key_of(representative), runs))
     if not problems:
         search.assert_stage_traffic_pairing(pairing, family)
-    return records, problems, alias_checks
+    return records, problems, alias_report
 
 
 def _scores(records):
     return [
         {
             "key": list(record["key"]),
+            "realized_key": record["identity"],
+            "labels": record["labels"],
             "valid": record["valid"],
             "mean_J_primary_s": record["mean_J_primary_s"],
             "mean_time_loss_s": record["mean_time_loss_s"],
             "failed_seeds": record["failed_seeds"],
-            "alias_keys": [k for k in record["members"]
-                           if k != list(record["key"])],
         }
         for record in records
     ]
@@ -524,165 +778,117 @@ def _fail_on(problems, what):
 
 
 # ---------------------------------------------------------------------------
-# Coarse: 1980 original + 208 audit, scored as executed plans.
+# Structural sets.
 # ---------------------------------------------------------------------------
 
 def coarse_sets():
     original = frozen_plans.coarse_timing_candidates()
     audit = audit_coarse_candidates()
     if len(original) != ORIGINAL_COARSE_COUNT:
-        raise AmendmentError("Original coarse grid is not 1980 plans.")
+        raise AmendmentError("Original coarse grid is not 1980 labels.")
     if len(audit) != AUDIT_COARSE_ADMISSIBLE_COUNT:
-        raise AmendmentError("Audit coarse grid is not 208 admissible plans.")
-    if set(map(key_of, original)) & set(map(key_of, audit)):
-        raise AmendmentError("The original and audit grids overlap.")
+        raise AmendmentError("Audit coarse grid is not 208 labels.")
     return original, audit
 
 
-def original_fine_keys(layout):
+def original_fine_labels(layout):
     """The original fine grid, regenerated from its own sealed artefact."""
     artefact = campaign.read_shortlist_artefact(
         layout.original_artefacts, campaign.TIMING_COARSE_DESIGN
     )
-    return set(map(key_of, frozen_plans.fine_timing_candidates(
-        artefact["plans"]
-    )))
+    return frozen_plans.fine_timing_candidates(artefact["plans"])
 
 
-def designations(layout):
-    """Which root holds each earlier key's evidence. Structural, not scanned."""
+def floor_representatives():
+    return [members[0] for _realized, members in sorted(
+        label_groups(floor_candidates()).items())]
+
+
+def evaluated_index(layout, include_floor):
     original, audit = coarse_sets()
-    mapping = {}
-    for key in original_fine_keys(layout):
-        mapping[key] = ROOT_ORIGINAL
-    for plan in original:
-        mapping[key_of(plan)] = ROOT_ORIGINAL
-    for plan in audit:
-        mapping[key_of(plan)] = ROOT_AUDIT
-    return mapping
+    index = EvaluatedIndex()
+    index.add(original + original_fine_labels(layout), ROOT_ORIGINAL)
+    index.add(audit, ROOT_AUDIT)
+    if include_floor:
+        index.add(floor_representatives(), ROOT_AMENDMENT)
+    return index
 
 
-def evaluate_coarse(layout, config):
-    original, audit = coarse_sets()
-    evidence = Evidence(layout, config, designations(layout))
-    every_key = original + audit
-    classes = plan_classes(every_key, prior_keys=set(map(key_of, every_key)))
-    records, problems, alias_checks = score_classes(
-        evidence, classes, DESIGN_FAMILY
-    )
-    _fail_on(problems, "Combined coarse evidence")
-    # The key-level ranking the audit reported, reconstructed from the same
-    # verified runs: aliases carry their representative's record.
-    by_identity = dict((tuple(r["identity"]), r) for r in records)
-    key_records = []
-    for plan in every_key:
-        record = dict(by_identity[executed_identity(plan)])
-        record["key"] = key_of(plan)
-        key_records.append(record)
-    frozen_rule_top_five = [
-        tuple(r["key"]) for r in search.rank_by_design(
-            key_records, search.COARSE_RETAINED
-        )
-    ]
-    if frozen_rule_top_five != REPORTED_FROZEN_RULE_TOP_FIVE:
-        raise AmendmentError(
-            "The verified evidence ranks {} under the frozen key rule, but "
-            "the boundary audit reported {}. These are not the runs the "
-            "reopen decision rested on.".format(
-                frozen_rule_top_five, REPORTED_FROZEN_RULE_TOP_FIVE
-            )
-        )
-    winners = search.rank_by_design(records, search.COARSE_RETAINED)
-    return {
-        "records": records,
-        "classes": classes,
-        "winners": winners,
-        "frozen_rule_top_five": frozen_rule_top_five,
-        "key_count": len(every_key),
-        "run_count": len(every_key) * len(search.DESIGN_SEEDS),
-        "alias_checks": alias_checks,
-        "environment": evidence.environment,
+def no_op_report(layout):
+    """R1 changes nothing where the original campaign ran (C >= 40)."""
+    original, _audit = coarse_sets()
+    fine = original_fine_labels(layout)
+    offsets = frozen_plans.fixed_offset_candidates()
+    report = {
+        "original_coarse": (len(original), len(label_groups(original))),
+        "original_fine": (len(fine), len(label_groups(fine))),
+        "fixed_offset": (len(offsets), len(label_groups(offsets))),
     }
+    for name, (labels, plans) in report.items():
+        if labels != plans:
+            raise AmendmentError(
+                "{}: {} labels are only {} realized plans; R1 would change "
+                "the original campaign.".format(name, labels, plans))
+    if len(offsets) != OFFSET_CANDIDATE_COUNT:
+        raise AmendmentError("The fixed-offset grid is not 90 plans.")
+    return report
 
 
-def fine_plan(layout, winner_plans):
-    """The amended fine grid, its executed plans, and the runs still needed."""
-    fine = fine_candidates(winner_plans)
-    fine_all = fine_candidates(winner_plans, include_invalid=True)
-    mapping = designations(layout)
-    classes = plan_classes(fine, prior_keys=set(mapping))
-    reuse = [c for c in classes
-             if mapping.get(key_of(c["representative"])) is not None]
-    new = [c for c in classes
-           if mapping.get(key_of(c["representative"])) is None]
-    seeds = len(search.DESIGN_SEEDS)
-    return {
-        "winners": [dict(p) for p in winner_plans],
-        "cycle_bounds_s": list(AMENDED_CYCLE_BOUNDS_S),
-        "fine_key_count": len(fine),
-        "rejected_by_min_green": len(fine_all) - len(fine),
-        "executed_plan_count": len(classes),
-        "alias_key_count": len(fine) - len(classes),
-        "keys_with_earlier_evidence": sum(
-            1 for p in fine if key_of(p) in mapping
-        ),
-        "reused_plan_count": len(reuse),
-        "reused_run_count": len(reuse) * seeds,
-        "new_plan_count": len(new),
-        "new_run_count": len(new) * seeds,
-        "validation_run_count": search.FINE_RETAINED * len(
-            search.VALIDATION_SEEDS
-        ),
-        "classes": [
-            {
-                "representative": c["representative"],
-                "members": [list(key_of(m)) for m in c["members"]],
-                "identity": list(c["identity"]),
-                "evidence_root": mapping.get(
-                    key_of(c["representative"]), ROOT_AMENDMENT
-                ),
-            }
-            for c in classes
-        ],
-        "new_work": [c["representative"] for c in new],
-    }
-
-
-def _classes_from_work_order(order):
-    return [
-        {
-            "identity": tuple(item["identity"]),
-            "representative": item["representative"],
-            "members": [
-                frozen_plans.make_plan(*member) for member in item["members"]
-            ],
+def floor_report():
+    labels = floor_candidates()
+    rejected = len(floor_candidates(include_invalid=True)) - len(labels)
+    groups = label_groups(labels)
+    per_cycle = {}
+    for cycle in FLOOR_CYCLES_S:
+        cycle_labels = [p for p in labels if p["cycle_s"] == cycle]
+        per_cycle[cycle] = {
+            "offsets": floor_offsets(cycle),
+            "labels": len(cycle_labels),
+            "realized_plans": len(label_groups(cycle_labels)),
+            "greens": sorted({(p["green_H_s"], p["green_V_s"])
+                              for p in cycle_labels}),
         }
-        for item in order["fine"]["classes"]
-    ]
+    return {
+        "labels": len(labels),
+        "rejected_by_min_green": rejected,
+        "realized_plans": len(groups),
+        "runs": len(groups) * len(search.DESIGN_SEEDS),
+        "per_cycle": per_cycle,
+        "groups": [[list(key_of(m)) for m in members]
+                   for _r, members in sorted(groups.items())],
+    }
 
 
 # ---------------------------------------------------------------------------
 # Guards.
 # ---------------------------------------------------------------------------
 
+def _candidate_cycle(name):
+    prefix = CONTROLLER + "__C"
+    if not name.startswith(prefix):
+        return None
+    try:
+        return int(name[len(prefix):len(prefix) + 3])
+    except ValueError:
+        return None
+
+
 def scan_for_leakage(layout):
     """No held-out traffic anywhere; no validation traffic in the audit.
 
-    The reopen decision must have rested on design seeds alone, so the audit
-    root may not hold a single benchmark_validation run.
+    Only directory NAMES are listed. No manifest or run under a validation
+    or held-out family is opened.
     """
     problems = []
     forbidden = ("final_test", "learner_validation")
-    for root in (layout.original_root, layout.audit_root,
-                 layout.amendment_root):
-        for sub in ("manifests", "runs"):
-            directory = os.path.join(root, sub)
-            if sub == "runs" and root == layout.audit_root:
-                directory = layout.audit_runs
+    for root, runs in ((layout.original_root, layout.original_runs),
+                       (layout.audit_root, layout.audit_runs),
+                       (layout.amendment_root, layout.runs)):
+        for directory in (os.path.join(root, "manifests"), runs):
             if not os.path.isdir(directory):
                 continue
             names = list(os.listdir(directory))
-            if sub == "runs":
+            if directory == runs:
                 for candidate in list(names):
                     path = os.path.join(directory, candidate)
                     if os.path.isdir(path):
@@ -690,390 +896,590 @@ def scan_for_leakage(layout):
             for name in names:
                 if any(token in name for token in forbidden):
                     problems.append(os.path.join(directory, name))
-                if root == layout.audit_root and (
-                    VALIDATION_FAMILY in name
-                ):
+                if root == layout.audit_root and VALIDATION_FAMILY in name:
                     problems.append(os.path.join(directory, name))
     if problems:
         raise AmendmentError(
             "Held-out or validation traffic where none may exist: {}".format(
-                problems[:5]
-            )
-        )
+                problems[:5]))
+    return True
+
+
+def assert_floor_not_yet_run(layout):
+    """Proof that no C < 20 simulation predates the sealed floor order."""
+    allowed = set()
+    order = _read_sealed(layout.floor_order)
+    if order is not None:
+        allowed = set(campaign.candidate_directory_name(CONTROLLER, plan)
+                      for plan in order["floor_plans"])
+    found = []
+    for runs, may in ((layout.original_runs, False), (layout.audit_runs, False),
+                      (layout.runs, True)):
+        if not os.path.isdir(runs):
+            continue
+        for name in os.listdir(runs):
+            cycle = _candidate_cycle(name)
+            if cycle is not None and cycle < 20 and not (may and name in allowed):
+                found.append(os.path.join(runs, name))
+    if found:
+        raise AmendmentError(
+            "C < 20 runs exist outside the sealed floor order: {}".format(
+                found[:5]))
     return True
 
 
 def refuse_original_state(layout):
-    if os.path.abspath(layout.state) == os.path.abspath(layout.original_state):
+    if _norm(layout.state) == _norm(layout.original_state):
         raise AmendmentError("The amended state directory is the original.")
     return True
+
+
+def _check_order_identity(layout, order):
+    if order.get("driver_sha256") != DRIVER_SHA256:
+        raise AmendmentError(
+            "This driver ({}) is not the one the work order was sealed with "
+            "({}). The driver is frozen from prepare-floor on.".format(
+                DRIVER_SHA256, order.get("driver_sha256")))
+    document = order.get("addendum_path")
+    if not document or not os.path.isfile(document) or (
+            _sha256_file(document) != order.get("addendum_sha256")):
+        raise AmendmentError(
+            "The addendum {} is missing or no longer hashes to {}.".format(
+                document, order.get("addendum_sha256")))
+    return True
+
+
+def read_floor_order(layout):
+    order = _read_sealed(layout.floor_order)
+    if order is None:
+        raise AmendmentError("No floor work order; run prepare-floor first.")
+    _check_order_identity(layout, order)
+    if order["floor_plans"] != floor_representatives():
+        raise AmendmentError("The floor order does not regenerate.")
+    return order
+
+
+def _order_fields(order, stage):
+    return {"addendum_sha256": order["addendum_sha256"], "stage": stage}
 
 
 # ---------------------------------------------------------------------------
 # Stages.
 # ---------------------------------------------------------------------------
 
-def precheck(layout, config, require_clean=True):
-    verify_repository(layout, require_clean)
-    scan_for_leakage(layout)
-    refuse_original_state(layout)
-    coarse = evaluate_coarse(layout, config)
-    fine = fine_plan(layout, [r["plan"] for r in coarse["winners"]])
-    return {"coarse": coarse, "fine": fine}
-
-
-def finalise_coarse(layout, config, require_clean=True):
-    """Seal the combined coarse shortlist and the fine work order, once."""
-    if os.path.exists(layout.work_order):
-        read_work_order(layout)
+def evaluate_existing_coarse(layout, config, runtime):
+    """Rebuild the 1980 + 208 ranking on realized plans. No top 5 is taken."""
+    original, audit = coarse_sets()
+    index = evaluated_index(layout, include_floor=False)
+    labels = original + audit
+    classes = plan_classes(labels, index)
+    evidence = Evidence(layout, config, index, runtime=runtime)
+    records, problems, aliases = score_classes(evidence, classes, DESIGN_FAMILY)
+    _fail_on(problems, "Existing coarse evidence")
+    stack = evidence.assert_one_stack()
+    by_identity = dict((tuple(r["identity"]), r) for r in records)
+    # The withdrawn label rule, rebuilt from each label's OWN verified runs.
+    key_records = [aliases["label_records"][key_of(plan)] for plan in labels]
+    reproduced = [tuple(r["key"]) for r in search.rank_by_design(
+        key_records, search.COARSE_RETAINED)]
+    if reproduced != REPORTED_FROZEN_RULE_TOP_FIVE:
         raise AmendmentError(
-            "The coarse stage is already finalised and its work order "
-            "verifies; it is never re-derived. Use precheck to re-inspect."
-        )
-    result = precheck(layout, config, require_clean)
-    coarse, fine = result["coarse"], result["fine"]
-    records = coarse["records"]
-    derivation = {
-        "expected_candidate_count": len(records),
-        "expected_run_count": len(records) * len(search.DESIGN_SEEDS),
-        "verified_run_count": len(records) * len(search.DESIGN_SEEDS),
-        "seeds": list(search.DESIGN_SEEDS),
-        "family": DESIGN_FAMILY,
-        "controller": CONTROLLER,
-        "environment": coarse["environment"],
-        "ranking": (
-            "search.rank_by_design on mean design J_primary, one record per "
-            "executed plan (Amendment 002)"
-        ),
-        "scores": _scores(records),
-        "derived_from_stage": None,
-        "amendment_002": {
-            "version": AMENDMENT_VERSION,
-            "key_count": coarse["key_count"],
-            "verified_key_run_count": coarse["run_count"],
-            "sources": {
-                "original": {"runs": layout.original_runs,
-                             "keys": ORIGINAL_COARSE_COUNT},
-                "audit": {"runs": layout.audit_runs,
-                          "keys": AUDIT_COARSE_ADMISSIBLE_COUNT},
-            },
-            "frozen_rule_top_five": [
-                list(k) for k in coarse["frozen_rule_top_five"]
-            ],
-            "alias_outcome_checks": coarse["alias_checks"],
-        },
+            "Verified evidence ranks {} under the withdrawn label rule, but "
+            "the audit reported {}.".format(
+                reproduced, REPORTED_FROZEN_RULE_TOP_FIVE))
+    best_label, best_j = REPORTED_BEST_BELOW_40
+    best = by_identity[realized_key(frozen_plans.make_plan(*best_label))]
+    if abs(best["mean_J_primary_s"] - best_j) > IDENTITY_TOLERANCE:
+        raise AmendmentError(
+            "The audit reported J={!r} for {} but the verified runs give "
+            "{!r}.".format(best_j, best_label, best["mean_J_primary_s"]))
+    valid = [r for r in records if r["valid"]]
+    leader = min(valid, key=lambda r: (r["mean_J_primary_s"], r["key"]))
+    return {
+        "labels": len(labels),
+        "runs": len(labels) * len(search.DESIGN_SEEDS),
+        "records": records,
+        "realized_plans": len(records),
+        "invalid_plans": len(records) - len(valid),
+        "aliases": aliases,
+        "stack": stack,
+        "leader": leader,
+        "environment": evidence.environment,
     }
-    _copy_offset_artefacts(layout)
-    campaign._write_shortlist_artefact(
-        layout.artefacts, campaign.TIMING_COARSE_DESIGN,
-        [r["plan"] for r in coarse["winners"]],
-        {"ranked_on": DESIGN_FAMILY, "seeds": list(search.DESIGN_SEEDS),
-         "protocol": "design ranks; validation selects"},
-        derivation,
-    )
-    order = {
+
+
+def precheck(layout, config, runtime=None, require_clean=True):
+    """Read-only. Writes nothing, anywhere."""
+    verify_repository(layout, require_clean)
+    refuse_original_state(layout)
+    scan_for_leakage(layout)
+    assert_floor_not_yet_run(layout)
+    no_op = no_op_report(layout)
+    existing = evaluate_existing_coarse(layout, config, runtime)
+    return {"no_op": no_op, "existing": existing, "floor": floor_report(),
+            "driver_sha256": DRIVER_SHA256}
+
+
+def prepare_floor(layout, config, amendment_document, runtime=None,
+                  require_clean=True):
+    if not amendment_document or not os.path.isfile(amendment_document):
+        raise AmendmentError(
+            "The addendum must exist and be hashed before any C < 20 run.")
+    if _read_sealed(layout.floor_order) is not None:
+        raise AmendmentError("The floor order is already sealed.")
+    result = precheck(layout, config, runtime, require_clean)
+    floor = result["floor"]
+    _write_sealed(layout, layout.floor_order, {
         "amendment_version": AMENDMENT_VERSION,
         "frozen_commit": FROZEN_COMMIT,
-        "coarse_artefact_sha256": sha256_file(campaign.shortlist_path(
-            layout.artefacts, campaign.TIMING_COARSE_DESIGN
-        )),
-        "fine": dict((k, v) for k, v in fine.items()),
-    }
-    _write_sealed(layout.work_order, order)
+        "driver_sha256": DRIVER_SHA256,
+        "addendum_path": os.path.abspath(amendment_document),
+        "addendum_sha256": _sha256_file(amendment_document),
+        "amendment_001_sha256": AMENDMENT_001_SHA256,
+        "offset_rule": "Delta in {0,5,10,...} with Delta < C",
+        "offsets_by_cycle": dict(
+            (str(c), floor_offsets(c)) for c in FLOOR_CYCLES_S),
+        "floor_plans": floor_representatives(),
+        "floor_label_groups": floor["groups"],
+        "floor_runs": floor["runs"],
+        "existing_coarse_realized_plans": result["existing"]["realized_plans"],
+        "software_stack": dict(result["existing"]["stack"]),
+    }, refuse_existing=True)
     return result
 
 
-def _copy_offset_artefacts(layout):
-    """The offset track is reused byte for byte, not re-derived."""
-    for name in COPIED_ARTEFACTS:
-        source = os.path.join(layout.original_artefacts, name)
-        target = os.path.join(layout.artefacts, name)
-        if not os.path.isfile(source):
-            raise AmendmentError("Missing original artefact {}.".format(source))
-        if os.path.isfile(target):
-            if sha256_file(target) != sha256_file(source):
-                raise AmendmentError(
-                    "{} differs from the original offset artefact.".format(
-                        target
-                    )
-                )
-            continue
-        if not os.path.isdir(layout.artefacts):
-            os.makedirs(layout.artefacts)
-        shutil.copyfile(source, target)
-    campaign.read_shortlist_artefact(layout.artefacts, campaign.OFFSET_DESIGN)
-    campaign.read_selected_plan_artefact(
-        layout.artefacts, campaign.OFFSET_VALIDATION
-    )
-
-
-def verify_offset_copies(layout):
-    for name in COPIED_ARTEFACTS:
-        if sha256_file(os.path.join(layout.artefacts, name)) != sha256_file(
-            os.path.join(layout.original_artefacts, name)
-        ):
-            raise AmendmentError(
-                "{} is no longer the original offset artefact.".format(name)
-            )
-    return True
-
-
-def read_work_order(layout):
-    order = _read_sealed(layout.work_order)
-    if order is None:
-        raise AmendmentError("No work order; run finalise-coarse first.")
-    artefact = campaign.read_shortlist_artefact(
-        layout.artefacts, campaign.TIMING_COARSE_DESIGN
-    )
-    if sha256_file(campaign.shortlist_path(
-        layout.artefacts, campaign.TIMING_COARSE_DESIGN
-    )) != order["coarse_artefact_sha256"]:
-        raise AmendmentError("The coarse artefact changed after the order.")
-    regenerated = fine_plan(layout, artefact["plans"])
-    if regenerated != order["fine"]:
-        raise AmendmentError(
-            "The work order does not regenerate from the sealed coarse "
-            "winners; it has been edited or the code changed."
-        )
-    return order
-
-
-def guarded_runner(runner, layout, config):
-    """Record a completed-but-uncleared run as a verified failure, once."""
+def guarded_runner(runner, layout, config, order, stage):
+    """Seal every new run's outcome; never re-simulate a recorded failure."""
     environment = campaign.environment_identity(config, layout.repository_root)
+    fields = _order_fields(order, stage)
 
     def run(traci_module, config_ref, repository_root, controller,
             manifest_csv_path, route_xml_path, family, seed, sumo_seed,
             output_directory, plan=None, **kwargs):
         search.assert_family_allowed(family, [seed])
+        layout.assert_writable(output_directory)
         manifest = {
-            "manifest_csv_sha256": sha256_file(manifest_csv_path),
-            "route_xml_sha256": sha256_file(route_xml_path),
+            "manifest_csv_sha256": _sha256_file(manifest_csv_path),
+            "route_xml_sha256": _sha256_file(route_xml_path),
             "sumo_seed": int(sumo_seed),
         }
-        if not failure_marker_problems(
-            output_directory, plan, family, seed, manifest, environment
-        ):
+        problems, marker = _outcome_marker_problems(
+            output_directory, plan, family, seed, manifest, environment,
+            fields,
+        )
+        if not problems and marker["outcome"] == "CLEARANCE_FAILURE":
             return campaign._load_metrics(output_directory)
         metrics = runner(
             traci_module, config_ref, repository_root, controller,
             manifest_csv_path, route_xml_path, family, seed, sumo_seed,
             output_directory, plan=plan, **kwargs
         )
-        if metrics and metrics.get("clearance_status") == "CLEARANCE_FAILURE":
-            write_failure_marker(
-                output_directory, plan, family, seed, manifest, environment,
-                metrics,
+        metrics_path = os.path.join(output_directory, campaign.METRICS_FILENAME)
+        if metrics and os.path.isfile(metrics_path):
+            payload = {
+                "amendment_version": AMENDMENT_VERSION,
+                "controller": CONTROLLER,
+                "candidate_key": list(key_of(plan)),
+                "realized_key": list(realized_key(plan)),
+                "plan": dict(plan),
+                "traffic_family": family,
+                "traffic_seed": int(seed),
+                "sumo_seed": int(sumo_seed),
+                "metrics_sha256": _sha256_file(metrics_path),
+                "outcome": metrics.get("clearance_status"),
+                "environment": dict(environment),
+                "driver_sha256": DRIVER_SHA256,
+                "frozen_commit": FROZEN_COMMIT,
+            }
+            payload.update(manifest)
+            payload.update(fields)
+            _write_sealed(
+                layout, os.path.join(output_directory, OUTCOME_MARKER_FILENAME),
+                payload, seal_field="marker_sha256",
             )
         return metrics
     return run
 
 
 def run_stage(layout, config, stage, runner, traci_module=None,
-              shard_index=0, shard_count=1):
-    if stage == "fine":
+              shard_index=0, shard_count=1, require_clean=True):
+    verify_repository(layout, require_clean)
+    order = read_floor_order(layout)
+    if stage == STAGE_FLOOR:
+        family, plans = DESIGN_FAMILY, order["floor_plans"]
+    elif stage == STAGE_FINE:
         family = DESIGN_FAMILY
-        plans = read_work_order(layout)["fine"]["new_work"]
-    elif stage == "validation":
+        plans = read_fine_order(layout)["new_work"]
+    elif stage == STAGE_VALIDATION:
+        protocol_stages.verify_stage_artefact(
+            layout.state, protocol_stages.BASELINE_DESIGN)
         family = VALIDATION_FAMILY
         plans = campaign.read_shortlist_artefact(
-            layout.artefacts, campaign.TIMING_FINE_DESIGN
-        )["plans"]
+            layout.artefacts, campaign.TIMING_FINE_DESIGN)["plans"]
     else:
         raise AmendmentError("Unknown stage {!r}.".format(stage))
     ledger_directory = os.path.join(layout.runs, "ledgers_" + stage)
+    for path in (layout.runs, ledger_directory):
+        layout.assert_writable(path)
     return campaign.execute_campaign(
-        guarded_runner(runner, layout, config), CONTROLLER, plans, family,
-        config, layout.runs, layout.original_manifests,
+        guarded_runner(runner, layout, config, order, stage), CONTROLLER,
+        plans, family, config, layout.runs, layout.original_manifests,
         layout.repository_root, shard_index=shard_index,
         shard_count=shard_count, traci_module=traci_module,
         ledger_directory=ledger_directory, allow_manifest_generation=False,
     )
 
 
-def finalise_fine(layout, config, require_clean=True):
-    verify_repository(layout, require_clean)
-    order = read_work_order(layout)
-    coarse_artefact = campaign.read_shortlist_artefact(
-        layout.artefacts, campaign.TIMING_COARSE_DESIGN
-    )
-    classes = _classes_from_work_order(order)
-    evidence = Evidence(layout, config, designations(layout))
-    records, problems, alias_checks = score_classes(
-        evidence, classes, DESIGN_FAMILY
-    )
-    _fail_on(problems, "Amended fine stage")
-    retained = search.rank_by_design(records, search.FINE_RETAINED)
-    derivation = {
+def _derivation(records, family, seeds, evidence, source_stage, extra):
+    return {
         "expected_candidate_count": len(records),
-        "expected_run_count": len(records) * len(search.DESIGN_SEEDS),
-        "verified_run_count": len(records) * len(search.DESIGN_SEEDS),
-        "seeds": list(search.DESIGN_SEEDS),
-        "family": DESIGN_FAMILY,
+        "expected_run_count": len(records) * len(seeds),
+        "verified_run_count": len(records) * len(seeds),
+        "seeds": list(seeds),
+        "family": family,
         "controller": CONTROLLER,
         "environment": evidence.environment,
         "ranking": (
-            "search.rank_by_design on mean design J_primary, one record per "
-            "executed plan (Amendment 002)"
+            "search.rank_by_design / select_timing_plan, one record per "
+            "realized plan (Amendment 002 R1)"
         ),
         "scores": _scores(records),
-        "derived_from_stage": coarse_artefact["stage"],
-        "amendment_002": {
-            "version": AMENDMENT_VERSION,
-            "work_order_sha256": sha256_file(layout.work_order),
-            "fine_key_count": order["fine"]["fine_key_count"],
-            "reused_plan_count": order["fine"]["reused_plan_count"],
-            "new_plan_count": order["fine"]["new_plan_count"],
-            "alias_outcome_checks": alias_checks,
-        },
+        "derived_from_stage": source_stage,
+        "amendment_002": dict(extra, driver_sha256=DRIVER_SHA256,
+                              version=AMENDMENT_VERSION),
     }
+
+
+def finalise_coarse(layout, config, runtime=None, require_clean=True):
+    """Floor in first; then the top 5 realized plans and the fine order."""
+    verify_repository(layout, require_clean)
+    if _read_sealed(layout.fine_order) is not None:
+        raise AmendmentError("The coarse stage is already finalised.")
+    order = read_floor_order(layout)
+    scan_for_leakage(layout)
+    assert_floor_not_yet_run(layout)
+    original, audit = coarse_sets()
+    index = evaluated_index(layout, include_floor=True)
+    labels = original + audit + floor_candidates()
+    classes = plan_classes(labels, index)
+    evidence = Evidence(layout, config, index,
+                        order=_order_fields(order, STAGE_FLOOR),
+                        runtime=runtime,
+                        floor_keys=map(key_of, order["floor_plans"]))
+    records, problems, aliases = score_classes(evidence, classes, DESIGN_FAMILY)
+    _fail_on(problems, "Combined coarse evidence (original, audit, floor)")
+    stack = evidence.assert_one_stack()
+    winners = search.rank_by_design(records, search.COARSE_RETAINED)
+    layout.assert_writable(layout.artefacts)
+    _copy_offset_artefacts(layout)
+    campaign._write_shortlist_artefact(
+        layout.artefacts, campaign.TIMING_COARSE_DESIGN,
+        [r["plan"] for r in winners],
+        {"ranked_on": DESIGN_FAMILY, "seeds": list(search.DESIGN_SEEDS),
+         "protocol": "design ranks; validation selects"},
+        _derivation(records, DESIGN_FAMILY, search.DESIGN_SEEDS, evidence,
+                    None, {
+                        "labels": len(labels),
+                        "floor_order_sha256": _sha256_file(layout.floor_order),
+                        "alias_groups": aliases["groups"],
+                        "alias_checks": aliases["checks"],
+                        "software_stack": dict(stack),
+                    }),
+    )
+    fine = fine_plan(layout, [r["plan"] for r in winners])
+    _write_sealed(layout, layout.fine_order, dict(fine, **{
+        "amendment_version": AMENDMENT_VERSION,
+        "driver_sha256": DRIVER_SHA256,
+        "floor_order_sha256": _sha256_file(layout.floor_order),
+        "coarse_artefact_sha256": _sha256_file(campaign.shortlist_path(
+            layout.artefacts, campaign.TIMING_COARSE_DESIGN)),
+    }), refuse_existing=True)
+    return {"records": records, "winners": winners, "fine": fine,
+            "aliases": aliases}
+
+
+def fine_plan(layout, winner_plans):
+    fine = fine_candidates(winner_plans)
+    every = fine_candidates(winner_plans, include_invalid=True)
+    classes = plan_classes(fine, evaluated_index(layout, include_floor=True))
+    new = [c for c in classes if c["evidence"] == "new"]
+    seeds = len(search.DESIGN_SEEDS)
+    return {
+        "winners": [dict(p) for p in winner_plans],
+        "cycle_bounds_s": list(AMENDED_CYCLE_BOUNDS_S),
+        "fine_labels": len(fine),
+        "rejected_by_min_green": len(every) - len(fine),
+        "realized_plans": len(classes),
+        "reused_plans": len(classes) - len(new),
+        "new_plans": len(new),
+        "new_runs": len(new) * seeds,
+        "validation_runs": search.FINE_RETAINED * len(search.VALIDATION_SEEDS),
+        "classes": [
+            {"identity": list(c["identity"]),
+             "representative": c["representative"],
+             "labels": [list(key_of(m)) for m in c["members"]],
+             "evidence": c["evidence"]}
+            for c in classes
+        ],
+        "new_work": [c["representative"] for c in new],
+    }
+
+
+def read_fine_order(layout):
+    order = _read_sealed(layout.fine_order)
+    if order is None:
+        raise AmendmentError("No fine order; run finalise-coarse first.")
+    if order.get("driver_sha256") != DRIVER_SHA256:
+        raise AmendmentError("The fine order was sealed by another driver.")
+    artefact = campaign.read_shortlist_artefact(
+        layout.artefacts, campaign.TIMING_COARSE_DESIGN)
+    if _sha256_file(campaign.shortlist_path(
+            layout.artefacts, campaign.TIMING_COARSE_DESIGN)) != (
+            order["coarse_artefact_sha256"]):
+        raise AmendmentError("The coarse artefact changed after the order.")
+    regenerated = fine_plan(layout, artefact["plans"])
+    if any(order[k] != v for k, v in regenerated.items()):
+        raise AmendmentError(
+            "The fine order does not regenerate from the sealed coarse "
+            "winners; it has been edited or the code changed.")
+    return order
+
+
+def _copy_offset_artefacts(layout):
+    """The offset track is reused byte for byte, never re-derived."""
+    for name in COPIED_ARTEFACTS:
+        source = os.path.join(layout.original_artefacts, name)
+        target = os.path.join(layout.artefacts, name)
+        layout.assert_writable(target)
+        if not os.path.isfile(source):
+            raise AmendmentError("Missing original artefact {}.".format(source))
+        if os.path.isfile(target):
+            if _sha256_file(target) != _sha256_file(source):
+                raise AmendmentError("{} differs from the original.".format(
+                    target))
+            continue
+        if not os.path.isdir(layout.artefacts):
+            os.makedirs(layout.artefacts)
+        shutil.copyfile(source, target)
+    campaign.read_shortlist_artefact(layout.artefacts, campaign.OFFSET_DESIGN)
+    campaign.read_selected_plan_artefact(
+        layout.artefacts, campaign.OFFSET_VALIDATION)
+
+
+def verify_offset_copies(layout):
+    for name in COPIED_ARTEFACTS:
+        if _sha256_file(os.path.join(layout.artefacts, name)) != _sha256_file(
+                os.path.join(layout.original_artefacts, name)):
+            raise AmendmentError(
+                "{} is no longer the original offset artefact.".format(name))
+    return True
+
+
+def _classes_from_order(order):
+    return [
+        {"identity": tuple(item["identity"]),
+         "representative": item["representative"],
+         "members": [frozen_plans.make_plan(*label)
+                     for label in item["labels"]]}
+        for item in order["classes"]
+    ]
+
+
+def finalise_fine(layout, config, runtime=None, require_clean=True):
+    verify_repository(layout, require_clean)
+    floor = read_floor_order(layout)
+    order = read_fine_order(layout)
+    # New fine runs carry stage "fine"; reused floor runs carry "floor"; reused
+    # original and audit runs are checked by their frozen markers alone.
+    evidence = Evidence(layout, config, evaluated_index(layout, True),
+                        order=_order_fields(floor, STAGE_FINE),
+                        runtime=runtime,
+                        floor_keys=map(key_of, floor["floor_plans"]))
+    records, problems, aliases = score_classes(
+        evidence, _classes_from_order(order), DESIGN_FAMILY)
+    _fail_on(problems, "Amended fine stage")
+    evidence.assert_one_stack()
+    retained = search.rank_by_design(records, search.FINE_RETAINED)
+    layout.assert_writable(layout.artefacts)
+    coarse = campaign.read_shortlist_artefact(
+        layout.artefacts, campaign.TIMING_COARSE_DESIGN)
     campaign._write_shortlist_artefact(
         layout.artefacts, campaign.TIMING_FINE_DESIGN,
         [r["plan"] for r in retained],
         {"ranked_on": DESIGN_FAMILY, "seeds": list(search.DESIGN_SEEDS),
          "protocol": "design ranks; validation selects"},
-        derivation,
+        _derivation(records, DESIGN_FAMILY, search.DESIGN_SEEDS, evidence,
+                    coarse["stage"], {
+                        "fine_order_sha256": _sha256_file(layout.fine_order),
+                        "alias_groups": aliases["groups"],
+                        "alias_checks": aliases["checks"],
+                    }),
     )
     refuse_original_state(layout)
+    layout.assert_writable(layout.state)
     completion = campaign.complete_global_stage(
-        protocol_stages.BASELINE_DESIGN, layout.artefacts, layout.state
-    )
+        protocol_stages.BASELINE_DESIGN, layout.artefacts, layout.state)
     return {"retained": retained, "records": records,
             "global_stage": completion}
 
 
-def finalise_validation(layout, config, require_clean=True):
+def finalise_validation(layout, config, runtime=None, require_clean=True):
     verify_repository(layout, require_clean)
-    fine_artefact = campaign.read_shortlist_artefact(
-        layout.artefacts, campaign.TIMING_FINE_DESIGN
-    )
+    floor = read_floor_order(layout)
     protocol_stages.assert_stage_allowed(
-        layout.state, protocol_stages.BASELINE_VALIDATION
-    )
+        layout.state, protocol_stages.BASELINE_VALIDATION)
+    fine_artefact = campaign.read_shortlist_artefact(
+        layout.artefacts, campaign.TIMING_FINE_DESIGN)
     finalists = [dict(p) for p in fine_artefact["plans"]]
-    evidence = Evidence(layout, config, {})
-    classes = [{"identity": executed_identity(p), "representative": p,
+    # An empty index: validation evidence comes only from this amendment's
+    # own runs, so no C = 40 validation result can enter.
+    evidence = Evidence(layout, config, EvaluatedIndex(),
+                        order=_order_fields(floor, STAGE_VALIDATION),
+                        allow_validation=True, runtime=runtime)
+    classes = [{"identity": realized_key(p), "representative": p,
                 "members": [p]} for p in finalists]
-    records, problems, _ = score_classes(
-        evidence, classes, VALIDATION_FAMILY, check_aliases=False
-    )
+    records, problems, _ = score_classes(evidence, classes, VALIDATION_FAMILY)
     _fail_on(problems, "Amended timing validation")
+    evidence.assert_one_stack()
     if len(records) != search.FINE_RETAINED:
         raise AmendmentError("Validation must score exactly 10 finalists.")
     selected = search.select_timing_plan(records)
-    derivation = {
-        "expected_candidate_count": len(records),
-        "expected_run_count": len(records) * len(search.VALIDATION_SEEDS),
-        "verified_run_count": len(records) * len(search.VALIDATION_SEEDS),
-        "seeds": list(search.VALIDATION_SEEDS),
-        "family": VALIDATION_FAMILY,
-        "controller": CONTROLLER,
-        "environment": evidence.environment,
-        "ranking": "search.select_timing_plan (frozen tie-break)",
-        "scores": _scores(records),
-        "derived_from_stage": fine_artefact["stage"],
-    }
+    layout.assert_writable(layout.artefacts)
+    layout.assert_writable(layout.state)
     campaign._write_selected_plan_artefact(
         layout.artefacts, campaign.TIMING_VALIDATION, CONTROLLER, selected,
-        derivation, config, layout.repository_root, fine_artefact,
+        _derivation(records, VALIDATION_FAMILY, search.VALIDATION_SEEDS,
+                    evidence, fine_artefact["stage"], {}),
+        config, layout.repository_root, fine_artefact,
     )
     completion = campaign.complete_global_stage(
-        protocol_stages.BASELINE_VALIDATION, layout.artefacts, layout.state
-    )
+        protocol_stages.BASELINE_VALIDATION, layout.artefacts, layout.state)
     return {"selected": selected, "records": records,
             "global_stage": completion}
 
 
-def freeze(layout, config, adaptive_config, amendment_document=None,
-           require_clean=True):
+def freeze(layout, config, adaptive_config, require_clean=True):
     verify_repository(layout, require_clean)
     refuse_original_state(layout)
+    floor = read_floor_order(layout)
+    read_fine_order(layout)
     verify_offset_copies(layout)
     target = protocol_stages.artefact_path(
-        layout.state, protocol_stages.FREEZE_BASELINE_PLANS
-    )
+        layout.state, protocol_stages.FREEZE_BASELINE_PLANS)
+    layout.assert_writable(target)
     if os.path.exists(target):
         raise AmendmentError(
-            "{} already exists. write_stage_artefact overwrites silently, so "
-            "a second freeze is refused here.".format(target)
-        )
+            "{} already exists. There is only one amended freeze.".format(
+                target))
     payload = campaign.build_baseline_freeze_payload(
-        layout.artefacts, config, layout.repository_root, adaptive_config
-    )
+        layout.artefacts, config, layout.repository_root, adaptive_config)
     original_freeze = protocol_stages.artefact_path(
-        layout.original_state, protocol_stages.FREEZE_BASELINE_PLANS
-    )
-    superseded = None
-    if os.path.isfile(original_freeze):
-        with open(original_freeze, "r") as handle:
-            old = json.load(handle).get("payload", {})
-        superseded = {
-            "artefact_path": original_freeze,
-            "artefact_sha256": sha256_file(original_freeze),
-            "optimized_fixed_timing_key": (
-                old.get("optimized_fixed_timing", {}).get("selected_key")
-            ),
-            "optimized_fixed_offset_key": (
-                old.get("optimized_fixed_offset", {}).get("selected_key")
-            ),
-        }
-        if superseded["optimized_fixed_offset_key"] != (
-            payload["optimized_fixed_offset"]["selected_key"]
-        ):
-            raise AmendmentError(
-                "The offset plan differs from the original freeze; Amendment "
-                "002 reopens the timing track only."
-            )
+        layout.original_state, protocol_stages.FREEZE_BASELINE_PLANS)
+    if not os.path.isfile(original_freeze):
+        raise AmendmentError(
+            "The superseded freeze {} is missing.".format(original_freeze))
+    old = (_read_json(original_freeze) or {}).get("payload", {})
+    superseded = {
+        "artefact_path": original_freeze,
+        "artefact_sha256": _sha256_file(original_freeze),
+        "optimized_fixed_timing_key": (
+            old.get("optimized_fixed_timing", {}).get("selected_key")),
+        "optimized_fixed_offset_key": (
+            old.get("optimized_fixed_offset", {}).get("selected_key")),
+    }
+    if superseded["optimized_fixed_offset_key"] != (
+            payload["optimized_fixed_offset"]["selected_key"]):
+        raise AmendmentError(
+            "The offset plan differs from the original freeze; Amendment 002 "
+            "reopens the timing track only.")
     payload["protocol_amendment_002"] = {
         "version": AMENDMENT_VERSION,
         "reopened_track": "optimized_fixed_timing",
-        "offset_track": "reused byte-identical from the original campaign",
+        "offset_track": "byte-identical copies of the original artefacts",
+        "frozen_commit": FROZEN_COMMIT,
+        "driver_sha256": DRIVER_SHA256,
+        "addendum_sha256": floor["addendum_sha256"],
         "amendment_001_sha256": AMENDMENT_001_SHA256,
-        "amendment_002_document_sha256": (
-            sha256_file(amendment_document) if amendment_document else None
-        ),
-        "work_order_sha256": sha256_file(layout.work_order),
+        "floor_order_sha256": _sha256_file(layout.floor_order),
+        "fine_order_sha256": _sha256_file(layout.fine_order),
         "supersedes": superseded,
+        "withdrawn": (
+            "The first Amendment-002 script and document are withdrawn: "
+            "they deduplicated candidate_key labels, not realized plans."),
         "learner_rule": (
             "Only official learner runs whose run_manifest records "
             "authorising_artefact_sha256 equal to this file's SHA-256 enter "
-            "learner validation; every other run is excluded."
-        ),
+            "learner validation."),
     }
     protocol_stages.assert_stage_allowed(
-        layout.state, protocol_stages.FREEZE_BASELINE_PLANS
-    )
+        layout.state, protocol_stages.FREEZE_BASELINE_PLANS)
     path = protocol_stages.write_stage_artefact(
-        layout.state, protocol_stages.FREEZE_BASELINE_PLANS, payload
-    )
+        layout.state, protocol_stages.FREEZE_BASELINE_PLANS, payload)
     return {"artefact": path, "payload": payload,
-            "artefact_sha256": sha256_file(path)}
+            "artefact_sha256": _sha256_file(path)}
+
+
+def amended_freeze_sha256(layout):
+    artefact = protocol_stages.verify_stage_artefact(
+        layout.state, protocol_stages.FREEZE_BASELINE_PLANS)
+    if (artefact["payload"].get("protocol_amendment_002") or {}).get(
+            "driver_sha256") != DRIVER_SHA256:
+        raise AmendmentError("The freeze at {} is not this amendment's.".format(
+            layout.state))
+    return _sha256_file(protocol_stages.artefact_path(
+        layout.state, protocol_stages.FREEZE_BASELINE_PLANS))
+
+
+def training_command(layout, method, training_seed, output_directory=None,
+                     require_clean=True):
+    """The frozen trainer, authorised by the amended freeze and nothing else."""
+    from adaptive_qmix.protocol import authorization
+    verify_repository(layout, require_clean)
+    if method not in ("qmix", "vdn", "idqn"):
+        raise AmendmentError("Unknown method {!r}.".format(method))
+    required = amended_freeze_sha256(layout)
+    evidence = authorization.authorization_evidence(layout.state)
+    if evidence["authorising_artefact_sha256"] != required:
+        raise AmendmentError("Authorisation does not come from the amended "
+                             "freeze.")
+    output_directory = os.path.abspath(output_directory or os.path.join(
+        layout.learners, method, "seed{}".format(int(training_seed))))
+    for root in (layout.original_root, layout.audit_root,
+                 layout.withdrawn_root):
+        if _inside(output_directory, root):
+            raise AmendmentError(
+                "Learner output {} is inside protected root {}.".format(
+                    output_directory, root))
+    if os.path.exists(output_directory):
+        raise AmendmentError(
+            "{} already exists; an official run never reuses a directory."
+            .format(output_directory))
+    return [
+        sys.executable, "-B",
+        os.path.join(layout.repository_root, "scripts", "adaptive_qmix",
+                     "train_adaptive.py"),
+        "--method", method, "--training-seed", str(int(training_seed)),
+        "--run-kind", "official_training",
+        "--campaign-state", layout.state,
+        "--output-directory", output_directory,
+    ]
 
 
 def verify_learners(layout, learner_root):
-    """Split official learner runs into authorised-by-amendment and excluded."""
-    freeze_path = protocol_stages.artefact_path(
-        layout.state, protocol_stages.FREEZE_BASELINE_PLANS
-    )
-    protocol_stages.verify_stage_artefact(
-        layout.state, protocol_stages.FREEZE_BASELINE_PLANS
-    )
-    required = sha256_file(freeze_path)
+    required = amended_freeze_sha256(layout)
     accepted, excluded = [], []
     for directory, _dirs, files in os.walk(learner_root):
-        if "run_manifest.json" not in files:
+        if RUN_MANIFEST_FILENAME not in files:
             continue
-        with open(os.path.join(directory, "run_manifest.json"), "r") as h:
-            manifest = json.load(h)
-        if not manifest.get("official_scientific_result"):
+        manifest = _read_json(os.path.join(directory, RUN_MANIFEST_FILENAME))
+        if not manifest or not manifest.get("official_scientific_result"):
             continue
         entry = {
             "directory": directory,
             "method": manifest.get("method"),
             "training_seed": manifest.get("training_seed"),
             "authorising_artefact_sha256": manifest.get(
-                "authorising_artefact_sha256"
-            ),
+                "authorising_artefact_sha256"),
         }
         (accepted if entry["authorising_artefact_sha256"] == required
          else excluded).append(entry)
@@ -1081,43 +1487,124 @@ def verify_learners(layout, learner_root):
             "excluded": excluded}
 
 
+def archive_withdrawn(withdrawn_root, archive_directory, extra_files=()):
+    """Copy the withdrawn Amendment 002 read-only; never touch the source."""
+    withdrawn_root = os.path.abspath(withdrawn_root)
+    archive_directory = os.path.abspath(archive_directory)
+    if _inside(archive_directory, withdrawn_root):
+        raise AmendmentError("The archive may not be inside the withdrawn "
+                             "root; nothing is written there.")
+    if os.path.exists(archive_directory):
+        raise AmendmentError("{} already exists.".format(archive_directory))
+    sources = [os.path.join(withdrawn_root, name) for name in WITHDRAWN_FILES]
+    sources += [os.path.abspath(path) for path in extra_files]
+    missing = [path for path in sources if not os.path.isfile(path)]
+    if missing:
+        raise AmendmentError("Missing withdrawn files: {}".format(missing))
+    before = dict((path, _sha256_file(path)) for path in sources)
+    os.makedirs(archive_directory)
+    lines = []
+    for path in sources:
+        target = os.path.join(archive_directory, os.path.basename(path))
+        shutil.copy2(path, target)
+        if _sha256_file(target) != before[path]:
+            raise AmendmentError("Copy of {} does not verify.".format(path))
+        lines.append("{}  {}".format(before[path], os.path.basename(path)))
+    after = dict((path, _sha256_file(path)) for path in sources)
+    if after != before:
+        raise AmendmentError("A withdrawn source changed during archiving.")
+    with open(os.path.join(archive_directory, "SHA256SUMS"), "w") as handle:
+        handle.write("\n".join(lines) + "\n")
+    with open(os.path.join(archive_directory, "README_WITHDRAWN.md"),
+              "w") as handle:
+        handle.write(WITHDRAWN_README.format(
+            root=withdrawn_root, files="\n".join(
+                "- `{}`".format(line) for line in lines)))
+    return {"archive": archive_directory, "files": lines}
+
+
+WITHDRAWN_README = """# WITHDRAWN: first Amendment 002 (timing track)
+
+Status: WITHDRAWN. Never executed. Not evidence. Not an execution commit.
+
+These files were copied byte for byte from `{root}`, which was not modified.
+
+Reason: the fine search deduplicated candidates by `candidate_key` =
+(C, split_thousandths, Delta), which is a label. It did not deduplicate by the
+realized plan (C, g_H, g_V, Delta mod C). At C <= 35, half-up rounding maps
+several split labels onto one plan. The 834 fine labels are 486 plans, the
+208 boundary labels are 195 plans, and two of the five coarse "winners",
+(20,550,10) and (20,600,10), are the same plan. Its counts (834 / 99 / 735 /
+3675) are therefore withdrawn.
+
+Superseded by: `amendment002.py` and `PROTOCOL_AMENDMENT_002_ADDENDUM.md`
+(revised). Their hashes are recorded in the floor work order and the freeze.
+
+SHA-256 at archive time:
+
+{files}
+"""
+
+
 # ---------------------------------------------------------------------------
 # CLI.
 # ---------------------------------------------------------------------------
 
 ACTIONS = (
-    "precheck", "finalise-coarse", "run-fine", "finalise-fine",
-    "run-validation", "finalise-validation", "freeze", "verify-learners",
+    "precheck", "prepare-floor", "run-floor", "finalise-coarse", "run-fine",
+    "finalise-fine", "run-validation", "finalise-validation", "freeze",
+    "train-official", "verify-learners", "archive-withdrawn",
 )
 
 
-def _print_counts(result):
-    coarse, fine = result["coarse"], result["fine"]
-    print("combined coarse: {} keys, {} runs verified, {} executed plans, "
-          "{} alias outcome checks passed".format(
-              coarse["key_count"], coarse["run_count"],
-              len(coarse["records"]), coarse["alias_checks"]))
-    print("frozen key-rule top five (as the audit reported): {}".format(
-        coarse["frozen_rule_top_five"]))
-    print("executed-plan top five (seeds the fine grid):")
-    for record in coarse["winners"]:
-        print("  {}  J={:.6f}  aliases={}".format(
-            tuple(record["key"]), record["mean_J_primary_s"],
-            [tuple(k) for k in record["members"]
-             if tuple(k) != tuple(record["key"])]))
-    print("amended fine keys        : {} ({} rejected by the 5 s min "
-          "green)".format(fine["fine_key_count"],
-                          fine["rejected_by_min_green"]))
-    print("keys with earlier runs   : {}".format(
-        fine["keys_with_earlier_evidence"]))
-    print("executed plans           : {} ({} alias keys)".format(
-        fine["executed_plan_count"], fine["alias_key_count"]))
-    print("reused plans             : {} => {} runs".format(
-        fine["reused_plan_count"], fine["reused_run_count"]))
-    print("new plans                : {} => {} runs".format(
-        fine["new_plan_count"], fine["new_run_count"]))
-    print("later validation         : 10 x 5 = {} runs".format(
-        fine["validation_run_count"]))
+def print_precheck(result):
+    existing, floor, no_op = (result["existing"], result["floor"],
+                              result["no_op"])
+    print("driver sha256            : {}".format(result["driver_sha256"]))
+    print("frozen commit            : {} (clean)".format(FROZEN_COMMIT))
+    print("R1 no-op on C >= 40      : coarse {} -> {}, fine {} -> {}, "
+          "offset {} -> {} (labels -> realized plans)".format(
+              *(no_op["original_coarse"] + no_op["original_fine"]
+                + no_op["fixed_offset"])))
+    print("existing coarse evidence : {} labels, {} runs verified (markers, "
+          "environment incl. source_commit, clean-tree run manifests)".format(
+              existing["labels"], existing["runs"]))
+    print("software stack           : {}".format(dict(existing["stack"])))
+    print("DISTINCT REALIZED PLANS  : {} ({} invalid) in the rebuilt coarse "
+          "ranking".format(existing["realized_plans"],
+                           existing["invalid_plans"]))
+    aliases = existing["aliases"]
+    print("equivalent-label groups  : {} groups, {} per-seed comparisons, "
+          "max |diff| {:.3g} (tolerance {:g})".format(
+              len(aliases["groups"]), aliases["checks"],
+              aliases["max_abs_difference"], IDENTITY_TOLERANCE))
+    scores = dict((tuple(r["key"]), r["mean_J_primary_s"])
+                  for r in existing["records"])
+    for group in aliases["groups"]:
+        print("  {}  J={:.12f}".format(
+            " == ".join(str(tuple(k)) for k in group),
+            scores[tuple(group[0])]))
+    print("audit report reproduced  : withdrawn label-rule ranking and "
+          "best C<40 J={!r}".format(REPORTED_BEST_BELOW_40[1]))
+    print("current best plan        : {}  J={:.12f}".format(
+        describe(existing["leader"]["plan"]),
+        existing["leader"]["mean_J_primary_s"]))
+    print("(no top 5 is taken until the floor audit is in the ranking)")
+    print("structural-floor audit   : C in {}, design seeds {} only".format(
+        list(FLOOR_CYCLES_S), list(search.DESIGN_SEEDS)))
+    for cycle, item in sorted(floor["per_cycle"].items()):
+        print("  C={}: offsets {}  labels {}  realized plans {}  (gH,gV) {}"
+              .format(cycle, item["offsets"], item["labels"],
+                      item["realized_plans"], item["greens"]))
+    print("  floor labels {} (+{} rejected by min green) -> UNIQUE PLANS {} "
+          "-> REQUIRED RUNS {}".format(
+              floor["labels"], floor["rejected_by_min_green"],
+              floor["realized_plans"], floor["runs"]))
+    for group in floor["groups"]:
+        if len(group) > 1:
+            print("  floor group: {}".format(
+                " == ".join(str(tuple(k)) for k in group)))
+    print("no C<20 run exists yet   : verified")
 
 
 def main(argv=None):
@@ -1127,65 +1614,88 @@ def main(argv=None):
     parser.add_argument("--original-root", default=DEFAULT_ORIGINAL_ROOT)
     parser.add_argument("--audit-root", default=DEFAULT_AUDIT_ROOT)
     parser.add_argument("--audit-runs", default=None)
+    parser.add_argument("--withdrawn-root", default=DEFAULT_WITHDRAWN_ROOT)
     parser.add_argument("--amendment-root", default=DEFAULT_AMENDMENT_ROOT)
     parser.add_argument("--amendment-document", default=None)
+    parser.add_argument("--archive-directory",
+                        default=DEFAULT_ARCHIVE_DIRECTORY)
+    parser.add_argument("--extra-withdrawn-file", action="append", default=[])
     parser.add_argument("--learner-root", default=None)
+    parser.add_argument("--method", default=None)
+    parser.add_argument("--training-seed", type=int, default=None)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
     args = parser.parse_args(argv)
-    if os.path.abspath(args.repository_root) != REPOSITORY_ROOT:
+    if _norm(args.repository_root) != _norm(REPOSITORY_ROOT):
         raise AmendmentError("--repository-root must be given once.")
 
+    if args.action == "archive-withdrawn":
+        result = archive_withdrawn(args.withdrawn_root, args.archive_directory,
+                                   args.extra_withdrawn_file)
+        print("archived to {}".format(result["archive"]))
+        for line in result["files"]:
+            print("  " + line)
+        return 0
+
     layout = Layout(args.original_root, args.audit_root, args.amendment_root,
+                    withdrawn_root=args.withdrawn_root,
                     audit_runs=args.audit_runs)
     config = load_config(layout.config_path)
+    runtime = current_runtime()
 
     if args.action == "precheck":
-        _print_counts(precheck(layout, config))
-        print("AMENDMENT 002 PRECHECK PASS (nothing was written)")
-    elif args.action == "finalise-coarse":
-        _print_counts(finalise_coarse(layout, config))
-        print("coarse artefact and work order sealed in {}".format(
-            layout.artefacts))
-    elif args.action in ("run-fine", "run-validation"):
-        verify_repository(layout)
+        try:
+            print_precheck(precheck(layout, config, runtime))
+        except AmendmentError as error:
+            print("PRECHECK FAIL: {}".format(error))
+            return 1
+        print("PRECHECK PASS (read-only: nothing was written)")
+    elif args.action == "prepare-floor":
+        prepare_floor(layout, config, args.amendment_document, runtime)
+        print("floor order sealed: {}".format(layout.floor_order))
+    elif args.action in ("run-floor", "run-fine", "run-validation"):
         from adaptive_qmix.baselines.runner import run_baseline
         import traci
         ledger = run_stage(
-            layout, config, args.action.split("-", 1)[1], run_baseline,
-            traci, args.shard_index, args.shard_count,
-        )
+            layout, config, args.action.split("-", 1)[1], run_baseline, traci,
+            args.shard_index, args.shard_count)
         counts = {}
         for entry in ledger:
             counts[entry["status"]] = counts.get(entry["status"], 0) + 1
         print("shard {} of {}: {}".format(
             args.shard_index, args.shard_count, counts))
+    elif args.action == "finalise-coarse":
+        result = finalise_coarse(layout, config, runtime)
+        print("top 5 distinct realized plans:")
+        for record in result["winners"]:
+            print("  {}  J={:.12f}".format(describe(record["plan"]),
+                                           record["mean_J_primary_s"]))
+        fine = result["fine"]
+        print("fine: {} labels -> {} realized plans; {} reused, {} new -> "
+              "{} runs".format(fine["fine_labels"], fine["realized_plans"],
+                               fine["reused_plans"], fine["new_plans"],
+                               fine["new_runs"]))
     elif args.action == "finalise-fine":
-        result = finalise_fine(layout, config)
-        print("fine top 10 (executed plans):")
+        result = finalise_fine(layout, config, runtime)
         for record in result["retained"]:
-            print("  {}  J={:.6f}".format(
-                tuple(record["key"]), record["mean_J_primary_s"]))
-        print("global baseline_design: {}".format(result["global_stage"]))
+            print("  {}  J={:.12f}".format(describe(record["plan"]),
+                                           record["mean_J_primary_s"]))
     elif args.action == "finalise-validation":
-        result = finalise_validation(layout, config)
-        print("selected: {}  validation J={:.6f}".format(
-            tuple(result["selected"]["key"]),
+        result = finalise_validation(layout, config, runtime)
+        print("selected: {}  validation J={:.12f}".format(
+            describe(result["selected"]["plan"]),
             result["selected"]["mean_J_primary_s"]))
     elif args.action == "freeze":
-        adaptive = load_config(layout.adaptive_config_path)
-        result = freeze(layout, config, adaptive, args.amendment_document)
-        print("amended freeze: {}".format(result["artefact"]))
-        print("  sha256: {}".format(result["artefact_sha256"]))
-        for track in ("optimized_fixed_offset", "optimized_fixed_timing"):
-            print("  {:22s}: {}".format(
-                track, result["payload"][track]["selected_key"]))
-        print("official training must pass --campaign-state {}".format(
-            layout.state))
+        result = freeze(layout, config, load_config(
+            layout.adaptive_config_path))
+        print("amended freeze: {}  sha256 {}".format(
+            result["artefact"], result["artefact_sha256"]))
+    elif args.action == "train-official":
+        command = training_command(layout, args.method, args.training_seed)
+        print(" ".join(command))
+        return subprocess.call(command)
     elif args.action == "verify-learners":
-        if not args.learner_root:
-            raise AmendmentError("--learner-root is required.")
-        result = verify_learners(layout, args.learner_root)
+        result = verify_learners(layout, args.learner_root or layout.learners)
         print("accepted: {}".format(len(result["accepted"])))
         for entry in result["excluded"]:
             print("EXCLUDED {} seed {}: {}".format(

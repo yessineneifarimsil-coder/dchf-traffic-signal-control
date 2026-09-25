@@ -1,122 +1,117 @@
-# Protocol Amendment 002: addendum to adopt before any fine-search run
+# Protocol Amendment 002 (revised): optimized-fixed-timing track
 
-Status: **must be hashed and placed in the amendment root before `run-fine`.**
-Scope: the optimized-fixed-timing track only. Frozen code: `8c14f32988e92ddc6b1421d70258f5fbd2f2cc4d`, not modified.
+**Status:** DRAFT until `prepare-floor` hashes this file into the sealed floor work order. That must happen before any C < 20 simulation exists. The precheck proves none exists.
 
-## 1. What was checked
+**Scope:** the optimized-fixed-timing track only. The fixed-offset plan (90,500,41) is reused unchanged.
 
-Everything below was recomputed from the frozen `plans.py`/`search.py`/`campaign.py`:
+**Supersedes:**
+* The first Amendment 002 (`amended_timing_campaign.py`, `protocol_amendment_002.md`). It is withdrawn and archived; see `withdrawn_v1/README.md`.
+* The draft addendum in commit `507a1c2`. It was never sealed or executed. Its counts (834/99/735/486/396/1,980) and its advice not to go below C = 20 are withdrawn.
 
-| Claim in the Amendment-002 plan | Verified |
-|---|---|
-| Amended fine grid around the reported five winners, clip [20,140] | **834 keys** (60 more rejected by the 5 s min green: 40 × (C20, 10/4), 20 × (C20, 11/3)) |
-| Keys already evaluated by the audit | **99** keys → 495 runs |
-| New keys | **735** keys → 3675 runs |
-| Duplicate keys inside the fine grid | 0 |
-| Original fine grid (clip [40,140]) | 621 keys = 3105 runs; the parameterised generator reproduces the frozen one exactly |
-| Cycles reached | {20, 25, 30, 35}. None ≥ 40, so no overlap with any original run |
-| Lower clip | Does nothing. The unclipped grid is identical because C = 15 and C = 10 can't fit two 5 s greens. The min-green rule does the work. |
+## 0. Provenance strategy (a)
 
-The arithmetic in the plan is right. What it counts is not.
+* **Execution checkout:** every stage runs from a checkout of `8c14f32988e92ddc6b1421d70258f5fbd2f2cc4d`. The driver checks that `git status --porcelain` is empty before every stage. All commands use `python -B`, so no bytecode is written into the checkout.
+* **Driver:** `amendment002.py` is an external file, and the driver refuses to run from inside the checkout. Its SHA-256 is recorded in:
+  * the floor and fine work orders;
+  * the outcome marker of every new run;
+  * every derived artefact;
+  * the freeze.
 
-## 2. Findings
+  From `prepare-floor` on, every stage refuses to run under a different driver hash.
+* **Reuse check:** reuse goes through the frozen `completion_problems(..., environment)`. That function compares `source_commit` (`git rev-parse HEAD`), `baseline_config_sha256`, `network_sha256`, `network_git_blob`, `campaign_version` and `raw_log_schema_version` with the current checkout. The check is not loosened.
+* **Per-run manifest check:** in addition, every reused or new run's `run_manifest.json` must record:
+  * `git_commit` = the frozen commit;
+  * an empty `git_status_porcelain`;
+  * a `git_describe` that does not end in `-dirty`;
+  * the runtime versions `python`, `numpy`, `pytorch` and `sumo`.
 
-### F1 (blocking): at C ≤ 35, split labels no longer identify distinct plans
+  All runs entering one ranking must share one stack, and it must be the current process's stack.
 
-`candidate_key = (C, split_thousandths, Δ)`. The executor only receives `(C, g_H, g_V, yellow, Δ)`: `runner.py` and `executors.py` never read `split_thousandths` or `f_H`. Greens are rounded half-up to whole seconds. At C = 20 the usable green is 14 s, so a 0.05 split step is 0.7 s and a 0.025 step is 0.35 s. Several keys therefore run the same signal plan:
+## 1. R1: a candidate is a realized plan
 
-* Coarse audit: 208 keys are only **195** executed plans.
-* **The 4th and 5th coarse winners, (20,550,10) and (20,600,10), are the same plan** (g_H 8, g_V 6, Δ 10). They are adjacent in the audit ranking because they tied exactly and the key tie-break separated them. So the fine grid is seeded by four plans, and the fifth neighbourhood adds **0** keys.
-* Amended fine grid: 834 keys are only **486** executed plans (alias classes: 199 × 1, 226 × 2, 61 × 3).
-* Of the 735 "new" keys, 67 run a plan the audit already ran. Only **396** new plans exist, which is 1980 runs, not 3675.
-* The frozen fine top 10 keeps the 10 best **keys**. With classes of 2 or 3 identical plans, the shortlist can collapse to about 4 distinct plans. Validation would then pick from far fewer plans than the original C = 40 stage did.
+The realized key is `(C, g_H, g_V, Δ mod C)`; yellow is fixed at 3 s and checked.
 
-This effect did not exist before the amendment. The original 1980 coarse keys are 1980 plans, and the original 621 fine keys are 621 plans. The amendment's domain extension created it.
+* Labels `(C, split_thousandths, Δ)` with the same realized key are one candidate.
+* Every top 5 and top 10 counts realized plans. Each realized plan is simulated once.
+* Its representative is the lowest label that a preregistered stage already evaluated for that plan. That label need not be in the current grid. Otherwise it is the lowest label in the grid. The choice never uses a score.
+* Labels of one plan that have runs must agree per seed on clearance status and validity, and on J_primary and time loss to within 1e-12. Otherwise the stage stops.
 
-### F2 (blocking): a run that fails to clear leaves the stage impossible to finalise
+**Verified no-op where the original campaign ran:** original coarse 1980 labels = 1980 plans; original fine 621 = 621; original coarse ∪ fine 2547 = 2547; fixed offset 90 = 90.
 
-`execute_campaign` writes a completion marker only for cleared runs. `finalise_stage` treats a missing marker as an incomplete stage and refuses to finalise. It also re-runs the failure on every resume. The frozen search rule says a non-clearing candidate is INVALID and excluded, but the campaign cannot express that. At g_V = 5 s and C = 20, a clearance failure is plausible. If one happens with no rule in place, the choice of what to do is made after seeing results.
+## 2. R2: structural-floor audit, C ∈ {16, 17, 18, 19}
 
-### F3 (blocking): the old freeze still authorises official training
+* **Cycle floor:** 16 s = 5 + 5 + 3 + 3.
+* **Splits:** the frozen coarse splits 0.30, 0.35, …, 0.75.
+* **Rounding and validity:** frozen `make_plan` (half-up) and frozen `candidate_is_valid` (g_H ≥ 5, g_V ≥ 5).
+* **Seeds:** design seeds 2001–2005 only.
+* **Deduplication:** by realized plan, before execution.
 
-`authorize_run` accepts any `--campaign-state` whose `freeze_baseline_plans` artefact verifies. The original state (with (40,650,23)) still verifies. Nothing stops a QMIX/VDN/IDQN run from being authorised against the superseded baseline. The pre-final freeze does not check which baseline freeze a checkpoint was trained under. In addition, `write_stage_artefact` overwrites silently, so writing a new freeze into the original state directory would destroy the old evidence.
+**Offset rule (frozen here):** Δ ∈ {0, 5, 10, …} with Δ < C. Only this reading needs no choice, because it is exactly what the frozen generator computes for any integer C: `coarse_timing_candidates` uses `range(0, cycle_s, 5)`. It keeps the 5 s absolute resolution anchored at Δ = 0 used for every other cycle. The wrap-around gap (C − 15 = 1–4 s) is never coarser than 5 s.
 
-### F4 (blocking): the external `amended_timing_campaign.py` was not available for review
+Two other readings of the prose "Δ = 0, 5, …, C−5" were considered and rejected before any result:
+* a grid anchored at C − 5 (e.g. C = 18 → 3, 8, 13) abandons the Δ = 0 anchor;
+* C/5 equally spaced offsets are not integers, so they break the 1 s plan resolution.
 
-It lives only on `D:\`. This addendum therefore specifies the rules, and `amendment002.py` implements them against the frozen code. Use it, or commit your script so it can be diffed against it.
+| C | offsets Δ | admissible labels | realized plans (g_H, g_V) | runs |
+|---|---|---|---|---|
+| 16 | 0, 5, 10, 15 | 8 | 4: (5,5) | 20 |
+| 17 | 0, 5, 10, 15 | 12 | 8: (5,6), (6,5) | 40 |
+| 18 | 0, 5, 10, 15 | 20 | 12: (5,7), (6,6), (7,5) | 60 |
+| 19 | 0, 5, 10, 15 | 28 | 16: (5,8), (6,7), (7,6), (8,5) | 80 |
+| **total** | | **68** (92 more rejected by the min green) | **40** | **200** |
 
-### Non-blocking findings
+The floor results enter the combined coarse ranking (1980 + 208 + 68 labels) **before** the top 5 realized plans are taken.
 
-* **Reuse is valid in principle.** The frozen campaign already reuses coarse runs inside the fine stage: run directories are keyed by candidate, not stage, so the 54 coarse keys inside the original fine grid are satisfied by their coarse runs whenever both stages share a runs root. Reusing audit runs is the same operation across two roots. It is safe when each run passes the frozen `completion_problems` against the **original** manifests, with the full environment identity (config, network, source commit, campaign version, schema).
-* **Offset track:** its candidates, seeds and selection are independent of the timing track. Reuse the two original artefacts byte for byte.
-* **Validation seeds 2101–2105:** reusing them for a second selection round is legitimate. They are selection data. Condition: no original timing-validation result (C = 40 finalists, (40,650,23)) may enter the amended selection, and the audit root must contain no validation run. The driver checks the latter.
-* **The new optimum sits on the lattice floor again.** Three of the five coarse winners are at C = 20. This is not the Amendment-001 truncation: 20 s is the smallest cycle on the preregistered 5 s cycle lattice that can hold two 5 s greens. Cycles 16–19 are a resolution gap, like 21–24, not a bound. Do not extend below 20.
+## 3. R3: fine rule for any centre
 
-## 3. Amended rules (adopt verbatim)
+The fine rule is unchanged:
+* cycles C0 ± 10 in 5 s steps;
+* splits f0 ± 0.05 in 0.025 steps, bounded to [0.25, 0.80];
+* offsets Δ0 ± 10 in 1 s steps, modulo the candidate cycle;
+* the frozen 5 s min green.
 
-**A2-1 Fine geometry.** Frozen `fine_timing_candidates` with the cycle clip [20,140]. Nothing else changes.
+The **only change is the cycle clip, [16, 140]**. Example: a centre at C0 = 18 gives cycles {18, 23, 28}. For centres on the 5 s lattice the clip changes nothing, because C = 15 cannot hold two 5 s greens. The fine run count is **not** fixed here. `finalise-coarse` derives it from the true top 5 realized plans, after the floor audit.
 
-**A2-2 Executed-plan identity.** Two keys are the same candidate if and only if they share `(C, g_H, g_V, yellow, Δ)`. Every retention step counts executed plans:
-* coarse: the top 5 distinct plans of the combined 1980 + 208 evidence, under the frozen `(mean design J, key)` order;
-* fine: the top 10 distinct plans;
-* each plan is scored once, under a representative key. The representative is the lowest key already evaluated by a preregistered grid (original coarse, original fine, audit coarse), or otherwise the lowest key. The choice is structural and never uses a score.
+## 4. R4: clearance failure is a terminal outcome
 
-This rule is a verified no-op on the original campaign.
+* Every new run gets a sealed outcome marker. It records the driver SHA-256, this addendum's SHA-256, the stage, the realized key, the manifest hashes, the environment and the metrics hash.
+* A `CLEARANCE_FAILURE` is recorded once and never re-simulated. Crashes and exceptions are re-run.
+* A plan with any failed design run is INVALID and excluded (frozen `summarise_candidate` / `rank_by_design`). If fewer than 5 (coarse) or 10 (fine) valid plans exist, the stage fails closed.
+* Historical markers and original code are not touched.
 
-**A2-3 Alias verification.** Wherever two keys of one plan both have runs, their per-seed clearance status, J_primary and time loss must be exactly equal. Otherwise the stage stops and the collapse is withdrawn. The audit alone provides 13 alias pairs × 5 seeds.
+## 5. R5: evidence roots
 
-**A2-4 Clearance failure.** A run that finishes with `CLEARANCE_FAILURE` gets a hash-sealed failure marker and is never re-simulated. Its candidate is INVALID and excluded (frozen `summarise_candidate` / `rank_by_design`). Exceptions and crashes are still re-run. If fewer than 10 valid fine plans exist, the stage fails closed (frozen rule).
+Each evaluated label has one evidence root, fixed by the grid that defined it, never by scanning:
+* original coarse and fine labels → the original root;
+* the 208 boundary labels → the audit root;
+* floor representatives → the amendment root.
 
-**A2-5 Evidence roots.** Each key has exactly one evidence root, fixed by which grid defined it: original keys use the original root, audit keys use the audit root, and every other key uses the amendment root. All runs are verified against the original campaign's manifests, read-only. No manifest is generated.
+All runs are verified against the original campaign's manifests, read-only.
 
-**A2-6 Validation.** The amended fine top 10 × 2101–2105 = 50 runs. Selection uses frozen `select_timing_plan` (J, time loss, shorter cycle, key). Original validation results are not consulted.
+## 6. R6: seed isolation
 
-**A2-7 Freeze.** Written to a **new** state directory `<amendment root>\campaign_state`. The frozen `complete_global_stage` and `build_baseline_freeze_payload` are used on artefacts from the amendment root. The two offset artefacts there are byte-identical copies, re-verified at freeze time. The payload records the superseded freeze (path, SHA-256, (40,650,23)), Amendment 001's hash and this addendum's hash. Writing a second freeze is refused.
+* Floor, coarse and fine stages open only benchmark_design 2001–2005.
+* benchmark_validation 2101–2105 opens only after the fine stage is finalised and `baseline_design` is sealed in the amended state. It is read only from this amendment's own runs, so no C = 40 validation result can enter the selection.
+* Learner validation 2201–2205 and final test 3001–3010 are refused by the frozen guards and by a name scan of all three roots.
+* The audit root must hold no benchmark_validation run.
 
-**A2-8 Learner eligibility.** Only official learner runs whose `run_manifest.json` records `authorising_artefact_sha256` equal to the SHA-256 of the amended freeze may enter learner validation (`verify-learners`). Everything else is excluded. That covers pre-amendment QMIX seed 101, and any run launched against the old state by mistake.
+## 7. R7: freeze and learners
 
-## 4. Run budget
+* The freeze goes in `<amendment root>\campaign_state`, and only once. It uses the frozen `build_baseline_freeze_payload`. The two offset artefacts are byte-identical copies, re-hashed against the originals at freeze time.
+* The freeze records what it supersedes: the original freeze's path and SHA-256, and (40,650,23).
+* Official training runs only through `train-official`. That launches the frozen `train_adaptive.py` with `--campaign-state` set to the amended state, into a new directory outside the original, audit and withdrawn roots.
+* `verify-learners` accepts only runs whose `authorising_artefact_sha256` equals the amended freeze's SHA-256. The pre-amendment QMIX seed 101 is therefore excluded. Seed 101 is re-run, and its 14 checkpoint SHA-256s are compared with the pre-amendment run and reported either way.
 
-| Item | Runs | Source |
-|---|---|---|
-| Combined coarse evidence re-verified | 10 940 (9 900 original + 1 040 audit) | reused, 0 new |
-| Fine plans with audit evidence | 90 plans / 99 keys → 450 runs reused | reused |
-| New fine plans, if the executed-plan 5th winner adds no keys | 396 plans → **1 980** | new |
-| New fine plans, given the true 5th distinct coarse plan | 396–792 plans → **1 980–3 960**; e.g. (20,650,5) or (20,650,15) → 1 980, (25,600,5) → 2 165, (30,650,0) → 2 505 | new; the `precheck` prints the exact figure |
-| Validation | 50 | new |
+## 8. Constraint reporting
 
-The 5th executed-plan winner is the best-ranked key after the audit's reported top five that is not an alias of the first four. That is already on disk, and `precheck` computes it before anything is written.
+For the current best plan and for each finalised top-5, top-10 and selected plan, report the realized (C, g_H, g_V, Δ) and which limits are active: C = 16, g_V = 5, g_H = 5.
 
-## 5. Execution order
+The current best on existing evidence is (20,650,10): C = 20, g_H = 9, g_V = 5, Δ = 10. Its active constraint is **g_V = 5**.
 
-```bat
-conda activate traffic_rl
-cd /d C:\Users\LENOVO\QMIX_Traffic_Coordination
-set A2=<path>\amendment002.py
+## 9. Unchanged
 
-python %A2% --action precheck            &:: read-only; must print PRECHECK PASS
-certutil -hashfile <amendment root>\PROTOCOL_AMENDMENT_002_ADDENDUM.md SHA256
-python %A2% --action finalise-coarse
-python %A2% --action run-fine --shard-index 0 --shard-count 4   &:: ... one per worker
-python %A2% --action finalise-fine
-python %A2% --action run-validation
-python %A2% --action finalise-validation
-python %A2% --action freeze --amendment-document <amendment root>\PROTOCOL_AMENDMENT_002_ADDENDUM.md
-```
+J_primary, the families and seeds, the 5 s min green (classical only), half-up rounding, the 5 s cycle step, the split and offset neighbourhoods, top 5 / top 10, the frozen tie-breaks, the offset plan, the adaptive configuration, and every learner hyper-parameter. Nothing about QMIX changes in response to any fixed-timing result.
 
-Official training from here on uses `--campaign-state <amendment root>\campaign_state` and a **new** learner output root. The pre-amendment `seed101` directory is never overwritten.
+## Appendix: stage order
 
-If `precheck` fails, stop and report the message. Likely causes are an audit layout that differs from `<root>\runs` (pass `--audit-runs`), audit markers written under a different campaign version, or manifests that differ from the original. Do not loosen a check to make it pass.
-
-## 6. Unchanged
-
-J_primary, the design/validation/final families and seeds, the 5 s min green (classical only), round-half-up, the 5 s cycle step, the ±0.05/0.025 split neighbourhood, the ±10/1 s offset neighbourhood, top 5/top 10, the frozen tie-breaks, the offset plan (90,500,41), the adaptive config, and every learner hyper-parameter.
-
-## 7. Commitments to fix before results
-
-1. **QMIX seed 101 is re-run** under the amended freeze (Amendment 001 made this rerun conditional on reopening, and the track was reopened). Training is configured deterministic, so compare the 14 checkpoint SHA-256s with the pre-amendment run and report the result. The re-run counts either way.
-2. **Lattice floor.** If the selected plan has C = 20, report it as the optimum on the 5 s cycle lattice at its structural floor. Report that cycles 16–19, like all non-multiples of 5, were not searched.
-3. **Interpretation.** Webster's cycle, (1.5L + 5)/(1 − Y), with L = 6 s and critical lane flows of 450 and 150 veh/h/lane, gives about 20–23 s for any saturation flow from 1500 to 2000 veh/h/lane. The Webster split would starve V below 5 s at C = 20, so the min green binds, and (20,650,10) is exactly g_H 9 / g_V 5. This is illustrative only, because saturation flow is not a frozen parameter. It supports reading the selected plan as a rapid-service plan at low v/c, not as progression.
-4. **Metric.** Short cycles reduce full stops, which is what `waitingTime` counts, more than they reduce time loss. Mean completed time loss and yellow fraction must sit next to J_primary for the fixed-timing plan, exactly as for QMIX.
-5. **Selection bias.** The design J (3.04 s) is the minimum over 2 188 keys and is biased low. Only the validation J and, later, the final-test J are reportable as that plan's performance.
-6. **No reaction.** Nothing about QMIX (min green, reward, observation, budget) changes in response to the fixed-timing result.
+`precheck` → `prepare-floor --amendment-document <this file>` → `run-floor` → `finalise-coarse` → `run-fine` → `finalise-fine` → `run-validation` → `finalise-validation` → `freeze` → `train-official` / `verify-learners`.
