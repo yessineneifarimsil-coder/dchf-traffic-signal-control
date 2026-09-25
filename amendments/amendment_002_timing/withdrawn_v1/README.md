@@ -10,6 +10,7 @@
 | `D:\QMIX_Results\qualification_300m_medium_timing_amendment_20260920\protocol_amendment_002.md` | first Amendment-002 protocol text |
 | the precheck output of that driver, if one was saved | console output |
 | `PROTOCOL_AMENDMENT_002_ADDENDUM.md` as of commit `507a1c2` | draft addendum, never sealed |
+| `amendment002.py` and the addendum as of commit `814b684` | revised draft, never approved or sealed: fine neighbourhoods built around one alias only, and label-dependent tie-breaks |
 
 `amendment002.py --action archive-withdrawn` copies the files byte for byte into `D:\QMIX_Results\WITHDRAWN_timing_amendment_002_v1_20260920`. It writes `SHA256SUMS` and `README_WITHDRAWN.md` there and verifies that the sources did not change. It refuses to write inside the withdrawn root.
 

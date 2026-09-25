@@ -96,6 +96,125 @@ class GridTests(unittest.TestCase):
         self.assertEqual(A.fine_candidates(lattice),
                          A.fine_candidates(lattice, (20, 140)))
 
+    # --- Union-of-aliases rule and label-free tie-breaks -------------------
+
+    def _realized(self, plans):
+        return {A.realized_key(p) for p in plans}
+
+    def test_two_aliases_differ_alone_but_their_union_does_not_depend_on_either(self):
+        a, b = _plans([(20, 550, 10), (20, 600, 10)])
+        self.assertEqual(A.realized_key(a), A.realized_key(b))
+        alone_a = self._realized(A.fine_candidates([a]))
+        alone_b = self._realized(A.fine_candidates([b]))
+        self.assertNotEqual(alone_a, alone_b)
+        self.assertNotIn((20, 9, 5, 10), alone_a)     # lowest-label defect
+        self.assertIn((20, 9, 5, 10), alone_b)
+        grid = A.combined_coarse_labels()
+        via_a, _ = A.fine_union([a], grid)
+        via_b, _ = A.fine_union([b], grid)
+        self.assertEqual(self._realized(via_a), self._realized(via_b))
+        self.assertEqual(self._realized(via_a), alone_a | alone_b)
+
+    def test_every_alias_group_gives_the_same_fine_plans_whichever_names_it(self):
+        grid = A.combined_coarse_labels()
+        self.assertEqual(len(grid), 1980 + 208 + 68)
+        groups = [m for m in A.label_groups(grid).values() if len(m) > 1]
+        self.assertEqual(len(groups), 13 + 28)
+        for members in groups:
+            results = set()
+            for alias in members:
+                union, report = A.fine_union([alias], grid)
+                results.add(frozenset(self._realized(union)))
+                self.assertEqual(report[0]["aliases"],
+                                 [list(A.key_of(m)) for m in members])
+            self.assertEqual(len(results), 1, members)
+            name = A.canonical_label(A.realized_key(members[0]))
+            union, _ = A.fine_union([name], grid)
+            self.assertEqual({frozenset(self._realized(union))}, results)
+
+    def _records(self, evidence_choice, j_of, family=search.DESIGN_FAMILY):
+        """Scored records for the combined grid with a chosen alias per plan."""
+        records = []
+        for realized, members in sorted(A.label_groups(
+                A.combined_coarse_labels()).items()):
+            alias = members[evidence_choice(realized, len(members))]
+            item = {"identity": realized,
+                    "name": A.canonical_label(realized),
+                    "evidence_label": alias, "members": members}
+            record = {"plan": dict(alias), "key": A.key_of(alias),
+                      "family": family, "valid": True,
+                      "mean_J_primary_s": j_of(realized),
+                      "mean_time_loss_s": 1.0 + j_of(realized) % 1,
+                      "failed_seeds": []}
+            records.append(A.relabel(record, item))
+        return records
+
+    def test_ranking_and_selection_do_not_depend_on_which_alias_was_run(self):
+        # Coarse J values with massive exact ties, as integer-second SUMO
+        # totals can produce.
+        def j_of(realized):
+            return float((realized[1] * 7 + realized[3]) % 5)
+        orders = set()
+        selections = set()
+        choices = (lambda r, n: 0, lambda r, n: n - 1, lambda r, n: n // 2,
+                   lambda r, n: (r[3] + r[1]) % n)
+        for choice in choices:
+            records = self._records(choice, j_of)
+            for retain in (5, 10):
+                orders.add((retain, tuple(tuple(r["identity"]) for r in
+                                          A.rank_realized(records, retain))))
+            chosen = self._records(choice, j_of, search.VALIDATION_FAMILY)
+            selections.add(tuple(A.select_realized(chosen)["identity"]))
+        self.assertEqual(len(orders), 2)
+        self.assertEqual(len(selections), 1)
+
+    def test_the_frozen_label_tie_break_alone_would_have_depended_on_it(self):
+        """Negative control: the label-dependence item B asks about is real.
+
+        (20,8,6,10) is realized by (20,550,10) and (20,600,10); (20,8,6,5) by
+        (20,550,5) and (20,600,5). With an exact J tie, ordering the ALIASES
+        that were run flips with the choice; ordering realized plans cannot.
+        """
+        tied = ((20, 8, 6, 10), (20, 8, 6, 5))
+
+        def j_of(realized):
+            return 1.0 if realized in tied else 9.0
+
+        def pick(low_for):
+            return lambda r, n: 0 if r == low_for else n - 1
+        raw, named = [], []
+        for choice in (pick(tied[0]), pick(tied[1])):
+            records = self._records(choice, j_of)
+            unnamed = [dict(r, key=tuple(r["evidence_key"])) for r in records]
+            raw.append([tuple(r["identity"]) for r in
+                        search.rank_by_design(unnamed, 2)])
+            named.append([tuple(r["identity"]) for r in
+                          A.rank_realized(records, 2)])
+        self.assertNotEqual(raw[0], raw[1])
+        self.assertEqual(named[0], named[1])
+        self.assertEqual(named[0], [(20, 8, 6, 5), (20, 8, 6, 10)])
+
+    def test_canonical_names_order_exactly_like_realized_keys(self):
+        grid = A.combined_coarse_labels()
+        fine = A.fine_candidates(_plans(AUDIT_WINNERS + ORIGINAL_WINNERS))
+        realized = sorted({A.realized_key(p) for p in grid + fine})
+        names = [A.key_of(A.canonical_label(r)) for r in realized]
+        self.assertEqual(names, sorted(names))
+        for r in realized:
+            self.assertEqual(A.realized_key(A.canonical_label(r)), r)
+
+    def test_union_rule_and_tie_break_are_no_ops_on_the_original_campaign(self):
+        original = P.coarse_timing_candidates()
+        frozen = P.fine_timing_candidates(_plans(ORIGINAL_WINNERS))
+        union, report = A.fine_union(_plans(ORIGINAL_WINNERS), original,
+                                     (40, 140))
+        self.assertEqual(union, frozen)
+        self.assertTrue(all(len(item["aliases"]) == 1 for item in report))
+        labels = original + frozen
+        by_label = [A.realized_key(p) for p in sorted(labels, key=A.key_of)]
+        self.assertEqual(by_label, sorted(by_label))
+        self.assertEqual(len(set(by_label)), len({A.key_of(p) for p in labels}))
+
     def test_active_constraints(self):
         self.assertEqual(A.active_constraints(P.make_plan(20, 650, 10)),
                          ["gV=5"])
@@ -290,7 +409,9 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(len(existing["aliases"]["groups"]), 13)
         self.assertEqual(existing["aliases"]["checks"], 13 * 5)
         self.assertEqual(existing["aliases"]["max_abs_difference"], 0.0)
-        self.assertEqual(tuple(existing["leader"]["key"]), (20, 650, 10))
+        self.assertEqual(tuple(existing["leader"]["identity"]), (20, 9, 5, 10))
+        self.assertEqual([A.key_of(p) for p in existing["leader_aliases"]],
+                         [(20, 650, 10)])
         self.assertEqual(result["floor"]["runs"], 200)
         self.assertEqual(result["no_op"]["original_coarse"], (1980, 1980))
         A.print_precheck(result)
@@ -329,9 +450,23 @@ class EndToEnd(unittest.TestCase):
 
     def test_05_floor_enters_the_ranking_before_the_top_five(self):
         result = A.finalise_coarse(self.layout, self.config, RUNTIME)
-        winners = [tuple(r["key"]) for r in result["winners"]]
-        self.assertEqual(winners, [(20, 650, 10), (18, 400, 10), (25, 650, 0),
-                                   (25, 700, 0), (20, 550, 10)])
+        winners = [tuple(r["identity"]) for r in result["winners"]]
+        self.assertEqual(winners, [(20, 9, 5, 10), (18, 5, 7, 10),
+                                   (25, 12, 7, 0), (25, 13, 6, 0),
+                                   (20, 8, 6, 10)])
+        # The (20,8,6,10) winner seeds its fine search from BOTH aliases, so
+        # the greens of the current best plan, (9,5) at C=20, are reachable.
+        report = dict((tuple(i["realized_key"]), i)
+                      for i in result["fine"]["per_winner"])
+        pair = report[(20, 8, 6, 10)]
+        self.assertEqual(pair["aliases"], [[20, 550, 10], [20, 600, 10]])
+        self.assertEqual(len(pair["per_alias_realized_plans"]), 2)
+        floor = report[(18, 5, 7, 10)]
+        self.assertEqual(floor["aliases"], [[18, 400, 10], [18, 450, 10]])
+        greens = {(c["identity"][0], c["identity"][1], c["identity"][2])
+                  for c in result["fine"]["classes"]}
+        self.assertIn((20, 9, 5), greens)
+        A.print_coarse_finalisation(result)
         self.assertEqual(len({tuple(r["identity"]) for r in result["winners"]}),
                          5)
         invalid = [tuple(r["identity"]) for r in result["records"]
@@ -372,7 +507,7 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual({c[2] for c in stub.calls},
                          {search.VALIDATION_FAMILY})
         result = A.finalise_validation(self.layout, self.config, RUNTIME)
-        self.assertEqual(tuple(result["selected"]["key"]), (20, 650, 10))
+        self.assertEqual(tuple(result["selected"]["identity"]), (20, 9, 5, 10))
 
     def test_09_one_freeze_in_a_new_state_that_records_what_it_supersedes(self):
         result = A.freeze(self.layout, self.config, self.adaptive)

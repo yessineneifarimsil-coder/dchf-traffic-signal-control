@@ -19,7 +19,11 @@ order before any C < 20 run exists:
       Delta in {0, 5, 10, ...} with Delta < C, the frozen rounding and the
       frozen min-green rule, on design seeds only. It enters the combined
       coarse ranking before any top 5 is taken.
-  R3  The fine rule is unchanged except the cycle clip, which becomes [16, 140].
+  R3  The fine rule is unchanged except (i) the cycle clip, which becomes
+      [16, 140], and (ii) it is applied around EVERY label of the combined
+      coarse grid that realizes a winning plan; the union is then collapsed
+      to realized plans. Labels are names: every tie-break orders realized
+      keys (canonical_label), so no alias choice can change a result.
   R4  A run that finishes with CLEARANCE_FAILURE gets a sealed terminal outcome
       marker and is never re-simulated. Its plan is INVALID (frozen rule).
   R5  The freeze goes in a new state directory, and there is only ever one
@@ -262,12 +266,47 @@ def active_constraints(plan):
     return active
 
 
-def describe(plan):
+def describe(plan, aliases=None):
     cycle, g_h, g_v, offset = realized_key(plan)
-    return "C={} gH={} gV={} D={} (label {}) active: {}".format(
-        cycle, g_h, g_v, offset, key_of(plan),
+    text = "C={} gH={} gV={} D={} active: {}".format(
+        cycle, g_h, g_v, offset,
         ", ".join(active_constraints(plan)) or "none",
     )
+    if aliases:
+        text += "; coarse labels {}".format(
+            ", ".join(str(key_of(a)) for a in aliases))
+    return text
+
+
+_CANONICAL = {}
+
+
+def canonical_label(realized):
+    """The NAME of a realized plan; it has no scientific role.
+
+    The lowest split, in thousandths, that the frozen make_plan rounds to the
+    plan's g_H. For one cycle, g_H is non-decreasing in the split, so this
+    name is strictly increasing in g_H, and g_V = C - 6 - g_H. Ordering
+    canonical keys (C, split, Delta) is therefore exactly ordering realized
+    keys (C, g_H, g_V, Delta). That makes every frozen tie-break that reads
+    record["key"] a realized-key tie-break, whichever alias was simulated.
+    """
+    realized = tuple(int(v) for v in realized)
+    if realized not in _CANONICAL:
+        cycle, g_h, g_v, offset = realized
+        if g_h + g_v + frozen_plans.LOST_TIME_S != cycle:
+            raise AmendmentError("{} is not a two-phase plan.".format(realized))
+        for split in range(0, 1001):
+            if frozen_plans.green_split(cycle, split)[0] == g_h:
+                plan = frozen_plans.make_plan(cycle, split, offset)
+                if realized_key(plan) != realized:
+                    raise AmendmentError("Canonical name does not realize "
+                                         "{}.".format(realized))
+                _CANONICAL[realized] = plan
+                break
+        else:
+            raise AmendmentError("No split realizes {}.".format(realized))
+    return dict(_CANONICAL[realized])
 
 
 class EvaluatedIndex(object):
@@ -297,7 +336,7 @@ class EvaluatedIndex(object):
                 members.sort(key=key_of)
         return self
 
-    def representative(self, realized):
+    def evidence_label(self, realized):
         members = self.by_realized.get(realized)
         return None if not members else members[0]
 
@@ -305,22 +344,101 @@ class EvaluatedIndex(object):
 def plan_classes(plans, index):
     """Collapse labels to realized plans; reuse any earlier evaluation of one.
 
-    The representative is the lowest label an earlier stage already evaluated
-    for that realized plan -- even if that label is not in this stage's grid --
-    or, if none exists, the lowest label in the grid. Chosen structurally,
-    never by score.
+    Each class has a canonical NAME (canonical_label) and an EVIDENCE label:
+    the lowest label an earlier stage evaluated for that plan, or, for a plan
+    never run, the name itself, under which it will be stored. Neither
+    affects a neighbourhood or a ranking.
     """
     classes = []
     for realized, members in label_groups(plans).items():
-        earlier = index.representative(realized)
+        earlier = index.evidence_label(realized)
+        name = canonical_label(realized)
         classes.append({
             "identity": realized,
-            "representative": dict(earlier or members[0]),
+            "name": name,
+            "evidence_label": dict(earlier or name),
             "members": members,
             "evidence": "earlier" if earlier is not None else "new",
         })
-    classes.sort(key=lambda item: key_of(item["representative"]))
+    classes.sort(key=lambda item: item["identity"])
     return classes
+
+
+def combined_coarse_labels():
+    """Every label of the combined coarse grid: 1980 + 208 + 68."""
+    original = frozen_plans.coarse_timing_candidates()
+    return original + audit_coarse_candidates() + floor_candidates()
+
+
+def fine_union(winner_plans, grid_labels, cycle_bounds=AMENDED_CYCLE_BOUNDS_S):
+    """R3: the frozen fine rule around EVERY alias of every winning plan.
+
+    Each winner is reduced to its realized key; every label of the combined
+    coarse grid with that key seeds its own frozen neighbourhood; the union
+    is returned (label-deduplicated, as the frozen generator does). Which
+    alias names the winner cannot change the result.
+    """
+    groups = label_groups(grid_labels)
+    seeds, report = [], []
+    for winner in winner_plans:
+        realized = realized_key(winner)
+        aliases = groups.get(realized)
+        if not aliases:
+            raise AmendmentError(
+                "Winner {} has no label in the combined coarse grid.".format(
+                    realized))
+        per_alias = []
+        for alias in aliases:
+            own = fine_candidates([alias], cycle_bounds)
+            per_alias.append([list(key_of(alias)),
+                              len(label_groups(own))])
+        union = fine_candidates(aliases, cycle_bounds)
+        report.append({
+            "realized_key": list(realized),
+            "active_constraints": active_constraints(aliases[0]),
+            "aliases": [list(key_of(a)) for a in aliases],
+            "per_alias_realized_plans": per_alias,
+            "union_labels": [list(key_of(p)) for p in union],
+        })
+        seeds.extend(aliases)
+    return fine_candidates(seeds, cycle_bounds), report
+
+
+def relabel(record, item):
+    """Name a scored record by its realized plan, not by the alias run."""
+    record = dict(record)
+    record["evidence_key"] = record["key"]
+    record["plan"] = dict(item["name"])
+    record["key"] = key_of(item["name"])
+    record["identity"] = list(item["identity"])
+    record["labels"] = [list(key_of(m)) for m in item["members"]]
+    return record
+
+
+def _realized_order(record):
+    return (record["mean_J_primary_s"], tuple(record["identity"]))
+
+
+def rank_realized(records, retain):
+    """Frozen rank_by_design, proven to break ties on the realized key."""
+    retained = search.rank_by_design(records, retain)
+    valid = [r for r in records if r["valid"]]
+    expected = sorted(valid, key=_realized_order)[:int(retain)]
+    if [r["identity"] for r in retained] != [r["identity"] for r in expected]:
+        raise AmendmentError("A tie-break read a label, not the plan.")
+    return retained
+
+
+def select_realized(records):
+    """Frozen select_timing_plan: J, time loss, cycle, then realized key."""
+    selected = search.select_timing_plan(records)
+    valid = [r for r in records if r["valid"]]
+    expected = sorted(valid, key=lambda r: (
+        r["mean_J_primary_s"], r["mean_time_loss_s"], r["identity"][0],
+        tuple(r["identity"])))[0]
+    if selected["identity"] != expected["identity"]:
+        raise AmendmentError("Selection read a label, not the plan.")
+    return selected
 
 
 # ---------------------------------------------------------------------------
@@ -677,20 +795,20 @@ def score_classes(evidence, classes, family):
 
     Every other label of the same realized plan that an earlier stage
     evaluated is read, and its per-seed outcome must match the
-    representative's to 1e-12. If any does not, the collapse is wrong and the
+    evidence label's to 1e-12. If any does not, the collapse is wrong and the
     stage stops.
     """
     records, problems, pairing = [], [], []
     alias_report = {"groups": [], "checks": 0, "max_abs_difference": 0.0,
                     "label_records": {}}
     for item in classes:
-        representative = item["representative"]
-        runs, missing = evidence.runs(representative, family)
+        evidence_plan = item["evidence_label"]
+        runs, missing = evidence.runs(evidence_plan, family)
         problems.extend(missing)
         if missing:
             continue
         others = [plan for plan in evidence.index.by_realized.get(
-            item["identity"], []) if key_of(plan) != key_of(representative)]
+            item["identity"], []) if key_of(plan) != key_of(evidence_plan)]
         for other in others:
             other_runs, other_missing = evidence.runs(other, family)
             if other_missing:
@@ -726,7 +844,7 @@ def score_classes(evidence, classes, family):
                         "differ on seed {} beyond {}: {} versus {}. The "
                         "realized-plan collapse is invalid; stage "
                         "stopped.".format(
-                            key_of(representative), key_of(other),
+                            key_of(evidence_plan), key_of(other),
                             item["identity"], mine.get("traffic_seed"),
                             IDENTITY_TOLERANCE,
                             [mine.get(f) for f in (search.PRIMARY_FIELD,
@@ -737,17 +855,16 @@ def score_classes(evidence, classes, family):
                     )
         if others:
             alias_report["groups"].append(
-                [list(key_of(representative))]
+                [list(key_of(evidence_plan))]
                 + [list(key_of(o)) for o in others]
             )
         record = search.summarise_candidate(
-            representative, runs, family, CONTROLLER
+            evidence_plan, runs, family, CONTROLLER
         )
-        alias_report["label_records"][key_of(representative)] = record
-        record["identity"] = list(item["identity"])
-        record["labels"] = [list(key_of(m)) for m in item["members"]]
+        alias_report["label_records"][key_of(evidence_plan)] = record
+        record = relabel(record, item)
         records.append(record)
-        pairing.append((key_of(representative), runs))
+        pairing.append((record["key"], runs))
     if not problems:
         search.assert_stage_traffic_pairing(pairing, family)
     return records, problems, alias_report
@@ -757,6 +874,7 @@ def _scores(records):
     return [
         {
             "key": list(record["key"]),
+            "evidence_label": list(record["evidence_key"]),
             "realized_key": record["identity"],
             "labels": record["labels"],
             "valid": record["valid"],
@@ -800,8 +918,9 @@ def original_fine_labels(layout):
 
 
 def floor_representatives():
-    return [members[0] for _realized, members in sorted(
-        label_groups(floor_candidates()).items())]
+    """Floor plans are new runs, stored under their canonical names."""
+    return [canonical_label(realized) for realized in sorted(
+        label_groups(floor_candidates()))]
 
 
 def evaluated_index(layout, include_floor):
@@ -994,7 +1113,8 @@ def evaluate_existing_coarse(layout, config, runtime):
             "The audit reported J={!r} for {} but the verified runs give "
             "{!r}.".format(best_j, best_label, best["mean_J_primary_s"]))
     valid = [r for r in records if r["valid"]]
-    leader = min(valid, key=lambda r: (r["mean_J_primary_s"], r["key"]))
+    leader = min(valid, key=_realized_order)
+    leader_aliases = label_groups(labels)[tuple(leader["identity"])]
     return {
         "labels": len(labels),
         "runs": len(labels) * len(search.DESIGN_SEEDS),
@@ -1004,6 +1124,7 @@ def evaluate_existing_coarse(layout, config, runtime):
         "aliases": aliases,
         "stack": stack,
         "leader": leader,
+        "leader_aliases": leader_aliases,
         "environment": evidence.environment,
     }
 
@@ -1169,7 +1290,7 @@ def finalise_coarse(layout, config, runtime=None, require_clean=True):
     records, problems, aliases = score_classes(evidence, classes, DESIGN_FAMILY)
     _fail_on(problems, "Combined coarse evidence (original, audit, floor)")
     stack = evidence.assert_one_stack()
-    winners = search.rank_by_design(records, search.COARSE_RETAINED)
+    winners = rank_realized(records, search.COARSE_RETAINED)
     layout.assert_writable(layout.artefacts)
     _copy_offset_artefacts(layout)
     campaign._write_shortlist_artefact(
@@ -1199,14 +1320,29 @@ def finalise_coarse(layout, config, runtime=None, require_clean=True):
 
 
 def fine_plan(layout, winner_plans):
-    fine = fine_candidates(winner_plans)
-    every = fine_candidates(winner_plans, include_invalid=True)
-    classes = plan_classes(fine, evaluated_index(layout, include_floor=True))
-    new = [c for c in classes if c["evidence"] == "new"]
+    """R3: union of every alias's neighbourhood, collapsed to realized plans."""
+    fine, per_winner = fine_union(winner_plans, combined_coarse_labels())
+    every = fine_candidates(
+        [frozen_plans.make_plan(*key) for item in per_winner
+         for key in item["aliases"]], include_invalid=True)
+    index = evaluated_index(layout, include_floor=True)
+    classes = plan_classes(fine, index)
+    by_identity = dict((c["identity"], c) for c in classes)
     seeds = len(search.DESIGN_SEEDS)
+    for item in per_winner:
+        own = set(realized_key(frozen_plans.make_plan(*key))
+                  for key in item.pop("union_labels"))
+        item["union_realized_plans"] = len(own)
+        item["reused_plans"] = sum(
+            1 for r in own if by_identity[r]["evidence"] == "earlier")
+        item["new_plans"] = item["union_realized_plans"] - item["reused_plans"]
+        item["new_runs"] = item["new_plans"] * seeds
+    new = [c for c in classes if c["evidence"] == "new"]
     return {
-        "winners": [dict(p) for p in winner_plans],
+        "winners": [list(realized_key(p)) for p in winner_plans],
         "cycle_bounds_s": list(AMENDED_CYCLE_BOUNDS_S),
+        "rule": "union of frozen neighbourhoods of every combined-grid alias",
+        "per_winner": per_winner,
         "fine_labels": len(fine),
         "rejected_by_min_green": len(every) - len(fine),
         "realized_plans": len(classes),
@@ -1216,12 +1352,13 @@ def fine_plan(layout, winner_plans):
         "validation_runs": search.FINE_RETAINED * len(search.VALIDATION_SEEDS),
         "classes": [
             {"identity": list(c["identity"]),
-             "representative": c["representative"],
+             "name": c["name"],
+             "evidence_label": c["evidence_label"],
              "labels": [list(key_of(m)) for m in c["members"]],
              "evidence": c["evidence"]}
             for c in classes
         ],
-        "new_work": [c["representative"] for c in new],
+        "new_work": [c["evidence_label"] for c in new],
     }
 
 
@@ -1278,7 +1415,8 @@ def verify_offset_copies(layout):
 def _classes_from_order(order):
     return [
         {"identity": tuple(item["identity"]),
-         "representative": item["representative"],
+         "name": item["name"],
+         "evidence_label": item["evidence_label"],
          "members": [frozen_plans.make_plan(*label)
                      for label in item["labels"]]}
         for item in order["classes"]
@@ -1299,7 +1437,7 @@ def finalise_fine(layout, config, runtime=None, require_clean=True):
         evidence, _classes_from_order(order), DESIGN_FAMILY)
     _fail_on(problems, "Amended fine stage")
     evidence.assert_one_stack()
-    retained = search.rank_by_design(records, search.FINE_RETAINED)
+    retained = rank_realized(records, search.FINE_RETAINED)
     layout.assert_writable(layout.artefacts)
     coarse = campaign.read_shortlist_artefact(
         layout.artefacts, campaign.TIMING_COARSE_DESIGN)
@@ -1336,14 +1474,14 @@ def finalise_validation(layout, config, runtime=None, require_clean=True):
     evidence = Evidence(layout, config, EvaluatedIndex(),
                         order=_order_fields(floor, STAGE_VALIDATION),
                         allow_validation=True, runtime=runtime)
-    classes = [{"identity": realized_key(p), "representative": p,
+    classes = [{"identity": realized_key(p), "name": p, "evidence_label": p,
                 "members": [p]} for p in finalists]
     records, problems, _ = score_classes(evidence, classes, VALIDATION_FAMILY)
     _fail_on(problems, "Amended timing validation")
     evidence.assert_one_stack()
     if len(records) != search.FINE_RETAINED:
         raise AmendmentError("Validation must score exactly 10 finalists.")
-    selected = search.select_timing_plan(records)
+    selected = select_realized(records)
     layout.assert_writable(layout.artefacts)
     layout.assert_writable(layout.state)
     campaign._write_selected_plan_artefact(
@@ -1395,6 +1533,8 @@ def freeze(layout, config, adaptive_config, require_clean=True):
     payload["protocol_amendment_002"] = {
         "version": AMENDMENT_VERSION,
         "reopened_track": "optimized_fixed_timing",
+        "selected_realized_key": list(realized_key(
+            payload["optimized_fixed_timing"]["plan"])),
         "offset_track": "byte-identical copies of the original artefacts",
         "frozen_commit": FROZEN_COMMIT,
         "driver_sha256": DRIVER_SHA256,
@@ -1578,7 +1718,7 @@ def print_precheck(result):
           "max |diff| {:.3g} (tolerance {:g})".format(
               len(aliases["groups"]), aliases["checks"],
               aliases["max_abs_difference"], IDENTITY_TOLERANCE))
-    scores = dict((tuple(r["key"]), r["mean_J_primary_s"])
+    scores = dict((tuple(r["evidence_key"]), r["mean_J_primary_s"])
                   for r in existing["records"])
     for group in aliases["groups"]:
         print("  {}  J={:.12f}".format(
@@ -1587,7 +1727,7 @@ def print_precheck(result):
     print("audit report reproduced  : withdrawn label-rule ranking and "
           "best C<40 J={!r}".format(REPORTED_BEST_BELOW_40[1]))
     print("current best plan        : {}  J={:.12f}".format(
-        describe(existing["leader"]["plan"]),
+        describe(existing["leader"]["plan"], existing["leader_aliases"]),
         existing["leader"]["mean_J_primary_s"]))
     print("(no top 5 is taken until the floor audit is in the ranking)")
     print("structural-floor audit   : C in {}, design seeds {} only".format(
@@ -1605,6 +1745,32 @@ def print_precheck(result):
             print("  floor group: {}".format(
                 " == ".join(str(tuple(k)) for k in group)))
     print("no C<20 run exists yet   : verified")
+
+
+def print_coarse_finalisation(result):
+    fine = result["fine"]
+    scores = dict((tuple(r["identity"]), r) for r in result["winners"])
+    print("top 5 distinct realized plans (union-of-aliases fine rule):")
+    for rank, item in enumerate(fine["per_winner"], 1):
+        record = scores[tuple(item["realized_key"])]
+        print("{}. realized {}  J={:.12f}  active: {}".format(
+            rank, tuple(item["realized_key"]), record["mean_J_primary_s"],
+            ", ".join(item["active_constraints"]) or "none"))
+        print("   coarse aliases : {}".format(
+            ", ".join(str(tuple(k)) for k in item["aliases"])))
+        for key, count in item["per_alias_realized_plans"]:
+            print("   from alias {} : {} realized fine plans".format(
+                tuple(key), count))
+        print("   union          : {} realized plans; reused {}, new {} -> "
+              "{} new runs".format(item["union_realized_plans"],
+                                   item["reused_plans"], item["new_plans"],
+                                   item["new_runs"]))
+    print("TOTAL (winners' unions overlap; totals are on the global union): "
+          "{} labels -> {} realized plans; reused {}, new {} -> {} new runs; "
+          "later validation {} runs".format(
+              fine["fine_labels"], fine["realized_plans"],
+              fine["reused_plans"], fine["new_plans"], fine["new_runs"],
+              fine["validation_runs"]))
 
 
 def main(argv=None):
@@ -1666,15 +1832,7 @@ def main(argv=None):
             args.shard_index, args.shard_count, counts))
     elif args.action == "finalise-coarse":
         result = finalise_coarse(layout, config, runtime)
-        print("top 5 distinct realized plans:")
-        for record in result["winners"]:
-            print("  {}  J={:.12f}".format(describe(record["plan"]),
-                                           record["mean_J_primary_s"]))
-        fine = result["fine"]
-        print("fine: {} labels -> {} realized plans; {} reused, {} new -> "
-              "{} runs".format(fine["fine_labels"], fine["realized_plans"],
-                               fine["reused_plans"], fine["new_plans"],
-                               fine["new_runs"]))
+        print_coarse_finalisation(result)
     elif args.action == "finalise-fine":
         result = finalise_fine(layout, config, runtime)
         for record in result["retained"]:
