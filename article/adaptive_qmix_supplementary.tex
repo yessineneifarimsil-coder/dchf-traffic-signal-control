@@ -1,0 +1,395 @@
+% =====================================================================
+% Supplementary material -- adaptive-QMIX manuscript (Paper 1)
+% RESULT-INDEPENDENT DRAFT. Same placeholder conventions as
+% adaptive_qmix_main.tex. Source of truth: frozen commit
+% 8c14f32988e92ddc6b1421d70258f5fbd2f2cc4d and Protocol Amendments 001
+% and 002 (revised). The historical DCHF supplement (supplementary.tex)
+% is preserved unchanged.
+% =====================================================================
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage[inline]{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.15}
+\newcommand{\TBD}[1]{\textcolor{red}{\texttt{\detokenize{#1}}}}
+\newcommand{\Jp}{J_{\mathrm{primary}}}
+\newcommand{\suppsec}[1]{\section*{#1}\addcontentsline{toc}{section}{#1}}
+
+\title{Supplementary Material for\\
+\emph{Adaptive Cooperative Traffic Signal Control with QMIX under
+Short-Interval Green-Duration Decisions}}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\noindent This supplement gives the exact specifications behind the
+main paper: the executor and its timing identities (S-1), the network
+and lane sets (S-2), traffic generation and random-number derivation
+(S-3), vehicle accounting and the reward (S-4), the learning procedure
+(S-5), the pretimed baseline search and its amendments (S-6), run
+validity (S-7), the statistical procedure (S-8), behavioural metrics
+(S-9), coordination diagnostics (S-10), provenance and chronology (S-11),
+and result tables to be completed (S-12).
+
+% ---------------------------------------------------------------------
+\suppsec{S-1\quad Executor specification and timing identities}
+% ---------------------------------------------------------------------
+
+Both intersections share one decision clock with $\Delta t=5$~s. Let
+$\phi_i\in\{H,V\}$ be the logical phase of intersection $i$ and $g_i$ its
+elapsed green in seconds at a decision instant. Initially $\phi_i=H$ and
+$g_i=0$ at $t=0$, and the first decision is taken at $t=0$. For each
+decision:
+\begin{itemize}
+\item \textsc{extend}: the green of $\phi_i$ is shown for 5~s and
+$g_i\leftarrow g_i+5$;
+\item \textsc{switch}: the yellow of $\phi_i$ is shown for 3~s, then the
+green of $\bar\phi_i$ for 2~s; afterwards $\phi_i\leftarrow\bar\phi_i$
+and $g_i\leftarrow 2$.
+\end{itemize}
+Consequently a green entered by switching and extended $k\geq0$ times
+lasts $2+5k$~s; the initial green lasts $5k$~s, $k\geq0$; a complete
+H--V sequence of two greens entered by switching lasts $10+5(k_H+k_V)$~s;
+and the time between phase changes at J1 and J2 is a multiple of 5~s.
+Every change of phase is preceded by exactly 3~s of yellow, with no
+all-red. The specification forbids a cycle length, an offset, a minimum
+green and a maximum green as parameters of the primary controller. A
+minimum-green wrapper would be a separate specification and is not
+implemented. The specification is hashed
+(\texttt{primary-adaptive-semantics-1.0}; see the provenance table of the
+main paper).
+
+% ---------------------------------------------------------------------
+\suppsec{S-2\quad Network and lane sets}
+% ---------------------------------------------------------------------
+
+The nominal junction spacing is 300~m. The simulated lane lengths are
+279.2~m for the central link in each direction, 289.6~m for the outer
+main-corridor links and 189.6~m for all side links; the implementation
+checks each length against these values at start-up (tolerance
+0.001~m). Table~\ref{tab:lanes} lists the lanes used by the observation
+and by the pressure controllers.
+
+\begin{table}[!htbp]
+\centering
+\caption{Lane sets per intersection (SUMO lane identifiers).}
+\label{tab:lanes}
+\small
+\begin{tabularx}{\textwidth}{@{}lL{3.4cm}Y@{}}
+\toprule
+ & J1 & J2 \\
+\midrule
+H incoming & \texttt{E0\_0/1}, \texttt{-E1\_0/1} & \texttt{E1\_0/1}, \texttt{E2\_0/1} \\
+V incoming & \texttt{E4\_0/1}, \texttt{E5\_0/1} & \texttt{E6\_0/1}, \texttt{E7\_0/1} \\
+H outgoing & \texttt{E1\_0/1}, \texttt{-E0\_0/1} & \texttt{-E1\_0/1}, \texttt{-E2\_0/1} \\
+V outgoing & \texttt{-E4\_0/1}, \texttt{-E5\_0/1} & \texttt{-E6\_0/1}, \texttt{-E7\_0/1} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Max Pressure and P5 use the straight-through lane pairs (incoming lane,
+receiving lane) of each movement, written out explicitly and checked
+against the network connectivity at start-up. Their counts are the
+number of vehicles on each lane, not the halting count, occupancy, the
+QMIX observation or the reward.
+
+% ---------------------------------------------------------------------
+\suppsec{S-3\quad Traffic generation and random-number derivation}
+% ---------------------------------------------------------------------
+
+For each of the six streams (WE 900, EW 700, and four side streams of
+300 vehicles), the departure seconds are drawn independently and
+uniformly from $\{0,1,\dots,3599\}$ by a PCG64 generator seeded with a
+\texttt{SeedSequence} over the experiment entropy, the
+traffic-manifest namespace, the family code, the seed, the manifest
+index and the stream rank. The family codes are: training 10,
+development 20, benchmark design 30, benchmark validation 40, learner
+validation 50, final test 60. Records are ordered by departure second,
+then stream, then rank within stream, and every manifest has exactly
+2{,}800 unique vehicles. The per-episode SUMO seed is derived from the
+same identifiers in a separate namespace and folded into SUMO's signed
+32-bit range. Learner randomness uses separate namespaces for the
+initialization of each local network, the QMIX mixer, the two
+exploration streams and replay sampling. Each exploration stream
+consumes two draws per agent and decision whether or not the random
+action is used, so random-number consumption is identical across
+methods.
+
+% ---------------------------------------------------------------------
+\suppsec{S-4\quad Vehicle accounting and reward}
+% ---------------------------------------------------------------------
+
+A ledger tracks every scheduled vehicle as future, due-but-pending,
+active, completed or exceptional (for example a teleport or an
+unexpected disappearance). The network is \emph{cleared} when every
+scheduled vehicle is completed and SUMO reports no remaining expected
+vehicles. The reward of Eq.~(\ref{eq:reward_s}) is accumulated second by
+second within each 5~s block:
+\begin{equation}
+r_k=-\sum_{\tau=5k+1}^{5k+5}\Bigl[\#\{v\ \text{active}: \mathrm{speed}_v(\tau)\leq0.1\}
++\#\{v: \text{scheduled departure}\leq\tau,\ \text{not inserted}\}\Bigr].
+\label{eq:reward_s}
+\end{equation}
+
+% ---------------------------------------------------------------------
+\suppsec{S-5\quad Learning procedure}
+% ---------------------------------------------------------------------
+
+\noindent\textbf{Procedure S-5 (official training run; identical for
+QMIX, VDN and IDQN).}
+\begin{enumerate}[leftmargin=1.2cm,label=\arabic*.]
+\item Initialize the local networks from seed-derived streams, which are
+identical across methods; QMIX also initializes its mixer. Copy the
+online networks to the target networks; set $t\gets0$, $e\gets0$.
+\item While $t<360{,}000$: load the training manifest with index $e$,
+reset the simulation and observe $(o_1,o_2)$ and $s$. Then repeat:
+\begin{enumerate}[label=(\alph*)]
+\item $\varepsilon\gets1.0-0.95\cdot\min(t,250{,}000)/250{,}000$;
+\item each agent takes its greedy local action, replaced with
+probability $\varepsilon$ by a random action from its own stream;
+\item execute 5~s; receive $r$, $(o'_1,o'_2)$, $s'$ and the flags
+terminated, timeout and budget; store the joint transition; $t\gets t+1$;
+\item if $t>5{,}000$: sample 256 transitions and perform one Double-DQN
+update; hard-copy the targets every 500 updates;
+\item if $t$ is a preregistered checkpoint, save the checkpoint;
+\end{enumerate}
+until the network clears, the 7{,}200~s cap is reached, or
+$t=360{,}000$. Set $e\gets e+1$.
+\end{enumerate}
+
+The bootstrap mask uses the terminated flag only. Timeout and budget
+truncation are stored as non-terminal, and the discount is
+$\gamma^{\Delta t/5}$ with $\Delta t=5$~s. A transition without a valid
+next observation is never stored. At the end of a full-budget run the
+number of learner updates must equal 355{,}000, or the run is rejected.
+
+% ---------------------------------------------------------------------
+\suppsec{S-6\quad Pretimed baseline search and amendments}
+% ---------------------------------------------------------------------
+
+\paragraph{Plan construction} For cycle $C$ and split $f_H$ (in
+thousandths), $g_H=\mathrm{round\_half\_up}\bigl(f_H(C-6)\bigr)$ computed in
+exact decimal arithmetic, and $g_V=C-6-g_H$. A plan is admissible for
+the classical search if $g_H\geq5$ and $g_V\geq5$. This rule applies to
+the classical search only.
+
+\paragraph{Coarse grids} Original: $C\in\{40,\dots,140\}$ in 10~s steps,
+$f_H\in\{0.30,\dots,0.75\}$ in 0.05 steps, $\Delta\in\{0,5,\dots\}$ with
+$\Delta<C$ (1{,}980 labels, all admissible). Lower-cycle audit (Amendment
+001): $C\in\{20,25,30,35\}$ with the same splits and offset rule (208
+admissible labels). Structural-floor audit (Amendment 002):
+$C\in\{16,17,18,19\}$ with the same splits and offset rule, which gives
+$\Delta\in\{0,5,10,15\}$ for each of these cycles
+(Table~\ref{tab:floor}).
+
+\begin{table}[!htbp]
+\centering
+\caption{Structural-floor audit grid (structural counts; no results).}
+\label{tab:floor}
+\small
+\begin{tabular}{@{}cccll@{}}
+\toprule
+$C$ (s) & offsets $\Delta$ (s) & admissible labels & realized plans & $(g_H,g_V)$ (s) \\
+\midrule
+16 & 0, 5, 10, 15 & 8 & 4 & (5,5) \\
+17 & 0, 5, 10, 15 & 12 & 8 & (5,6), (6,5) \\
+18 & 0, 5, 10, 15 & 20 & 12 & (5,7), (6,6), (7,5) \\
+19 & 0, 5, 10, 15 & 28 & 16 & (5,8), (6,7), (7,6), (8,5) \\
+\midrule
+total & & 68 & 40 & 200 design runs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Realized-plan identity} The executor receives only
+$(C,g_H,g_V,\Delta\bmod C)$. Labels with the same realized key are one
+candidate. Every original label at $C\geq40$~s is a distinct plan
+(1{,}980 coarse and 621 original fine labels, 2{,}547 in their union),
+so realized-plan identity changes nothing in the original search. The
+208 lower-cycle labels are 195 plans, and the 68 floor labels are 40
+plans.
+
+\paragraph{Fine neighbourhood} Around a centre $(C_0,f_0,\Delta_0)$:
+$C\in\{C_0-10,\dots,C_0+10\}$ in 5~s steps within $[16,140]$ (originally
+$[40,140]$); $f\in\{f_0-0.05,\dots,f_0+0.05\}$ in 0.025 steps within
+$[0.25,0.80]$; $\Delta\in\{\Delta_0-10,\dots,\Delta_0+10\}$ in 1~s steps,
+reduced modulo the candidate cycle; admissibility as above. Under
+Amendment 002 the neighbourhood is generated around every label of the
+combined coarse grid (1{,}980 + 208 + 68 labels) that realizes a winning
+plan. The union is then deduplicated by realized plan. The resulting
+fine-search size is \TBD{TBD_AFTER_FINALISE_COARSE}.
+
+\paragraph{Canonical naming and tie-breaks} A realized plan is named by
+$\bigl(C,s^\ast,\Delta\bigr)$, where $s^\ast$ is the smallest integer
+split in thousandths with $\mathrm{round\_half\_up}\bigl(s^\ast(C-6)/1000\bigr)=g_H$.
+For fixed $C$, $g_H$ is non-decreasing in the split, so $s^\ast$ is
+strictly increasing in $g_H$. Since $g_V=C-6-g_H$, lexicographic order of
+canonical names equals lexicographic order of $(C,g_H,g_V,\Delta)$. The
+frozen ranking tie-break (mean design $\Jp$, then name) and selection
+tie-break (mean validation $\Jp$, time loss, cycle, then name) therefore
+depend only on the realized plan. The driver re-sorts on the realized
+key at every ranking and stops if the orders differ.
+
+\paragraph{Replication gate (Amendment 001)} Five original candidates
+were re-run through the lower-cycle audit path on the five design seeds.
+Validity had to be identical, and mean $\Jp$ and mean time loss had to
+agree within $10^{-12}$; all five candidates passed.
+
+\paragraph{Evidence reuse} Each evaluated label has exactly one evidence
+root, fixed by the grid that defined it. A run is reused only if its
+sealed completion record verifies against the current manifests and the
+full environment identity (source commit, configuration and network
+hashes, campaign and log-schema versions), and if its run manifest
+records the frozen commit, a clean working tree and one common software
+stack. Labels of one realized plan that both have runs must agree per
+seed within $10^{-12}$. A new run whose episode ends in
+\textsc{clearance\_failure} receives a sealed terminal record and is not
+re-simulated.
+
+% ---------------------------------------------------------------------
+\suppsec{S-7\quad Run validity gates}
+% ---------------------------------------------------------------------
+
+A run is admissible only if: all 2{,}800 scheduled vehicles are
+accounted for; the status is cleared; there is no unexpected
+disappearance; there is no unresolved teleport or accounting error; the
+one-second evaluation log is complete; scientific analysis is permitted
+for the run kind; and $\Jp$ and the required secondary outcomes (time
+loss, travel time, waiting time, departure delay, stops) are finite. A
+failed run contributes NaN and is never imputed. The statistical code
+refuses non-finite inputs.
+
+% ---------------------------------------------------------------------
+\suppsec{S-8\quad Statistical procedure}
+% ---------------------------------------------------------------------
+
+\noindent\textbf{Procedure S-8 (paired crossed two-factor bootstrap for
+one comparison).}
+\begin{enumerate}[leftmargin=1.2cm,label=\arabic*.]
+\item Form $D\in\mathbb R^{10\times10}$ with rows for training seeds
+101--110 and columns for final seeds 3001--3010.
+\item Seed a fixed generator from the protocol namespace and the matrix
+shape.
+\item For $b=1,\dots,10{,}000$: draw 10 row indices $R$ and,
+independently, 10 column indices $K$ with replacement, and set
+$m_b=\frac{1}{100}\sum_{r\in R}\sum_{c\in K}D_{rc}$, keeping
+multiplicities (Cartesian product).
+\item The 95\% interval is the 2.5th--97.5th percentile range of
+$\{m_b\}$; the decision uses ``upper limit $<0$''.
+\end{enumerate}
+
+Additional quantities: $\bar D_{i\cdot}$ (per training seed);
+$d_z=\overline{\bar D_{i\cdot}}/\mathrm{sd}(\bar D_{i\cdot})$ with the
+$n-1$ denominator; the fraction of $i$ with $\bar D_{i\cdot}<0$; and the
+training-success count, meaning runs completed under contract with a
+validly selected checkpoint, with a 95\% Wilson score interval.
+% TODO-LITERATURE: bootstrap, crossed-design resampling, d_z and Wilson
+% references (see main paper).
+
+% ---------------------------------------------------------------------
+\suppsec{S-9\quad Behavioural metrics}
+% ---------------------------------------------------------------------
+
+A row of the one-second phase log stamped $t$ describes $[t-1,t)$. A
+\emph{green spell} of movement $m$ is a maximal run of seconds with
+actual phase $m$. The spell in progress at $t=0$ counts as a service
+spell. A \emph{non-green spell} (service deprivation) is a maximal run of
+seconds without green for $m$, including the conflicting green and the
+yellow; spells still open at the end of the window are marked
+right-censored. The \emph{emergent cycle} is the interval between
+consecutive H-green starts at the same intersection. Reported per
+intersection and movement over the demand window $[0,3600)$~s, with the
+full episode as secondary: green-spell distribution (including the count
+and share of 2~s greens); non-green spell mean, median, 95th percentile
+and maximum; services per hour; green share among green time; yellow
+fraction of elapsed time; queue 95th percentile and maximum; switch
+count, rate and fraction of decisions (not applicable to pretimed
+plans); and emergent-cycle mean, median, 95th percentile and standard
+deviation. No numeric starvation or flickering threshold is defined
+(see the behavioural-review subsection of the main paper).
+
+% ---------------------------------------------------------------------
+\suppsec{S-10\quad Coordination diagnostics}
+% ---------------------------------------------------------------------
+
+Let $g_i(t)\in\{0,1\}$ indicate H green at intersection $i$.
+\begin{itemize}
+\item Phase cross-correlation:
+$\rho(\ell)=\mathrm{corr}\bigl(g_1(t),g_2(t+\ell)\bigr)$ for
+$|\ell|\leq120$~s; a positive $\ell$ means that J2 follows J1.
+\item Green-start lag: for each H-green start at J1, the time to the
+first H-green start at J2 at or after it (and symmetrically for EW).
+\item GAD50: for each direction on the central link, the fraction of
+vehicle crossings of a virtual detector 50~m upstream of the downstream
+stop line (at 229.2~m along the 279.2~m lane) that occur during
+downstream H green.
+\item Projected arrival on green: detector crossings projected to the
+stop line at the free-flow speed of 13.89~m/s. It is a free-flow proxy,
+never an observed arrival-on-green measure.
+\item Downstream stops of vehicles that crossed the detector.
+\end{itemize}
+Rolling versions use 300~s windows advanced every 60~s. Because the
+learned controllers act on a common 5~s grid, lags are interpreted at
+5~s resolution. \TBD{TBD_AFTER_FINAL_EVALUATION}.
+
+% ---------------------------------------------------------------------
+\suppsec{S-11\quad Provenance and chronology}
+% ---------------------------------------------------------------------
+
+\begin{table}[!htbp]
+\centering
+\caption{Protocol chronology (to be completed with dates and hashes).}
+\label{tab:chronology}
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}L{4.6cm}Y@{}}
+\toprule
+Event & Record \\
+\midrule
+Frozen implementation & commit \texttt{8c14f32988e92ddc6b1421d70258f5fbd2f2cc4d} \\
+Original classical design, validation and freeze & fixed-offset and fixed-timing tracks; fixed-timing winners on the $C=40$~s bound \\
+QMIX seed 101 (pre-amendment) & launched before Amendment 001 was documented; no checkpoint selected; excluded from inference \\
+Amendment 001 (lower-cycle audit) & SHA-256 \texttt{edb9ec98281b6a9588fae96cfdf982eb90984b830b7fa815ad058160b3ba020a}; replication gate passed; fixed-timing track reopened \\
+Amendment 002, first draft & withdrawn before execution (label-based deduplication); archived \\
+Amendment 002 (revised), sealed & \TBD{TBD_AFTER_FINALISE_COARSE} \\
+Structural-floor audit & \TBD{TBD_AFTER_FINALISE_COARSE} \\
+Amended baseline freeze & \TBD{TBD_AFTER_FINALISE_COARSE} \\
+Official training (30 runs) & \TBD{TBD_AFTER_LEARNER_TRAINING} \\
+Seed-101 checkpoint-hash comparison & \TBD{TBD_AFTER_LEARNER_TRAINING} \\
+Checkpoint freeze and behavioural reviews & \TBD{TBD_AFTER_LEARNER_VALIDATION} \\
+Pre-final audit, final-test unlock, final evaluation & \TBD{TBD_AFTER_FINAL_EVALUATION} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------
+\suppsec{S-12\quad Result tables to be completed}
+% ---------------------------------------------------------------------
+
+\begin{itemize}
+\item Combined coarse ranking (top realized plans with aliases, active
+constraints, design $\Jp$ labelled as selection-optimistic), fine-search
+counts per winner and in total, validation table of the ten finalists:
+\TBD{TBD_AFTER_FINALISE_COARSE}.
+\item Checkpoint-validation matrices ($14\times5$ per method and seed) and
+selected checkpoints: \TBD{TBD_AFTER_LEARNER_VALIDATION}.
+\item Per-seed final-test $\Jp$ matrices, secondary outcomes, behavioural
+distributions and coordination diagnostics:
+\TBD{TBD_AFTER_FINAL_EVALUATION}.
+\item High-demand slice: \TBD{OPTIONAL_ROBUSTNESS_AFTER_PRIMARY_GATE}.
+\end{itemize}
+
+\end{document}
