@@ -9,19 +9,26 @@ REM
 REM Ordre des etapes (chacune verifie la precedente et s'arrete sinon) :
 REM   verifier                 empreintes, depot fige, tests simules (aucune ecriture sur D:)
 REM   plan                     lecture seule : reconstitution, domaines, comptes, empreinte
-REM   sumo                     verifications SUMO reelles + mesure locale -> RACINE\checks
+REM   sumo                     verifications SUMO reelles -> RACINE\checks ; la mesure
+REM                            (measure.json) n'est ecrite que si tout est complet et reussi
 REM   plan                     de nouveau : estimations fondees sur la mesure locale
 REM   preparer EMPREINTE_PLAN  espace disque, plan.json scelle
 REM   grossier                 classement grossier (executions reutilisees verifiees),
 REM                            5 gagnants, ordre fin scelle, nombre EXACT d'executions fines
 REM   repro                    re-simulation des 5 gagnants (25 executions, controle 1e-12)
-REM   fin EMPREINTE_GROSSIER   executions fines nouvelles (apres lecture du nombre exact)
+REM   fin EMPREINTE_GROSSIER   executions fines nouvelles (apres lecture du nombre exact) ;
+REM                            refusee avant toute simulation si la reproduction est
+REM                            absente, incomplete ou differente
 REM   finaliser-fin            controle de reproduction, top 10
 REM   validation               10 x 5 executions sur 2101-2105
 REM   selection                regle figee ; plan min7 scelle avec parametres et empreintes
 REM   preparer-comparaison     manifestes 9301-9305 (identiques aux pilotes), 60 cellules
 REM   comparaison              A 5 + B 5 + QMIX historiques 50 = 60 evaluations
-REM   avancement               evaluations enregistrees / 60
+REM   avancement               evaluations enregistrees / 60 et cellules en attente
+REM   adopter                  apres une interruption seulement : scelle un resultat ecrit
+REM                            sans marqueur si sa provenance est verifiee ; refuse sinon ;
+REM                            ne simule jamais, ne modifie aucun fichier existant ;
+REM                            relancer ensuite l'etape interrompue (aucune simulation)
 REM   synthese                 tableaux par trafic, moyennes, ecarts apparies, pilotes lus
 REM
 REM Variables (facultatives, a definir avant l'appel) :
@@ -52,6 +59,7 @@ if /i "%~1"=="selection" goto selection
 if /i "%~1"=="preparer-comparaison" goto preparer_comparaison
 if /i "%~1"=="comparaison" goto comparaison
 if /i "%~1"=="avancement" goto avancement
+if /i "%~1"=="adopter" goto adopter
 if /i "%~1"=="synthese" goto synthese
 echo Etape inconnue ou absente : "%~1". Voir l'en-tete de ce fichier.
 exit /b 2
@@ -123,6 +131,10 @@ exit /b %ERRORLEVEL%
 
 :avancement
 "%PYTHON%" -B "%DRIVER%" progress %COMMON%
+exit /b %ERRORLEVEL%
+
+:adopter
+"%PYTHON%" -B "%DRIVER%" adopt-results %COMMON%
 exit /b %ERRORLEVEL%
 
 :synthese

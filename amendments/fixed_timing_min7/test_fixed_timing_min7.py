@@ -202,11 +202,17 @@ def _write_tripinfo(directory, j_value, arrived=2800):
         handle.write("</tripinfos>\n")
 
 
+class KeyboardInterruptLike(RuntimeError):
+    """An interruption between the metrics and the outcome marker."""
+
+
 class StubRunner(object):
-    def __init__(self, fail=(), drift=None):
+    def __init__(self, fail=(), drift=None, tripinfo=(), interrupt_after_metrics=()):
         self.calls = []
         self.fail = set(fail)
         self.drift = drift or {}
+        self.tripinfo = set(tripinfo)
+        self.interrupt_after_metrics = set(interrupt_after_metrics)
         self.hashes = {}
 
     def _sha(self, path):
@@ -234,45 +240,87 @@ class StubRunner(object):
             "phase_parameters": dict(plan), "sumo_seed": int(sumo_seed),
             "manifest_csv_sha256": self._sha(manifest_csv_path),
             "route_xml_sha256": self._sha(route_xml_path),
+            "baseline_config_sha256": config["_config_sha256"],
         }
-        if family == M.DEVELOPMENT_FAMILY:
+        # As the frozen runner: run_manifest first, tripinfo, then the metrics.
+        with open(os.path.join(output_directory, A.RUN_MANIFEST_FILENAME), "w") as handle:
+            json.dump({"git_commit": A.FROZEN_COMMIT, "git_status_porcelain": "",
+                       "git_describe": "8c14f32", "runtime": dict(RUNTIME),
+                       "controller": controller, "phase_parameters": dict(plan),
+                       "traffic_family": family, "traffic_seed": int(seed),
+                       "sumo_seed": int(sumo_seed),
+                       "route_xml_sha256": self._sha(route_xml_path),
+                       "network_sha256": config["network"]["sha256"]},
+                      handle, sort_keys=True)
+        if family == M.DEVELOPMENT_FAMILY or P.candidate_key(plan) in self.tripinfo:
             _write_tripinfo(output_directory, value, 2800 if cleared else 2700)
         with open(os.path.join(output_directory, campaign.METRICS_FILENAME), "w") as handle:
             json.dump(metrics, handle, sort_keys=True)
-        with open(os.path.join(output_directory, A.RUN_MANIFEST_FILENAME), "w") as handle:
-            json.dump({"git_commit": A.FROZEN_COMMIT, "git_status_porcelain": "",
-                       "git_describe": "8c14f32", "runtime": dict(RUNTIME)},
-                      handle, sort_keys=True)
+        if P.candidate_key(plan) in self.interrupt_after_metrics:
+            raise KeyboardInterruptLike("interrupted after the metrics, before the marker")
         return metrics
 
 
 class StubEvaluator(object):
     """Stands in for the frozen evaluate_checkpoint.py subprocess."""
 
-    def __init__(self, fail=(), crash=()):
+    def __init__(self, network_sha256, fail=(), crash=(), interrupt_after_metrics=(),
+                 wrong_checkpoint=()):
         self.calls, self.fail, self.crash = [], set(fail), set(crash)
+        self.network_sha256 = network_sha256
+        self.interrupt_after_metrics = set(interrupt_after_metrics)
+        self.wrong_checkpoint = set(wrong_checkpoint)
 
     def __call__(self, layout, cell, prefix, sumo_seed, directory):
         self.calls.append(cell["id"])
         if cell["id"] in self.crash:
             self.crash.discard(cell["id"])
+            with open(os.path.join(directory, "lane_states.csv"), "w") as handle:
+                handle.write("partial log of an attempt that crashed\n")
             raise RuntimeError("simulated crash before any result")
         cleared = cell["id"] not in self.fail
-        value = 4.0 + 0.1 * (int(cell["model"].split("seed")[1][:3]) - 100) + 0.01 * (
-            cell["traffic_seed"] - 9300)
+        training_seed = int(cell["model"].split("seed")[1][:3])
+        value = 4.0 + 0.1 * (training_seed - 100) + 0.01 * (cell["traffic_seed"] - 9300)
+        with open(os.path.join(directory, A.RUN_MANIFEST_FILENAME), "w") as handle:
+            json.dump({"git_commit": A.FROZEN_COMMIT, "git_status_porcelain": "",
+                       "git_describe": "8c14f32", "runtime": dict(RUNTIME),
+                       "checkpoint_sha256": "0" * 64 if cell["id"] in self.wrong_checkpoint
+                       else cell["checkpoint_sha256"],
+                       "traffic_seed": cell["traffic_seed"], "sumo_seed": int(sumo_seed),
+                       "route_manifest_sha256": _sha(prefix + ".csv"),
+                       "run_kind": "development_evaluation", "method": "qmix",
+                       "training_seed": training_seed,
+                       "network_sha256": self.network_sha256}, handle, sort_keys=True)
         metrics = {"clearance_status": "CLEARED" if cleared else "CLEARANCE_FAILURE",
                    "J_primary_valid": cleared,
                    search.PRIMARY_FIELD: value if cleared else float("nan"),
                    search.TIME_LOSS_FIELD: value + 2.0 if cleared else float("nan"),
                    "completed_count": 2800 if cleared else 2650,
-                   "traffic_seed": cell["traffic_seed"], "method": "qmix"}
+                   "traffic_seed": cell["traffic_seed"], "method": "qmix",
+                   "training_seed": training_seed}
         _write_tripinfo(directory, value, 2800 if cleared else 2650)
         with open(os.path.join(directory, campaign.METRICS_FILENAME), "w") as handle:
             json.dump(metrics, handle, sort_keys=True)
+        if cell["id"] in self.interrupt_after_metrics:
+            self.interrupt_after_metrics.discard(cell["id"])
+            raise KeyboardInterruptLike("interrupted after the metrics, before the marker")
         return metrics
 
 
 class MetricTests(unittest.TestCase):
+
+    def test_a_j_declared_valid_must_be_finite_and_match_tripinfo(self):
+        valid = {"clearance_status": "CLEARED", "J_primary_valid": True,
+                 search.PRIMARY_FIELD: 3.25}
+        self.assertEqual(M.j_problems(valid, 3.25), [])
+        self.assertTrue(M.j_problems(valid, 4.0))                      # differs
+        self.assertTrue(M.j_problems(valid, None))                     # no tripinfo
+        for bad in (float("nan"), None, float("inf")):
+            self.assertTrue(M.j_problems(dict(valid, **{search.PRIMARY_FIELD: bad}), 3.25))
+        self.assertTrue(M.j_problems(dict(valid, clearance_status="CLEARANCE_FAILURE"), 3.25))
+        invalid = {"clearance_status": "CLEARANCE_FAILURE", "J_primary_valid": False,
+                   search.PRIMARY_FIELD: float("nan")}
+        self.assertEqual(M.j_problems(invalid, None), [])              # never imputed
 
     def test_j_is_recomputed_from_tripinfo_and_invalid_if_any_trip_is_unfinished(self):
         directory = tempfile.mkdtemp()
@@ -285,6 +333,84 @@ class MetricTests(unittest.TestCase):
             self.assertIsNone(M.recompute_j(directory))
         finally:
             shutil.rmtree(directory)
+
+
+class SignalStringTests(unittest.TestCase):
+    """sumo_checks_min7.check_schedule against the frozen tlLogic, without SUMO."""
+
+    @classmethod
+    def setUpClass(cls):
+        import sumo_checks_min7 as SC
+        cls.SC = SC
+        cls.config = load_config(os.path.join(M.REPOSITORY_ROOT, "config", "adaptive_qmix",
+                                              "baselines_300m_medium.json"))
+        cls.programs = SC.load_programs(M.REPOSITORY_ROOT, cls.config)
+
+    def _seconds(self, plan, duration=200):
+        """What SUMO holds when the frozen executor runs the plan correctly."""
+        phase_map = self.config["network"]["phase_map"]
+        offsets = {"J1": 0, "J2": plan["offset_s"] % plan["cycle_s"]}
+        seconds = []
+        for t in range(duration):
+            row = {"time": float(t)}
+            for tl, offset in offsets.items():
+                index, _actual = self.SC.expected_phase(plan, phase_map, t, offset)
+                row[tl] = (index, self.programs[tl]["0"][index], "0")
+            seconds.append(row)
+        return seconds
+
+    def test_frozen_tl_logic_is_read_from_the_frozen_network(self):
+        self.assertEqual(sorted(self.programs), ["J1", "J2"])
+        states = self.programs["J1"]["0"]
+        phase_map = self.config["network"]["phase_map"]
+        self.assertIn("G", states[phase_map["H_GREEN"]])
+        self.assertIn("G", states[phase_map["V_GREEN"]])
+        self.assertIn("y", states[phase_map["H_TO_V_YELLOW"]])
+        self.assertIn("y", states[phase_map["V_TO_H_YELLOW"]])
+
+    def test_a_correct_run_passes(self):
+        for key in ((20, 500, 10), (25, 650, 0), (19, 577, 9)):
+            plan = P.make_plan(*key)
+            problems, summary = self.SC.check_schedule(plan, self.config, self._seconds(plan),
+                                                       5, self.programs)
+            self.assertEqual(problems, [], key)
+            self.assertEqual(summary["J1"]["signal_string_mismatches"], 0)
+
+    def test_correct_index_but_wrong_signal_string_fails(self):
+        plan = P.make_plan(20, 500, 10)
+        seconds = self._seconds(plan)
+        green = self.config["network"]["phase_map"]["H_GREEN"]
+        target = [r for r in seconds if r["J2"][0] == green][3]
+        target["J2"] = (green, "r" * 16, "0")              # index right, all red
+        problems, summary = self.SC.check_schedule(plan, self.config, seconds, 7, self.programs)
+        self.assertEqual(summary["J2"]["schedule_mismatches"], 0)
+        self.assertEqual(summary["J2"]["signal_string_mismatches"], 1)
+        self.assertTrue(any("signal string" in p and "rrrrrrrrrrrrrrrr" in p for p in problems))
+        # one movement wrong only (a G turned to r), same index
+        seconds = self._seconds(plan)
+        row = [r for r in seconds if r["J1"][0] == green][0]
+        state = row["J1"][1]
+        first_green = state.index("G")
+        row["J1"] = (green, state[:first_green] + "r" + state[first_green + 1:], "0")
+        problems, _ = self.SC.check_schedule(plan, self.config, seconds, 7, self.programs)
+        self.assertTrue(any("J1" in p and "signal string" in p for p in problems))
+
+    def test_another_program_fails(self):
+        plan = P.make_plan(20, 500, 10)
+        seconds = self._seconds(plan)
+        seconds[5]["J1"] = seconds[5]["J1"][:2] + ("off",)
+        problems, _ = self.SC.check_schedule(plan, self.config, seconds, 7, self.programs)
+        self.assertTrue(any("program" in p for p in problems))
+
+    def test_another_network_file_is_refused(self):
+        config = dict(self.config, network=dict(self.config["network"], sha256="0" * 64))
+        with self.assertRaises(M.Min7Error):
+            self.SC.load_programs(M.REPOSITORY_ROOT, config)
+
+
+def _read_text(path):
+    with open(path) as handle:
+        return handle.read()
 
 
 def _snapshot(root):
@@ -442,6 +568,30 @@ class EndToEnd(unittest.TestCase):
             A.current_runtime = saved
         return code, lines
 
+    def _local_checks(self, report_changes=None, measure_changes=None, run_problem=None):
+        """A report of the local SUMO checks, as sumo_checks_min7.py writes it."""
+        checks = os.path.join(self.layout.root, M.CHECKS_DIRECTORY)
+        if not os.path.isdir(checks):
+            os.makedirs(checks)
+        measurement = {"seconds_per_run": 40.0, "bytes_per_run": 30e3,
+                       "seconds_per_qmix_evaluation": 60.0, "measured_on": "this machine",
+                       "date": "2026-10-28 10:00:00"}
+        runs = dict((name, {"problems": []}) for name in M.LOCAL_CHECK_RUNS)
+        if run_problem:
+            runs["min7_cycle_bound"]["problems"] = [run_problem]
+        report = {"verdict": "OK", "complete": True, "runs": runs,
+                  "measurement": dict(measurement), "driver_sha256": M.DRIVER_SHA256,
+                  "a002_driver_sha256": M.A002_DRIVER_SHA256,
+                  "sumo_checks_sha256": M.sha256_file(M.SUMO_CHECKS_PATH),
+                  "frozen_commit": M.FROZEN_COMMIT, "runtime": dict(RUNTIME),
+                  "network_sha256": self.config["network"]["sha256"]}
+        report.update(report_changes or {})
+        measurement.update(measure_changes or {})
+        with open(os.path.join(checks, M.LOCAL_CHECK_REPORT), "w") as handle:
+            json.dump(report, handle)
+        with open(os.path.join(checks, "measure.json"), "w") as handle:
+            json.dump(measurement, handle)
+
     def _prepare(self):
         """Through the command line: plan, refusals, then prepare."""
         code, lines = self._cli("plan")
@@ -451,16 +601,37 @@ class EndToEnd(unittest.TestCase):
         self.assertTrue(any("NON mesurees" in l for l in lines))
         code, lines = self._cli("prepare", "--approved-plan", fingerprint)
         self.assertEqual(code, 2)                       # no local measurement yet
-        checks = os.path.join(self.layout.root, M.CHECKS_DIRECTORY)
-        os.makedirs(checks)
-        with open(os.path.join(checks, "measure.json"), "w") as handle:
-            json.dump({"seconds_per_run": 40.0, "bytes_per_run": 30e3,
-                       "seconds_per_qmix_evaluation": 60.0}, handle)
+        # Defect 5: a measurement is refused unless the local SUMO checks that
+        # produced it are complete, passed, and match this code and stack.
+        refused = (
+            {"report_changes": {"verdict": "ECHEC"},
+             "run_problem": "J1: 12 seconds differ from the schedule"},
+            {"run_problem": "J1: 140 seconds show another signal string"},   # verdict lies
+            {"report_changes": {"complete": False}},
+            {"measure_changes": {"seconds_per_run": 4.0}},
+            {"report_changes": {"runtime": dict(RUNTIME, sumo="Eclipse SUMO sumo 1.28.0")}},
+            {"report_changes": {"sumo_checks_sha256": "0" * 64}},
+            {"report_changes": {"driver_sha256": "0" * 64}},
+        )
+        for case in refused:
+            self._local_checks(**case)
+            code, lines = self._cli("prepare", "--approved-plan", fingerprint)
+            self.assertEqual(code, 2, case)
+            self.assertTrue(any(l.startswith("CONTROLES LOCAUX NON VALIDES") for l in lines))
+            self.assertFalse(os.path.exists(self.layout.plan_path), case)
+        self._local_checks(report_changes={"runs": dict(
+            (name, {"problems": []}) for name in M.LOCAL_CHECK_RUNS[:3])})
+        code, lines = self._cli("prepare", "--approved-plan", fingerprint)
+        self.assertEqual(code, 2)                       # synthetic QMIX check missing
+        self._local_checks()
         code, lines = self._cli("prepare", "--approved-plan", "0" * 64)
         self.assertEqual(code, 2)
         code, lines = self._cli("prepare", "--approved-plan", fingerprint)
         self.assertEqual(code, 0, lines)
         self.assertTrue(any("mesure locale" in l for l in lines))
+        sealed = M.read_sealed(self.layout.plan_path, "plan")
+        self.assertEqual(sealed["preparation"]["local_checks_sha256"], M.sha256_file(
+            os.path.join(self.layout.root, M.CHECKS_DIRECTORY, M.LOCAL_CHECK_REPORT)))
         code, lines = self._cli("prepare", "--approved-plan", fingerprint)
         self.assertEqual(code, 2)                       # written once
         code, lines = self._cli("prepare-comparison", "--workers", "2")
@@ -468,7 +639,24 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(M.without_options(
             ["run-fine", "--workers", "2", "--shard=1/3", "--approved-coarse", "x"],
             ("--workers", "--shard")), ["run-fine", "--approved-coarse", "x"])
+        return sealed
+
+    def _plan(self):
         return M.read_sealed(self.layout.plan_path, "plan")
+
+    def _fine_refused(self, approved, fragment):
+        """run-fine stops before any simulation, directly and with workers."""
+        stub = StubRunner()
+        with self.assertRaises(M.Min7Error) as caught:
+            M.run_stage(self.layout, self.config, M.STAGE_FINE, stub, approved_coarse=approved,
+                        runtime=RUNTIME)
+        self.assertIn(fragment, str(caught.exception))
+        self.assertEqual(stub.calls, [])
+        code, lines = self._cli("run-fine", "--workers", "2", "--approved-coarse", approved)
+        self.assertEqual(code, 1)
+        self.assertTrue(any(fragment in l for l in lines), lines)
+        self.assertFalse(os.path.exists(os.path.join(self.layout.root, "logs")))
+        self.assertFalse(os.path.exists(self.layout.runs))
 
     # Stages run in name order and build on each other.
 
@@ -535,31 +723,22 @@ class EndToEnd(unittest.TestCase):
         with self.assertRaises(M.Min7Error):
             M.finalise_coarse(self.layout, self.config, RUNTIME)
 
-    def test_04_fine_needs_the_approved_coarse_count(self):
-        with self.assertRaises(M.Min7Error):
-            M.run_stage(self.layout, self.config, M.STAGE_FINE, StubRunner(),
-                        approved_coarse="0" * 64, runtime=RUNTIME)
+    def test_04_fine_needs_the_approved_count_and_a_reproduction(self):
+        self._fine_refused("0" * 64, "--approved-coarse")
+        # Defect 2: the right approval is not enough without the reproduction.
+        self._fine_refused(M.coarse_order_seal(self.layout), "absent or incomplete")
 
-    def test_05_fine_runs_each_new_plan_once_and_records_failures_once(self):
-        order = M.read_coarse_order(self.layout, M.read_sealed(self.layout.plan_path, "plan"))
+    def test_05_reproduction_complete_and_identical_before_any_fine_run(self):
         approved = M.coarse_order_seal(self.layout)
-        stub = StubRunner(fail=[MIN7_FAILURE])
-        for shard in range(3):
-            M.run_stage(self.layout, self.config, M.STAGE_FINE, stub, shard_index=shard,
-                        shard_count=3, approved_coarse=approved, runtime=RUNTIME)
-        self.assertEqual(len(stub.calls), order["fine_new_runs"])
-        self.assertEqual(len({c[1] for c in stub.calls}), order["fine_new_plans"])
-        self.assertEqual({c[2] for c in stub.calls}, {search.DESIGN_FAMILY})
-        self.assertIn(MIN7_FAILURE, {c[1] for c in stub.calls})
-        again = StubRunner()                      # it would clear now: never asked
-        M.run_stage(self.layout, self.config, M.STAGE_FINE, again,
-                    approved_coarse=approved, runtime=RUNTIME)
-        self.assertEqual(again.calls, [])
-
-    def test_06_winners_must_reproduce_before_the_fine_ranking(self):
         drift = StubRunner(drift={((25, 12, 7, 0), 2003): 1e-9})
-        M.run_stage(self.layout, self.config, M.STAGE_REPRO, drift, runtime=RUNTIME)
+        M.run_stage(self.layout, self.config, M.STAGE_REPRO, drift, shard_index=0,
+                    shard_count=2, runtime=RUNTIME)
+        self.assertTrue(0 < len(drift.calls) < 25)
+        self._fine_refused(approved, "absent or incomplete")        # half of it
+        M.run_stage(self.layout, self.config, M.STAGE_REPRO, drift, shard_index=1,
+                    shard_count=2, runtime=RUNTIME)
         self.assertEqual(len(drift.calls), 25)
+        self._fine_refused(approved, "do not reproduce")            # one differs by 1e-9
         with self.assertRaises(M.Min7Error) as caught:
             M.finalise_fine(self.layout, self.config, RUNTIME)
         self.assertIn("do not reproduce", str(caught.exception))
@@ -570,6 +749,78 @@ class EndToEnd(unittest.TestCase):
         good = StubRunner()
         M.run_stage(self.layout, self.config, M.STAGE_REPRO, good, runtime=RUNTIME)
         self.assertEqual(len(good.calls), 1)
+
+    def _fine_run_directories(self, key):
+        plan = P.make_plan(*key)
+        return [campaign.run_directory_for(self.layout.runs, M.CONTROLLER, plan,
+                                           search.DESIGN_FAMILY, seed)
+                for seed in search.DESIGN_SEEDS]
+
+    def test_06_fine_runs_once_and_an_existing_result_is_never_rerun(self):
+        order = M.read_coarse_order(self.layout, self._plan())
+        approved = M.coarse_order_seal(self.layout)
+        candidates = [tuple(A.key_of(p)) for p in order["new_work"]
+                      if A.realized_key(p) not in (MIN7_FAILURE, (20, 7, 7, 12))]
+        interrupted, tampered = candidates[0], candidates[1]
+        stub = StubRunner(fail=[MIN7_FAILURE], tripinfo=[interrupted],
+                          interrupt_after_metrics=[interrupted])
+        for shard in range(3):
+            M.run_stage(self.layout, self.config, M.STAGE_FINE, stub, shard_index=shard,
+                        shard_count=3, approved_coarse=approved, runtime=RUNTIME)
+        self.assertEqual(len(stub.calls), order["fine_new_runs"])
+        self.assertEqual(len({c[1] for c in stub.calls}), order["fine_new_plans"])
+        self.assertEqual({c[2] for c in stub.calls}, {search.DESIGN_FAMILY})
+        self.assertIn(MIN7_FAILURE, {c[1] for c in stub.calls})
+        # Defect 3, search side. Metrics written, interrupted before the marker:
+        interrupted_dirs = self._fine_run_directories(interrupted)
+        hashes = dict((d, _sha(os.path.join(d, campaign.METRICS_FILENAME)))
+                      for d in interrupted_dirs)
+        for directory in interrupted_dirs:
+            self.assertFalse(os.path.exists(os.path.join(directory, M.OUTCOME_MARKER)))
+        # A marker that no longer verifies, on a recorded run:
+        tampered_dir = self._fine_run_directories(tampered)[0]
+        marker_path = os.path.join(tampered_dir, M.OUTCOME_MARKER)
+        completion = os.path.join(tampered_dir, campaign.MARKER_FILENAME)
+        saved = dict((p, _read_text(p)) for p in (marker_path, completion))
+        marker = json.loads(saved[marker_path])
+        marker["outcome"] = "CLEARANCE_FAILURE"
+        with open(marker_path, "w") as handle:
+            json.dump(marker, handle)
+        os.remove(completion)
+        again = StubRunner()                      # never asked for any of these
+        ledger = M.run_stage(self.layout, self.config, M.STAGE_FINE, again,
+                             approved_coarse=approved, runtime=RUNTIME)
+        self.assertEqual(again.calls, [])
+        failures = [e["failure"] for e in ledger if e.get("failure")]
+        self.assertEqual(sum("RESULT WITHOUT MARKER" in f for f in failures), 5)
+        self.assertEqual(sum("INVALID MARKER" in f for f in failures), 1)
+        with self.assertRaises(A.AmendmentError):
+            M.finalise_fine(self.layout, self.config, RUNTIME)
+        # Adoption: the five interrupted results are verified and sealed; the
+        # invalid marker is refused; no other file changes.
+        lines = []
+        self.assertEqual(M.adopt_results(self.layout, self.config, RUNTIME, lines.append), 1)
+        self.assertTrue(any(l.startswith("REFUSE") and tampered_dir in l for l in lines))
+        for directory in interrupted_dirs:
+            sealed = M.read_json(os.path.join(directory, M.OUTCOME_MARKER))
+            self.assertEqual(sealed["adopted"]["by"], "adopt-results")
+            self.assertEqual(_sha(os.path.join(directory, campaign.METRICS_FILENAME)),
+                             hashes[directory])
+        self.assertEqual(json.loads(_read_text(marker_path))["outcome"], "CLEARANCE_FAILURE")
+        # Test-only repair of the tampered marker, as a person would after
+        # inspection; then the frozen campaign records completion, no simulation.
+        for path, text in saved.items():
+            with open(path, "w") as handle:
+                handle.write(text)
+        third = StubRunner()
+        ledger = M.run_stage(self.layout, self.config, M.STAGE_FINE, third,
+                             approved_coarse=approved, runtime=RUNTIME)
+        self.assertEqual(third.calls, [])
+        self.assertEqual([e for e in ledger if e.get("failure")], [])
+        for directory in interrupted_dirs:
+            self.assertTrue(os.path.isfile(os.path.join(directory, campaign.MARKER_FILENAME)))
+        lines = []
+        self.assertEqual(M.adopt_results(self.layout, self.config, RUNTIME, lines.append), 0)
 
     def test_07_validation_is_closed_before_the_fine_stage_is_sealed(self):
         with self.assertRaises(M.Min7Error):
@@ -613,23 +864,61 @@ class EndToEnd(unittest.TestCase):
         with self.assertRaises(M.Min7Error):
             M.prepare_comparison(self.layout, self.config, runtime=RUNTIME)
 
-    def test_11_comparison_resumes_without_duplicates(self):
+    def test_11_comparison_never_resubmits_an_existing_result(self):
+        failed = "C_qmix_seed103_t300103__traffic9302"
+        crashed = "C_qmix_seed105_t300105__traffic9304"
+        adoptable = "C_qmix_seed106_t300106__traffic9301"
+        foreign = "C_qmix_seed107_t300107__traffic9303"
+        network = self.config["network"]["sha256"]
         stub = StubRunner()
-        evaluator = StubEvaluator(fail=["C_qmix_seed103_t300103__traffic9302"],
-                                  crash=["C_qmix_seed105_t300105__traffic9304"])
+        evaluator = StubEvaluator(network, fail=[failed], crash=[crashed],
+                                  interrupt_after_metrics=[adoptable, foreign],
+                                  wrong_checkpoint=[foreign])
         for shard in range(2):
             M.run_comparison(self.layout, self.config, stub, evaluator, shard_index=shard,
                              shard_count=2, out=self.out, runtime=RUNTIME)
         self.assertEqual(len(stub.calls), 10)
         self.assertEqual(len(evaluator.calls), 50)
         self.assertEqual({c[2] for c in stub.calls}, {M.DEVELOPMENT_FAMILY})
-        self.assertEqual(M.progress(self.layout, self.config, self.out, RUNTIME), 3)
+        lines = []
+        self.assertEqual(M.progress(self.layout, self.config, lines.append, RUNTIME), 3)
+        self.assertTrue(any(M.RESULT_WITHOUT_MARKER in l and adoptable in l for l in lines))
         self.assertEqual(M.summarise(self.layout, self.config, self.out, RUNTIME), 1)
-        stub2, evaluator2 = StubRunner(), StubEvaluator()
-        M.run_comparison(self.layout, self.config, stub2, evaluator2, out=self.out,
+        # Defect 3, comparison side: results without a marker are never
+        # resubmitted; only the crash before any result is run again, after its
+        # files are set aside unchanged.
+        directory = lambda cell_id: os.path.join(self.layout.comparison_runs, cell_id)  # noqa
+        before = dict((c, _sha(os.path.join(directory(c), campaign.METRICS_FILENAME)))
+                      for c in (adoptable, foreign))
+        evaluator2 = StubEvaluator(network)
+        lines = []
+        code = M.run_comparison(self.layout, self.config, StubRunner(), evaluator2,
+                                out=lines.append, runtime=RUNTIME)
+        self.assertEqual(code, 4)
+        self.assertEqual(evaluator2.calls, [crashed])
+        self.assertEqual(sum(l.startswith("REFUS") for l in lines), 2)
+        kept = directory(crashed) + ".interrupted-1"
+        self.assertTrue(os.path.isfile(os.path.join(kept, "lane_states.csv")))
+        lines = []
+        self.assertEqual(M.adopt_results(self.layout, self.config, RUNTIME, lines.append), 1)
+        self.assertEqual(M.read_json(os.path.join(directory(adoptable), M.OUTCOME_MARKER))[
+            "adopted"]["by"], "adopt-results")
+        self.assertTrue(any(l.startswith("REFUSE") and foreign in l and "checkpoint_sha256" in l
+                            for l in lines))
+        self.assertFalse(os.path.exists(os.path.join(directory(foreign), M.OUTCOME_MARKER)))
+        for cell_id, digest in before.items():
+            self.assertEqual(_sha(os.path.join(directory(cell_id), campaign.METRICS_FILENAME)),
+                             digest)
+        evaluator3 = StubEvaluator(network)
+        M.run_comparison(self.layout, self.config, StubRunner(), evaluator3, out=self.out,
                          runtime=RUNTIME)
-        self.assertEqual(stub2.calls, [])
-        self.assertEqual(evaluator2.calls, ["C_qmix_seed105_t300105__traffic9304"])
+        self.assertEqual(evaluator3.calls, [])                 # still refused, not rerun
+        # The refused result is set aside by a person's explicit decision (here
+        # the test), then the cell is evaluated once.
+        os.rename(directory(foreign), directory(foreign) + ".refused-by-operator")
+        M.run_comparison(self.layout, self.config, StubRunner(), evaluator3, out=self.out,
+                         runtime=RUNTIME)
+        self.assertEqual(evaluator3.calls, [foreign])
         self.assertEqual(M.progress(self.layout, self.config, self.out, RUNTIME), 0)
 
     def test_12_summary_keeps_failures_and_never_imputes(self):
@@ -676,6 +965,46 @@ class EndToEnd(unittest.TestCase):
         finally:
             with open(path, "w") as handle:
                 handle.write(saved)
+
+    def _with_pilot_metrics(self, change):
+        """Run summarise with one pilot result altered, then restore it exactly."""
+        path = os.path.join(self.layout.paths["pilot_root"], "vdn_seed201", "evaluations",
+                            "t360000", "traffic9303", "evaluation_metrics.json")
+        summary = os.path.join(self.layout.summary, "comparison_summary.json")
+        written = os.stat(summary).st_mtime_ns
+        with open(path) as handle:
+            saved = handle.read()
+        stat = os.stat(path)
+        try:
+            data = json.loads(saved)
+            change(data)
+            with open(path, "w") as handle:
+                json.dump(data, handle)
+            lines = []
+            code = M.summarise(self.layout, self.config, lines.append, RUNTIME)
+        finally:
+            with open(path, "w") as handle:
+                handle.write(saved)
+            os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+        if code != 0:
+            self.assertEqual(os.stat(summary).st_mtime_ns, written)  # nothing rewritten
+        return code, lines
+
+    def test_13b_a_pilot_j_inconsistent_with_tripinfo_blocks_the_summary(self):
+        # Defect 1: the pilot declares J = 1 s but its tripinfo gives about 3.5 s.
+        code, lines = self._with_pilot_metrics(
+            lambda d: d.update({search.PRIMARY_FIELD: 1.0}))
+        self.assertEqual(code, 1)
+        self.assertTrue(any(l.startswith("  PROBLEME : pilot vdn t360000 traffic 9303")
+                            and "differs from tripinfo" in l for l in lines), lines)
+        self.assertTrue(any("NON ECRITE" in l for l in lines))
+        for bad in (float("nan"), None):
+            code, lines = self._with_pilot_metrics(
+                lambda d: d.update({search.PRIMARY_FIELD: bad}))
+            self.assertEqual(code, 1)
+            self.assertTrue(any("pilot vdn" in l and "not finite" in l for l in lines), lines)
+        code, lines = self._with_pilot_metrics(lambda d: None)
+        self.assertEqual(code, 0)                                   # restored: passes
 
     def test_14_protected_roots_were_never_written(self):
         for root in self.protected:

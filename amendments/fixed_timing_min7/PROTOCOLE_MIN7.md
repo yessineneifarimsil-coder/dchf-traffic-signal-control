@@ -99,7 +99,7 @@ Le résumé était : grille grossière 40–140 ; extension aux cycles courts ; 
 | Validation | top 10 sur 2101–2105, exécutions neuves de la nouvelle racine | 50 exécutions |
 | Sélection | `select_timing_plan` (J, perte de temps, cycle, clé réalisée) | 1 plan, scellé avec ses paramètres, ses contraintes actives et ses empreintes |
 
-**Ordre de lecture des résultats.** Le pilote calcule et affiche le nombre exact de nouvelles exécutions fines avant d'en lancer une seule. L'étape `fin` n'accepte que l'empreinte de l'ordre grossier affichée ; elle revérifie alors l'espace disque sur ce nombre exact. Ces bornes sont des maxima théoriques : des gagnants de même cycle et de décalages voisins se recouvrent largement. Dans le monde de test simulé, 5 gagnants (C 20, 25 et 40) donnaient 164 nouveaux plans, soit 820 exécutions.
+**Ordre de lecture des résultats.** Le pilote calcule et affiche le nombre exact de nouvelles exécutions fines avant d'en lancer une seule. L'étape `fin` n'accepte que l'empreinte de l'ordre grossier affichée. Avant le premier appel au simulateur, en appel direct comme avec plusieurs processus (le processus parent vérifie avant d'en lancer aucun), elle exige aussi que les 25 re-simulations de reproduction soient toutes enregistrées et identiques aux exécutions réutilisées. Une reproduction absente, incomplète ou différente l'arrête. Elle revérifie ensuite l'espace disque sur le nombre exact d'exécutions fines. Ces bornes sont des maxima théoriques : des gagnants de même cycle et de décalages voisins se recouvrent largement. Dans le monde de test simulé, 5 gagnants (C 20, 25 et 40) donnaient 164 nouveaux plans, soit 820 exécutions.
 
 ## 4. Données : réutilisation explicite
 
@@ -124,9 +124,35 @@ Le résumé était : grille grossière 40–140 ; extension aux cycles courts ; 
 
 **Mêmes demandes partout.** Les manifestes 9301–9305 des pilotes doivent être identiques octet pour octet aux nouveaux (csv et rou.xml), sinon `preparer-comparaison` s'arrête.
 
-**Contrôle de J.** Pour chaque cellule et chaque résultat de pilote, la synthèse recalcule J à partir de `tripinfo.xml`. Elle refuse de s'écrire en cas d'incohérence au-delà de 1e-9 ou de cellule manquante.
+**Contrôle de J.** La même règle s'applique aux nouvelles cellules et aux résultats des pilotes. Un J déclaré valide doit remplir trois conditions :
 
-**Échecs.** Un échec d'évacuation est un résultat. Il apparaît comme tel, son J est vide et il n'est jamais imputé. Une cellule déjà enregistrée n'est jamais relancée. Seul un plantage avant tout résultat (aucune métrique) est relançable.
+* il provient d'une exécution `CLEARED` ;
+* il est présent et fini ;
+* il est égal, à 1e-9 près, au J recalculé à partir de `tripinfo.xml` (les 2800 véhicules arrivés ; les trajets non terminés que le code figé écrit avec une arrivée −1 rendent le recalcul invalide).
+
+Sinon la synthèse ne s'écrit pas et nomme la cellule ou le pilote en cause. Elle ne s'écrit pas non plus si une cellule manque. Un J déclaré invalide reste invalide ; il n'est ni imputé ni recalculé à sa place.
+
+**Échecs.** Un échec d'évacuation est un résultat. Il apparaît comme tel, son J est vide et il n'est jamais imputé.
+
+**Jamais de nouvelle exécution d'un résultat existant.** La règle est la même pour la recherche (`run-repro`, `run-fine`, `run-validation`) et pour la comparaison. Chaque répertoire d'exécution est classé avant toute action :
+
+| État | Contenu | Conduite |
+|---|---|---|
+| enregistré | marqueur scellé valide | définitif, quel que soit le résultat |
+| marqueur invalide | marqueur présent qui ne se vérifie pas | refus explicite, jamais relancé ; examen humain |
+| résultat sans marqueur | `evaluation_metrics.json` écrit, interruption avant le marqueur | jamais relancé ni resoumis à l'évaluateur ; refus explicite à chaque passage jusqu'à `adopt-results` |
+| interrompu sans résultat | fichiers, mais aucune métrique | fichiers conservés tels quels dans `<répertoire>.interrupted-N`, puis l'exécution reprend |
+| vide | rien | exécution |
+
+**`adopt-results` (étape `adopter`).** Elle ne simule jamais. Elle ne scelle un résultat sans marqueur que si sa provenance se vérifie :
+
+* plan, famille, trafic, graine SUMO, empreintes du manifeste et de l'itinéraire ;
+* contrôleur ou checkpoint (SHA-256), graine d'entraînement, type d'exécution ;
+* commit figé, arbre propre, réseau figé ;
+* pile logicielle égale à la pile courante ;
+* J cohérent avec `tripinfo.xml`.
+
+Le marqueur ajouté porte la mention `adopted`, et aucun fichier existant n'est modifié. Un résultat qui ne se vérifie pas, ou un marqueur invalide, est refusé et reste en place pour examen. Après une adoption, relancer l'étape interrompue : le code figé enregistre alors la complétude sans simulation.
 
 **Contenu de la synthèse :**
 
@@ -146,4 +172,19 @@ Le résumé était : grille grossière 40–140 ; extension aux cycles courts ; 
 
 ## 7. Durées et stockage
 
-Les estimations de `plan` utilisent `RACINE\checks\measure.json`, mesuré par `sumo_checks_min7.py` **sur la machine qui exécutera**. Les valeurs mesurées dans le conteneur cloud de développement ne sont que des ordres de grandeur. Pour mémoire, l'entraînement QMIX projeté à environ 2,5 h dans le cloud a réellement duré environ 7 h en local. Le CMD fait donc mesurer localement avant `preparer`, qui refuse sans mesure locale.
+Les estimations de `plan` utilisent `RACINE\checks\measure.json`, mesuré par `sumo_checks_min7.py` **sur la machine qui exécutera**.
+
+`preparer` n'accepte cette mesure qu'accompagnée du rapport `sumo_checks.json`, et seulement si toutes les conditions suivantes sont remplies :
+
+* verdict OK ;
+* contrôles complets : les 3 plans et l'évaluation QMIX synthétique, ni `--quick` ni `--skip-qmix` ;
+* aucune anomalie dans aucun contrôle ;
+* mesure identique à celle du rapport ;
+* empreintes du pilote, du pilote A002 et du script de contrôle égales à celles en usage ;
+* même commit figé, même réseau, même pile logicielle que le processus courant.
+
+L'empreinte du rapport est scellée dans `plan.json`. Le script n'écrit `measure.json` que si les contrôles sont complets et réussis.
+
+Les contrôles comparent, par carrefour et par seconde, l'indice de phase **et la chaîne rouge/jaune/vert complète** relue dans SUMO à la chaîne que le `tlLogic` du réseau figé définit pour l'indice prescrit par le planning (empreinte du fichier réseau vérifiée, programme vérifié).
+
+Les valeurs mesurées dans le conteneur cloud de développement ne sont que des ordres de grandeur. Pour mémoire, l'entraînement QMIX projeté à environ 2,5 h dans le cloud a réellement duré environ 7 h en local. Le CMD fait donc mesurer localement avant `preparer`, qui refuse sans mesure locale validée.

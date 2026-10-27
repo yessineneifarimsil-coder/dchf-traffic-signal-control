@@ -52,9 +52,15 @@ family development, never used for search or selection)
 
 Stages: plan | prepare | finalise-coarse | run-repro | run-fine | finalise-fine |
 run-validation | finalise-validation | prepare-comparison | run-comparison |
-progress | summarise. Local time and size per run are measured beforehand by
-sumo_checks_min7.py, in <root>/checks, the only thing allowed to exist in the
-root before prepare.
+progress | adopt-results | summarise. Local time and size per run are
+measured beforehand by sumo_checks_min7.py, in <root>/checks, the only thing
+allowed to exist in the root before prepare; prepare accepts the measurement
+only with that script's complete, passing report for this code and stack.
+
+An existing result is never re-simulated. A result written just before an
+interruption, with no outcome marker yet, is refused by every stage until
+adopt-results has verified its provenance and sealed it; files left by an
+attempt interrupted before any result are set aside unchanged.
 """
 
 from __future__ import print_function
@@ -666,8 +672,87 @@ def outcome_marker_problems(directory, plan, family, seed, manifest, environment
     return problems, marker
 
 
+RECORDED = "recorded"
+INVALID_MARKER = "invalid_marker"
+RESULT_WITHOUT_MARKER = "result_without_marker"
+INTERRUPTED = "interrupted_before_any_result"
+EMPTY = "empty"
+
+
+def run_state(directory, marker_problems):
+    """What a run or cell directory holds, for the never-rerun rule.
+
+    RECORDED              a valid sealed outcome: final, whatever it is;
+    INVALID_MARKER        a marker that does not verify: refused, never rerun;
+    RESULT_WITHOUT_MARKER metrics written, interrupted before the marker:
+                          never rerun; only `adopt-results` may seal it, after
+                          its provenance is verified;
+    INTERRUPTED           files but no metrics: no result exists; the files are
+                          set aside, unchanged, and the run starts again;
+    EMPTY                 nothing yet.
+    """
+    if not marker_problems:
+        return RECORDED
+    if os.path.isfile(os.path.join(directory, OUTCOME_MARKER)):
+        return INVALID_MARKER
+    if os.path.isfile(os.path.join(directory, campaign.METRICS_FILENAME)):
+        return RESULT_WITHOUT_MARKER
+    if os.path.isdir(directory) and os.listdir(directory):
+        return INTERRUPTED
+    return EMPTY
+
+
+def set_aside(layout, directory):
+    """Keep an interrupted attempt's files, unchanged, beside the run."""
+    index = 1
+    while os.path.exists("{}.interrupted-{}".format(directory, index)):
+        index += 1
+    target = "{}.interrupted-{}".format(directory, index)
+    layout.assert_writable(target)
+    os.rename(directory, target)
+    os.makedirs(directory)
+    return target
+
+
+def refusal(state, directory, problems):
+    if state == RESULT_WITHOUT_MARKER:
+        return ("RESULT WITHOUT MARKER in {}: never re-simulated; verify and seal it with "
+                "adopt-results, or inspect it by hand.".format(directory))
+    return "INVALID MARKER in {} ({}): never re-simulated; inspect it by hand.".format(
+        directory, "; ".join(problems))
+
+
+def write_marker(directory, payload):
+    marker = dict(payload)
+    marker["marker_sha256"] = payload_sha256(payload)
+    path = os.path.join(directory, OUTCOME_MARKER)
+    with open(path + ".partial", "w") as handle:
+        json.dump(marker, handle, indent=2, sort_keys=True, default=str)
+    os.replace(path + ".partial", path)
+    return path
+
+
+def search_marker_payload(layout, plan, family, seed, manifest, environment, stage, directory,
+                          adopted=None):
+    metrics_path = os.path.join(directory, campaign.METRICS_FILENAME)
+    payload = {"driver_version": DRIVER_VERSION, "controller": CONTROLLER,
+               "candidate_key": list(A.key_of(plan)),
+               "realized_key": list(A.realized_key(plan)), "plan": dict(plan),
+               "traffic_family": family, "traffic_seed": int(seed),
+               "sumo_seed": int(manifest["sumo_seed"]), "stage": stage,
+               "metrics_sha256": sha256_file(metrics_path),
+               "outcome": (read_json(metrics_path) or {}).get("clearance_status"),
+               "environment": dict(environment), "driver_sha256": DRIVER_SHA256,
+               "frozen_commit": FROZEN_COMMIT, "plan_fingerprint": plan_fingerprint(layout),
+               "manifest_csv_sha256": manifest["manifest_csv_sha256"],
+               "route_xml_sha256": manifest["route_xml_sha256"]}
+    if adopted:
+        payload["adopted"] = adopted
+    return payload
+
+
 def guarded_runner(runner, layout, config, stage):
-    """Seal every new run's outcome; a recorded clearance failure is terminal."""
+    """Seal every new run's outcome; an existing result is never re-simulated."""
     environment = campaign.environment_identity(config, layout.paths["repository_root"])
 
     def run(traci_module, config_ref, repository_root, controller, manifest_csv_path,
@@ -679,32 +764,22 @@ def guarded_runner(runner, layout, config, stage):
                     "sumo_seed": int(sumo_seed)}
         problems, marker = outcome_marker_problems(output_directory, plan, family, seed,
                                                    manifest, environment, layout)
-        if not problems:
+        state = run_state(output_directory, problems)
+        if state == RECORDED:
             # A recorded outcome is final, whatever it is: a run is never
             # re-simulated to improve its result.
             return campaign._load_metrics(output_directory)
+        if state in (INVALID_MARKER, RESULT_WITHOUT_MARKER):
+            raise Min7Error(refusal(state, output_directory, problems))
+        if state == INTERRUPTED:
+            set_aside(layout, output_directory)
         metrics = runner(traci_module, config_ref, repository_root, controller,
                          manifest_csv_path, route_xml_path, family, seed, sumo_seed,
                          output_directory, plan=plan, **kwargs)
-        metrics_path = os.path.join(output_directory, campaign.METRICS_FILENAME)
-        if metrics and os.path.isfile(metrics_path):
-            payload = {"driver_version": DRIVER_VERSION, "controller": CONTROLLER,
-                       "candidate_key": list(A.key_of(plan)),
-                       "realized_key": list(A.realized_key(plan)), "plan": dict(plan),
-                       "traffic_family": family, "traffic_seed": int(seed),
-                       "sumo_seed": int(sumo_seed), "stage": stage,
-                       "metrics_sha256": sha256_file(metrics_path),
-                       "outcome": metrics.get("clearance_status"),
-                       "environment": dict(environment), "driver_sha256": DRIVER_SHA256,
-                       "frozen_commit": FROZEN_COMMIT,
-                       "plan_fingerprint": plan_fingerprint(layout)}
-            payload.update(manifest)
-            marker = dict(payload)
-            marker["marker_sha256"] = payload_sha256(payload)
-            path = os.path.join(output_directory, OUTCOME_MARKER)
-            with open(path + ".partial", "w") as handle:
-                json.dump(marker, handle, indent=2, sort_keys=True)
-            os.replace(path + ".partial", path)
+        if metrics and os.path.isfile(os.path.join(output_directory,
+                                                   campaign.METRICS_FILENAME)):
+            write_marker(output_directory, search_marker_payload(
+                layout, plan, family, seed, manifest, environment, stage, output_directory))
         return metrics
     return run
 
@@ -914,23 +989,34 @@ def coarse_order_seal(layout):
     return (read_json(layout.coarse_order) or {}).get("payload_sha256")
 
 
+def check_fine_ready(layout, config, runtime, plan, order, approved_coarse):
+    """Everything the fine stage needs, checked before its first simulation:
+    the approved coarse count, the complete and identical reproduction of the
+    five winners (25 runs), and the disk space for the exact count."""
+    if approved_coarse != coarse_order_seal(layout):
+        raise Min7Error("The fine stage ({} new runs) starts only with --approved-coarse "
+                        "{}, after its count has been read.".format(
+                            order["fine_new_runs"], coarse_order_seal(layout)))
+    index, floor_keys = evidence_index(layout)
+    repro = assert_reproduced(layout, config, runtime, order, index, floor_keys)
+    per_run = plan["preparation"]["estimate"]["bytes_per_run"]
+    needed = order["fine_new_runs"] * per_run * DISK_MARGIN
+    if disk_free(layout.root) < needed:
+        raise Min7Error("Not enough free space for the fine stage: {:.1f} GB free, "
+                        "{:.1f} GB needed ({} runs, margin {}).".format(
+                            disk_free(layout.root) / 1e9, needed / 1e9,
+                            order["fine_new_runs"], DISK_MARGIN))
+    return repro
+
+
 def run_stage(layout, config, stage, runner, traci_module=None, shard_index=0, shard_count=1,
               approved_coarse=None, runtime=None):
     verify_repository(layout)
     plan, _models = load_plan(layout, config, runtime)
     order = read_coarse_order(layout, plan)
-    if stage == STAGE_FINE and approved_coarse != coarse_order_seal(layout):
-        raise Min7Error("The fine stage ({} new runs) starts only with --approved-coarse "
-                        "{}, after its count has been read.".format(
-                            order["fine_new_runs"], coarse_order_seal(layout)))
     if stage == STAGE_FINE:
-        per_run = plan["preparation"]["estimate"]["bytes_per_run"]
-        needed = order["fine_new_runs"] * per_run * DISK_MARGIN
-        if disk_free(layout.root) < needed:
-            raise Min7Error("Not enough free space for the fine stage: {:.1f} GB free, "
-                            "{:.1f} GB needed ({} runs, margin {}).".format(
-                                disk_free(layout.root) / 1e9, needed / 1e9,
-                                order["fine_new_runs"], DISK_MARGIN))
+        check_fine_ready(layout, config, runtime or A.current_runtime(), plan, order,
+                         approved_coarse)
     if stage == STAGE_REPRO:
         family, plans, output = DESIGN_FAMILY, order["repro_work"], layout.repro_runs
     elif stage == STAGE_FINE:
@@ -1005,6 +1091,20 @@ def repro_check(layout, config, runtime, order, index, floor_keys):
     return rows, problems
 
 
+def assert_reproduced(layout, config, runtime, order, index, floor_keys):
+    """All 25 re-simulations recorded, and identical to the reused runs."""
+    repro, problems = repro_check(layout, config, runtime, order, index, floor_keys)
+    expected = len(order["repro_work"]) * len(search.DESIGN_SEEDS)
+    if problems:
+        raise Min7Error("Determinism re-simulation absent or incomplete ({} of {} recorded; "
+                        "run run-repro first): {}".format(len(repro), expected, problems[:3]))
+    differing = [r for r in repro if r["differing"]]
+    if differing or len(repro) != expected:
+        raise Min7Error("Re-simulated winners do not reproduce the reused runs: {}".format(
+            differing[:3]))
+    return repro
+
+
 def finalise_fine(layout, config, runtime):
     verify_repository(layout)
     plan, _models = load_plan(layout, config, runtime)
@@ -1012,13 +1112,7 @@ def finalise_fine(layout, config, runtime):
     if os.path.exists(layout.fine_result):
         raise Min7Error("The fine stage is already finalised.")
     index, floor_keys = evidence_index(layout)
-    repro, problems = repro_check(layout, config, runtime, order, index, floor_keys)
-    if problems:
-        raise Min7Error("Determinism re-simulation incomplete: {}".format(problems[:3]))
-    differing = [r for r in repro if r["differing"]]
-    if differing or len(repro) != len(order["repro_work"]) * len(search.DESIGN_SEEDS):
-        raise Min7Error("Re-simulated winners do not reproduce the reused runs: {}".format(
-            differing[:3]))
+    repro = assert_reproduced(layout, config, runtime, order, index, floor_keys)
     classes = [{"identity": tuple(c["identity"]), "name": c["name"],
                 "evidence_label": c["evidence_label"],
                 "members": [P.make_plan(*label) for label in c["labels"]]}
@@ -1197,14 +1291,23 @@ def run_comparison(layout, config, baseline_runner, qmix_evaluator=None, traci_m
     order = read_comparison_order(layout, plan)
     environment = campaign.environment_identity(config, layout.paths["repository_root"])
     qmix_evaluator = qmix_evaluator or frozen_qmix_evaluator
+    refused = 0
     for position, cell in enumerate(order["cells"]):
         if position % shard_count != shard_index:
             continue
         problems, marker = comparison_marker_problems(layout, cell, order, environment)
-        if not problems:
-            continue            # recorded once, CLEARED or CLEARANCE_FAILURE: never rerun
         directory = cell_directory(layout, cell)
+        state = run_state(directory, problems)
+        if state == RECORDED:
+            continue            # recorded once, CLEARED or CLEARANCE_FAILURE: never rerun
+        if state in (INVALID_MARKER, RESULT_WITHOUT_MARKER):
+            out("REFUS {} : {}".format(cell["id"], refusal(state, directory, problems)))
+            refused += 1
+            continue
         layout.assert_writable(directory)
+        if state == INTERRUPTED:
+            out("{} : tentative interrompue sans resultat conservee dans {}".format(
+                cell["id"], set_aside(layout, directory)))
         prefix = campaign.manifest_prefix_for(layout.comparison_manifests, DEVELOPMENT_FAMILY,
                                               cell["traffic_seed"])
         manifest = order["manifests"][str(cell["traffic_seed"])]
@@ -1230,23 +1333,169 @@ def run_comparison(layout, config, baseline_runner, qmix_evaluator=None, traci_m
         if metrics is None or not os.path.isfile(metrics_path):
             out("ECHEC TECHNIQUE {} : pas de metriques".format(cell["id"]))
             continue
-        payload = {"cell": cell, "stage": STAGE_COMPARISON, "driver_sha256": DRIVER_SHA256,
-                   "plan_fingerprint": order["plan_fingerprint"],
-                   "environment": dict(environment), "frozen_commit": FROZEN_COMMIT,
-                   "metrics_sha256": sha256_file(metrics_path),
-                   "outcome": metrics.get("clearance_status"),
-                   "elapsed_wall_s": time.time() - start}
-        payload.update(manifest)
-        marker = dict(payload)
-        marker["marker_sha256"] = payload_sha256(payload)
-        path = os.path.join(directory, OUTCOME_MARKER)
-        with open(path + ".partial", "w") as handle:
-            json.dump(marker, handle, indent=2, sort_keys=True, default=str)
-        os.replace(path + ".partial", path)
+        payload = cell_marker_payload(cell, order, environment, directory)
+        payload["elapsed_wall_s"] = time.time() - start
+        write_marker(directory, payload)
         out("{} : {} J={} ({:.0f} s)".format(cell["id"], metrics.get("clearance_status"),
                                              metrics.get(search.PRIMARY_FIELD),
                                              time.time() - start))
-    return 0
+    return 4 if refused else 0
+
+
+def cell_marker_payload(cell, order, environment, directory, adopted=None):
+    metrics_path = os.path.join(directory, campaign.METRICS_FILENAME)
+    payload = {"cell": cell, "stage": STAGE_COMPARISON, "driver_sha256": DRIVER_SHA256,
+               "plan_fingerprint": order["plan_fingerprint"],
+               "environment": dict(environment), "frozen_commit": FROZEN_COMMIT,
+               "metrics_sha256": sha256_file(metrics_path),
+               "outcome": (read_json(metrics_path) or {}).get("clearance_status")}
+    payload.update(order["manifests"][str(cell["traffic_seed"])])
+    if adopted:
+        payload["adopted"] = adopted
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# Adoption of results written before an interruption, after provenance checks.
+# ---------------------------------------------------------------------------
+
+def provenance_problems(directory, runtime, expected_metrics, expected_manifest, config):
+    """Does this directory hold the result of exactly this run, made by the
+    frozen code on this software stack? Nothing is modified."""
+    problems = []
+    metrics = read_json(os.path.join(directory, campaign.METRICS_FILENAME))
+    if metrics is None:
+        return ["evaluation_metrics.json unreadable"]
+    for field, value in sorted(expected_metrics.items()):
+        if metrics.get(field) != value:
+            problems.append("metrics {} is {!r}, needs {!r}".format(field, metrics.get(field),
+                                                                    value))
+    faults, stack = A._run_manifest_problems(directory)
+    problems.extend(faults)
+    if stack is not None and dict(stack) != dict(runtime):
+        problems.append("made under {} but this process runs {}".format(dict(stack), runtime))
+    manifest = read_json(os.path.join(directory, A.RUN_MANIFEST_FILENAME)) or {}
+    for field, value in sorted(expected_manifest.items()):
+        if manifest.get(field) != value:
+            problems.append("run_manifest {} is {!r}, needs {!r}".format(
+                field, manifest.get(field), value))
+    if manifest.get("network_sha256") != config["network"]["sha256"]:
+        problems.append("run_manifest network_sha256 differs from the frozen network")
+    problems.extend(j_problems(metrics, recompute_j(directory)))
+    return problems
+
+
+def baseline_expectations(plan, family, seed, manifest, config):
+    metrics = {"phase_parameters": dict(plan), "traffic_family": family,
+               "traffic_seed": int(seed), "sumo_seed": int(manifest["sumo_seed"]),
+               "manifest_csv_sha256": manifest["manifest_csv_sha256"],
+               "route_xml_sha256": manifest["route_xml_sha256"], "controller": CONTROLLER,
+               "baseline_config_sha256": config["_config_sha256"]}
+    run_manifest = {"phase_parameters": dict(plan), "traffic_family": family,
+                    "traffic_seed": int(seed), "sumo_seed": int(manifest["sumo_seed"]),
+                    "route_xml_sha256": manifest["route_xml_sha256"],
+                    "controller": CONTROLLER}
+    return metrics, run_manifest
+
+
+def adoption_note():
+    return {"by": "adopt-results", "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "reason": "metrics written before an interruption, provenance verified; "
+                      "no file was modified"}
+
+
+def search_directories(layout, plan):
+    """Every directory a search stage of this plan may have written."""
+    items = []
+    if not os.path.isfile(layout.coarse_order):
+        return items
+    order = read_coarse_order(layout, plan)
+    for stage, root, plans, family in (
+            (STAGE_REPRO, layout.repro_runs, order["repro_work"], DESIGN_FAMILY),
+            (STAGE_FINE, layout.runs, order["new_work"], DESIGN_FAMILY)):
+        for label in plans:
+            for seed in search.DESIGN_SEEDS:
+                items.append((stage, root, P.make_plan(*A.key_of(label)), family, seed))
+    if os.path.isfile(layout.fine_result):
+        for item in read_sealed(layout.fine_result, "fine result")["retained"]:
+            for seed in search.VALIDATION_SEEDS:
+                items.append((STAGE_VALIDATION, layout.runs, dict(item["name"]),
+                              VALIDATION_FAMILY, seed))
+    return items
+
+
+def adopt_results(layout, config, runtime=None, out=print):
+    """Seal results that exist without a marker, if and only if their
+    provenance verifies. Refuses invalid markers and anything that does not
+    verify. Writes nothing but the marker; never simulates."""
+    verify_repository(layout)
+    runtime = runtime or A.current_runtime()
+    plan, _models = load_plan(layout, config, runtime)
+    environment = campaign.environment_identity(config, layout.paths["repository_root"])
+    adopted, refused = [], []
+    manifests = {}
+    for stage, root, run_plan, family, seed in search_directories(layout, plan):
+        if family not in manifests:
+            manifests[family] = campaign.load_seed_manifests(
+                layout.a002.original_manifests, config, family)
+        manifest = manifests[family][seed]
+        directory = campaign.run_directory_for(root, CONTROLLER, run_plan, family, seed)
+        problems, _marker = outcome_marker_problems(directory, run_plan, family, seed,
+                                                    manifest, environment, layout)
+        state = run_state(directory, problems)
+        if state == INVALID_MARKER:
+            refused.append((directory, problems))
+        elif state == RESULT_WITHOUT_MARKER:
+            expected_metrics, expected_manifest = baseline_expectations(
+                run_plan, family, seed, manifest, config)
+            faults = provenance_problems(directory, runtime, expected_metrics,
+                                         expected_manifest, config)
+            if faults:
+                refused.append((directory, faults))
+            else:
+                write_marker(directory, search_marker_payload(
+                    layout, run_plan, family, seed, manifest, environment, stage, directory,
+                    adopted=adoption_note()))
+                adopted.append(directory)
+    if os.path.isfile(layout.comparison_order):
+        order = read_comparison_order(layout, plan)
+        for cell in order["cells"]:
+            directory = cell_directory(layout, cell)
+            problems, _marker = comparison_marker_problems(layout, cell, order, environment)
+            state = run_state(directory, problems)
+            if state == INVALID_MARKER:
+                refused.append((directory, problems))
+                continue
+            if state != RESULT_WITHOUT_MARKER:
+                continue
+            manifest = order["manifests"][str(cell["traffic_seed"])]
+            if cell["kind"] == "fixed":
+                expected_metrics, expected_manifest = baseline_expectations(
+                    cell["plan"], DEVELOPMENT_FAMILY, cell["traffic_seed"], manifest, config)
+            else:
+                seed = int(cell["model"].split("_")[1][len("seed"):])
+                expected_metrics = {"traffic_seed": cell["traffic_seed"], "method": "qmix",
+                                    "training_seed": seed}
+                expected_manifest = {"checkpoint_sha256": cell["checkpoint_sha256"],
+                                     "traffic_seed": cell["traffic_seed"],
+                                     "sumo_seed": int(manifest["sumo_seed"]),
+                                     "route_manifest_sha256": manifest["manifest_csv_sha256"],
+                                     "run_kind": "development_evaluation", "method": "qmix",
+                                     "training_seed": seed}
+            faults = provenance_problems(directory, runtime, expected_metrics,
+                                         expected_manifest, config)
+            if faults:
+                refused.append((directory, faults))
+            else:
+                write_marker(directory, cell_marker_payload(cell, order, environment, directory,
+                                                            adopted=adoption_note()))
+                adopted.append(directory)
+    for directory in adopted:
+        out("ADOPTE (provenance verifiee, aucun fichier modifie) : {}".format(directory))
+    for directory, problems in refused:
+        out("REFUSE : {} : {}".format(directory, "; ".join(str(p) for p in problems[:4])))
+    out("Adoption : {} adoptes, {} refuses.".format(len(adopted), len(refused)))
+    return 1 if refused else 0
 
 
 SCHEDULED_VEHICLES = 2800
@@ -1269,6 +1518,26 @@ def recompute_j(directory):
     total = sum(float(row["waitingTime"]) + float(row["departDelay"])
                 for row in rows.values())
     return total / float(SCHEDULED_VEHICLES)
+
+
+def j_problems(metrics, recomputed):
+    """A J declared valid must be a CLEARED run's finite J, equal to the value
+    recomputed from tripinfo.xml. An invalid J is never imputed or checked
+    further: it enters as invalid."""
+    if not metrics.get("J_primary_valid"):
+        return []
+    problems = []
+    if metrics.get("clearance_status") != "CLEARED":
+        problems.append("J declared valid for a {} run".format(metrics.get("clearance_status")))
+    j = metrics.get(search.PRIMARY_FIELD)
+    if not finite(j):
+        problems.append("J declared valid but absent or not finite ({!r})".format(j))
+    elif recomputed is None:
+        problems.append("J declared valid but tripinfo.xml is absent or not all 2800 "
+                        "vehicles arrived")
+    elif abs(float(j) - recomputed) > J_RECOMPUTE_TOLERANCE:
+        problems.append("J {!r} differs from tripinfo ({!r})".format(j, recomputed))
+    return problems
 
 
 def pilot_manifest_prefixes(layout, seed):
@@ -1313,6 +1582,9 @@ def pilot_results(layout, manifests):
                                                                             seed))
                     continue
                 recomputed = recompute_j(directory)
+                for problem in j_problems(metrics, recomputed):
+                    problems.append("pilot {} t{} traffic {} : {}".format(
+                        method, transition, seed, problem))
                 rows.append(result_row("pilot_{}_seed{}".format(method, PILOT_SEED),
                                        "t{:06d}".format(transition), seed, metrics,
                                        recomputed, check.get("verdict"), record))
@@ -1355,8 +1627,8 @@ def summarise(layout, config, out=print, runtime=None):
         recomputed = recompute_j(directory)
         model = cell.get("model") or "C{}_gH{}_gV{}_D{}".format(*A.realized_key(cell["plan"]))
         row = result_row(cell["arm"], model, cell["traffic_seed"], metrics, recomputed)
-        if row["J_primary_s"] is not None and row["J_consistent"] is not True:
-            problems.append("{} : J incoherent avec tripinfo".format(cell["id"]))
+        for problem in j_problems(metrics, recomputed):
+            problems.append("{} : J incoherent : {}".format(cell["id"], problem))
         rows.append(row)
     pilots, pilot_problems = pilot_results(layout, order["manifests"])
     counts = {"expected": len(order["cells"]), "complete": len(rows),
@@ -1497,9 +1769,16 @@ def progress(layout, config, out=print, runtime=None):
     plan, _models = load_plan(layout, config, runtime)
     order = read_comparison_order(layout, plan)
     environment = campaign.environment_identity(config, layout.paths["repository_root"])
-    done = sum(1 for cell in order["cells"]
-               if not comparison_marker_problems(layout, cell, order, environment)[0])
+    states = {}
+    for cell in order["cells"]:
+        problems, _marker = comparison_marker_problems(layout, cell, order, environment)
+        state = run_state(cell_directory(layout, cell), problems)
+        states.setdefault(state, []).append(cell["id"])
+    done = len(states.get(RECORDED, []))
     out("Comparaison : {}/{} evaluations enregistrees".format(done, len(order["cells"])))
+    for state in (RESULT_WITHOUT_MARKER, INVALID_MARKER, INTERRUPTED):
+        if states.get(state):
+            out("  {} : {}".format(state, ", ".join(states[state])))
     return 0 if done == len(order["cells"]) else 3
 
 
@@ -1569,7 +1848,7 @@ def print_plan(plan, bound, estimate, free, out=print):
 
 ACTIONS = ("plan", "prepare", "finalise-coarse", "run-repro", "run-fine", "finalise-fine",
            "run-validation", "finalise-validation", "prepare-comparison", "run-comparison",
-           "progress", "summarise")
+           "progress", "adopt-results", "summarise")
 RUN_ACTIONS = ("run-repro", "run-fine", "run-validation", "run-comparison")
 CHECKS_DIRECTORY = "checks"
 
@@ -1617,6 +1896,49 @@ def run_workers(layout, action, argv, workers, out=print):
     return max(codes) if codes else 0
 
 
+SUMO_CHECKS_PATH = os.path.join(HERE, "sumo_checks_min7.py")
+LOCAL_CHECK_REPORT = "sumo_checks.json"
+LOCAL_CHECK_RUNS = ("old_optimized_fixed_timing", "min7_cycle_bound", "min7_short_cycle",
+                    "synthetic_qmix")
+
+
+def local_checks_problems(measure_file, runtime, config):
+    """The measurement counts only with a complete, passing report of the local
+    SUMO checks, made by this code, on this stack, with this measurement."""
+    measurement = read_json(measure_file)
+    report_path = os.path.join(os.path.dirname(os.path.abspath(measure_file)),
+                               LOCAL_CHECK_REPORT)
+    report = read_json(report_path)
+    if measurement is None:
+        return ["no local measurement at {}".format(measure_file)], None
+    if report is None:
+        return ["no local SUMO check report at {}".format(report_path)], None
+    problems = []
+    if report.get("verdict") != "OK":
+        problems.append("the local SUMO checks failed (verdict {!r})".format(report.get("verdict")))
+    if report.get("complete") is not True:
+        problems.append("the local SUMO checks were partial (--quick or --skip-qmix)")
+    runs = report.get("runs") or {}
+    missing = [name for name in LOCAL_CHECK_RUNS if name not in runs]
+    if missing:
+        problems.append("checks missing from the report: {}".format(missing))
+    for name, run in sorted(runs.items()):
+        if run.get("problems") or run.get("problems") is None:
+            problems.append("check {} failed: {}".format(name, run.get("problems")))
+    if report.get("measurement") != measurement:
+        problems.append("measure.json differs from the measurement in the report")
+    expected = {"driver_sha256": DRIVER_SHA256, "a002_driver_sha256": A002_DRIVER_SHA256,
+                "sumo_checks_sha256": sha256_file(SUMO_CHECKS_PATH),
+                "frozen_commit": FROZEN_COMMIT, "runtime": dict(runtime),
+                "network_sha256": config["network"]["sha256"]}
+    for field, value in sorted(expected.items()):
+        if report.get(field) != value:
+            problems.append("report {} is {!r}, this process has {!r}".format(
+                field, report.get(field), value))
+    return problems, {"report_sha256": sha256_file(report_path),
+                      "measure_sha256": sha256_file(measure_file)}
+
+
 def root_is_fresh(layout):
     """Before prepare, the root may hold only the local SUMO checks."""
     if not os.path.exists(layout.root):
@@ -1648,18 +1970,25 @@ def main(argv=None, out=print):
             if args.action not in RUN_ACTIONS:
                 raise Min7Error("--workers applies to {} only.".format(", ".join(RUN_ACTIONS)))
             verify_repository(layout)
-            load_plan(layout, config)
+            plan, _models = load_plan(layout, config)
+            if args.action == "run-fine":
+                check_fine_ready(layout, config, A.current_runtime(), plan,
+                                 read_coarse_order(layout, plan), args.approved_coarse)
             return run_workers(layout, args.action, argv, args.workers, out)
         if args.action in ("plan", "prepare"):
             plan, _models = build_plan(layout, config, A.current_runtime())
             bound = fine_upper_bound()
-            measurement = read_json(measure_file)
+            runtime = A.current_runtime()
+            check_problems, check_hashes = local_checks_problems(measure_file, runtime, config)
+            measurement = None if check_problems else read_json(measure_file)
             estimate = estimates(plan, bound, measurement)
             free = disk_free(layout.root)
             print_plan(plan, bound, estimate, free, out)
             problem = stack_problem(plan)
             if problem:
                 out("PROBLEME DE PILE LOGICIELLE : " + problem)
+            for item in check_problems:
+                out("CONTROLES LOCAUX NON VALIDES : " + item)
             if args.action == "plan":
                 out("Rien n'a ete ecrit.")
                 return 0
@@ -1669,9 +1998,9 @@ def main(argv=None, out=print):
             if problem:
                 out("REFUS : pile logicielle differente de celle des executions reutilisees.")
                 return 2
-            if measurement is None:
-                out("REFUS : pas de mesure locale ({}) ; lancez d'abord sumo_checks_min7.py."
-                    .format(measure_file))
+            if check_problems:
+                out("REFUS : controles SUMO locaux absents, partiels ou en echec ; relancez "
+                    "sumo_checks_min7.py sur cette machine apres correction.")
                 return 2
             # The fixed stages must fit now; the fine stage is checked again
             # against its exact size before it starts (run-fine).
@@ -1688,7 +2017,8 @@ def main(argv=None, out=print):
             plan_out["preparation"] = {"estimate": estimate, "fine_bound": bound,
                                        "disk_free_bytes": free,
                                        "measure_file": measure_file,
-                                       "measure_sha256": sha256_file(measure_file)}
+                                       "measure_sha256": check_hashes["measure_sha256"],
+                                       "local_checks_sha256": check_hashes["report_sha256"]}
             if not os.path.isdir(layout.root):
                 os.makedirs(layout.root)
             write_sealed(layout, layout.plan_path, dict(plan_out, fingerprint=plan["fingerprint"]))
@@ -1706,10 +2036,15 @@ def main(argv=None, out=print):
             stage = args.action.split("-", 1)[1]
             ledger = run_stage(layout, config, stage, run_baseline, traci, shard_index,
                                shard_count, args.approved_coarse)
-            counts = {}
+            counts, refused = {}, []
             for entry in ledger:
                 counts[entry["status"]] = counts.get(entry["status"], 0) + 1
+                if entry.get("failure"):
+                    refused.append(entry["failure"])
             out("{} shard {}/{} : {}".format(stage, shard_index, shard_count, counts))
+            for failure in refused:
+                out("  NON EXECUTE OU INTERROMPU : {}".format(failure))
+            return 4 if refused else 0
         elif args.action == "finalise-fine":
             payload = finalise_fine(layout, config, runtime)
             out("Reproduction des 5 gagnants : {} executions identiques".format(
@@ -1730,6 +2065,8 @@ def main(argv=None, out=print):
                                   shard_count, out)
         elif args.action == "progress":
             return progress(layout, config, out)
+        elif args.action == "adopt-results":
+            return adopt_results(layout, config, runtime, out)
         elif args.action == "summarise":
             return summarise(layout, config, out)
     except (Min7Error, A.AmendmentError, search.SelectionError,

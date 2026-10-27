@@ -17,11 +17,13 @@ and, through the frozen evaluate_checkpoint.py, one synthetic QMIX checkpoint
 
 For every fixed-plan run it checks, second by second, the phase SUMO actually
 held at each intersection (read back from SUMO, not from the executor):
-  1. it is the phase the frozen schedule prescribes (J1 offset 0, J2 Delta);
+  1. it is the phase index the frozen schedule prescribes (J1 offset 0, J2
+     Delta), and the COMPLETE red/yellow/green string SUMO showed is the one
+     the frozen network's tlLogic defines for that index (network SHA-256
+     checked);
   2. complete greens last exactly gH and gV, every yellow exactly 3 s, the
      cycle is C, and no complete green is shorter than the plan's minimum;
-  3. yellow phases show yellow signals and green phases show none;
-  4. the runner's own signal_phases.csv log agrees with SUMO;
+  3. the runner's own signal_phases.csv log agrees with SUMO;
 and, for every run, that J_primary in evaluation_metrics.json equals
 mean(waitingTime + departDelay) over the 2800 trips of tripinfo.xml (the
 pipeline's metric, never SUMO's printed mean waiting).
@@ -76,7 +78,8 @@ class RecordingTraci(object):
         row = {"time": now}
         for tl_id in self._tl_ids:
             row[tl_id] = (int(self._traci.trafficlight.getPhase(tl_id)),
-                          self._traci.trafficlight.getRedYellowGreenState(tl_id))
+                          self._traci.trafficlight.getRedYellowGreenState(tl_id),
+                          self._traci.trafficlight.getProgram(tl_id))
         self.seconds.append(row)
         return self._traci.simulationStep(*args, **kwargs)
 
@@ -92,32 +95,74 @@ def spans(sequence):
     return [tuple(item) for item in result]
 
 
-def check_schedule(plan, config, seconds, min_green):
+def load_programs(repository_root, config):
+    """{light: {programID: [full signal string of each phase index]}} from the
+    tlLogic of the frozen network file, whose SHA-256 is checked first."""
+    import xml.etree.ElementTree as ET
+    path = os.path.join(repository_root, config["network"]["path"])
+    if M.sha256_file(path) != config["network"]["sha256"]:
+        raise M.Min7Error("{} is not the frozen network.".format(path))
+    programs = {}
+    for logic in ET.parse(path).getroot().findall("tlLogic"):
+        programs.setdefault(logic.get("id"), {})[logic.get("programID")] = [
+            phase.get("state") for phase in logic.findall("phase")]
+    return programs
+
+
+def expected_phase(plan, phase_map, time_s, offset):
+    """The phase index the frozen executor sets for this second (as
+    executors._phase_index: a yellow is named by the green it ends)."""
+    actual, logical, _served = P.state_at(plan, P.local_second(plan, time_s, offset))
+    if actual == "H":
+        return phase_map["H_GREEN"], actual
+    if actual == "V":
+        return phase_map["V_GREEN"], actual
+    return phase_map["H_TO_V_YELLOW" if logical == "H" else "V_TO_H_YELLOW"], actual
+
+
+def check_schedule(plan, config, seconds, min_green, programs):
+    """Per light and per second: the phase index AND the complete
+    red/yellow/green string SUMO held, against the frozen schedule and the
+    frozen tlLogic; then realised durations, cycle and offset."""
     problems, summary = [], {}
-    index_to_name = dict((v, k) for k, v in config["network"]["phase_map"].items())
+    phase_map = config["network"]["phase_map"]
+    index_to_name = dict((v, k) for k, v in phase_map.items())
     offsets = {"J1": 0, "J2": int(plan["offset_s"]) % int(plan["cycle_s"])}
     for tl_id, offset in sorted(offsets.items()):
-        letters, mismatches = [], 0
+        letters, index_mismatches, string_mismatches = [], 0, 0
+        first_string_mismatch = None
+        tl_programs = programs.get(tl_id) or {}
         for row in seconds:
-            phase, signals = row[tl_id]
+            held = row[tl_id]
+            phase, signals = held[0], held[1]
+            program = held[2] if len(held) > 2 else None
+            if program is None and len(tl_programs) == 1:
+                program = list(tl_programs)[0]
+            states = tl_programs.get(program)
+            if states is None:
+                problems.append("{} t={} runs program {!r}, not one of the frozen tlLogic "
+                                "programs {}".format(tl_id, row["time"], program,
+                                                     sorted(tl_programs)))
+                continue
             name = index_to_name.get(phase)
-            if name is None:
+            if name is None or phase >= len(states):
                 problems.append("{} t={} holds unknown phase {}".format(tl_id, row["time"], phase))
                 continue
-            letter = PHASE_LETTER[name]
-            letters.append(letter)
-            expected, _logical, _served = P.state_at(
-                plan, P.local_second(plan, row["time"], offset))
-            if letter != expected:
-                mismatches += 1
-            if letter == "Y" and "y" not in signals.lower():
-                problems.append("{} t={} yellow phase shows no yellow: {}".format(
-                    tl_id, row["time"], signals))
-            if letter != "Y" and "y" in signals:
-                problems.append("{} t={} green phase shows yellow: {}".format(
-                    tl_id, row["time"], signals))
-        if mismatches:
-            problems.append("{}: {} seconds differ from the schedule".format(tl_id, mismatches))
+            letters.append(PHASE_LETTER[name])
+            expected_index, _actual = expected_phase(plan, phase_map, row["time"], offset)
+            if phase != expected_index:
+                index_mismatches += 1
+            if signals != states[expected_index]:
+                string_mismatches += 1
+                if first_string_mismatch is None:
+                    first_string_mismatch = (row["time"], signals, states[expected_index])
+        if index_mismatches:
+            problems.append("{}: {} seconds hold another phase index than the schedule".format(
+                tl_id, index_mismatches))
+        if string_mismatches:
+            problems.append("{}: {} seconds show another signal string than the frozen "
+                            "tlLogic prescribes; first at t={}: {} instead of {}".format(
+                                tl_id, string_mismatches, *first_string_mismatch))
         complete = spans(letters)[1:-1]          # the first and last are censored
         lengths = {}
         for letter, length in complete:
@@ -138,7 +183,8 @@ def check_schedule(plan, config, seconds, min_green):
         summary[tl_id] = {"seconds": len(letters), "complete_spans": len(complete),
                           "realised_lengths": dict((k, sorted(v)) for k, v in lengths.items()),
                           "realised_cycles": sorted(cycle_lengths),
-                          "schedule_mismatches": mismatches,
+                          "schedule_mismatches": index_mismatches,
+                          "signal_string_mismatches": string_mismatches,
                           "first_H_start_s": starts[0] if starts else None}
     if all(summary.get(t, {}).get("first_H_start_s") is not None for t in offsets):
         lag = (summary["J2"]["first_H_start_s"] - summary["J1"]["first_H_start_s"]) % plan["cycle_s"]
@@ -248,7 +294,14 @@ def main(argv=None):
     manifests = os.path.join(work, "manifests")
     manifest = campaign.prepare_seed_manifests(manifests, CONFIG, CHECK_FAMILY,
                                                seeds=(CHECK_SEED,))[CHECK_SEED]
+    programs = load_programs(repository, CONFIG)
     results, failures = {"runtime": M.A.current_runtime(), "frozen_commit": head,
+                         "driver_sha256": M.DRIVER_SHA256,
+                         "a002_driver_sha256": M.A002_DRIVER_SHA256,
+                         "sumo_checks_sha256": M.sha256_file(os.path.abspath(__file__)),
+                         "network_sha256": CONFIG["network"]["sha256"],
+                         "tl_programs": programs,
+                         "complete": not (args.quick or args.skip_qmix),
                          "traffic": {"family": CHECK_FAMILY, "seed": CHECK_SEED}, "runs": {}}, []
     plans = PLANS[1:2] if args.quick else PLANS
     for name, key, min_green in plans:
@@ -257,12 +310,20 @@ def main(argv=None):
         os.makedirs(directory)
         recorder = RecordingTraci(traci, CONFIG["network"]["traffic_lights"])
         start = time.time()
-        run_baseline(recorder, CONFIG, repository, M.CONTROLLER, manifest["prefix"] + ".csv",
-                     manifest["prefix"] + ".rou.xml", CHECK_FAMILY, CHECK_SEED,
-                     manifest["sumo_seed"], directory, plan=plan, manifest_index=0,
-                     manifest_prefix=manifest["prefix"])
+        try:
+            run_baseline(recorder, CONFIG, repository, M.CONTROLLER,
+                         manifest["prefix"] + ".csv", manifest["prefix"] + ".rou.xml",
+                         CHECK_FAMILY, CHECK_SEED, manifest["sumo_seed"], directory, plan=plan,
+                         manifest_index=0, manifest_prefix=manifest["prefix"])
+        except Exception as error:  # noqa: BLE001 - a failed check, reported as such
+            results["runs"][name] = {"plan_key": list(key), "wall_seconds": time.time() - start,
+                                     "bytes": directory_bytes(directory),
+                                     "problems": ["run_baseline raised {!r}".format(error)]}
+            failures.append("{}: run_baseline raised {!r}".format(name, error))
+            continue
         elapsed = time.time() - start
-        schedule_problems, schedule = check_schedule(plan, CONFIG, recorder.seconds, min_green)
+        schedule_problems, schedule = check_schedule(plan, CONFIG, recorder.seconds, min_green,
+                                                     programs)
         log_problems, log = check_runner_log(directory, recorder.seconds)
         metric_problems, metric = check_metric(directory)
         problems = schedule_problems + log_problems + metric_problems
@@ -306,20 +367,28 @@ def main(argv=None):
             "OK" if not problems else problems))
     fixed = [r for n, r in results["runs"].items() if n != "synthetic_qmix"]
     results["measurement"] = {
-        "seconds_per_run": max(r["wall_seconds"] for r in fixed),
-        "bytes_per_run": max(r["bytes"] for r in fixed),
+        "seconds_per_run": max([r["wall_seconds"] for r in fixed] or [None]),
+        "bytes_per_run": max([r["bytes"] for r in fixed] or [None]),
         "seconds_per_qmix_evaluation": results["runs"].get("synthetic_qmix", {}).get(
             "wall_seconds"),
         "measured_on": "this machine", "date": time.strftime("%Y-%m-%d %H:%M:%S")}
-    with open(os.path.join(work, "sumo_checks.json"), "w") as handle:
+    results["verdict"] = "OK" if not failures else "ECHEC"
+    with open(os.path.join(work, M.LOCAL_CHECK_REPORT), "w") as handle:
         json.dump(results, handle, indent=2, sort_keys=True, default=str)
-    with open(os.path.join(work, "measure.json"), "w") as handle:
-        json.dump(results["measurement"], handle, indent=2, sort_keys=True)
-    print("Mesure locale : {}".format(json.dumps(results["measurement"], sort_keys=True)))
-    print("VERIFICATIONS SUMO : {}".format("OK" if not failures else "ECHEC"))
+    # The measurement is usable only with a complete and passing report;
+    # prepare checks both, and their agreement, again.
+    if results["verdict"] == "OK" and results["complete"]:
+        with open(os.path.join(work, "measure.json"), "w") as handle:
+            json.dump(results["measurement"], handle, indent=2, sort_keys=True)
+        print("Mesure locale : {}".format(json.dumps(results["measurement"], sort_keys=True)))
+    else:
+        print("Aucune mesure ecrite : controles {}.".format(
+            "en echec" if failures else "partiels"))
+    print("VERIFICATIONS SUMO : {}{}".format(results["verdict"],
+                                             "" if results["complete"] else " (partielles)"))
     for failure in failures:
         print("  " + failure)
-    return 0 if not failures else 1
+    return 0 if not failures and results["complete"] else 1
 
 
 if __name__ == "__main__":
