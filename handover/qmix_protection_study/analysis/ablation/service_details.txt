@@ -1,0 +1,36 @@
+Runs under a guarantee arm with a vehicle waiting > 127 s (counter bound vs vehicle wait):
+  qmix_seed101_t350000 9303 guarantee max veh wait 128.0 development_m000_EW_v0697 max counter 125 max wait-to-green 125
+  qmix_seed101_t350000 9305 guarantee max veh wait 128.0 development_m000_S2N2_v0299 max counter 124 max wait-to-green 124
+  idqn_seed101_t225000 9302 guarantee max veh wait 130.0 development_m000_N1S1_v0299 max counter 125 max wait-to-green 125
+  idqn_seed102_t050000 9303 both max veh wait 132.0 development_m000_WE_v0898 max counter 127 max wait-to-green 127
+  idqn_seed102_t050000 9305 guarantee max veh wait 169.0 development_m000_WE_v0898 max counter 127 max wait-to-green 127
+  idqn_seed106_t200000 9301 both max veh wait 135.0 development_m000_WE_v0894 max counter 125 max wait-to-green 125
+  idqn_seed110_t360000 9303 guarantee max veh wait 128.0 development_m000_N2S2_v0298 max counter 124 max wait-to-green 124
+  idqn_seed110_t360000 9305 guarantee max veh wait 133.0 development_m000_S2N2_v0299 max counter 125 max wait-to-green 125
+Failures by cell and arm:
+  ('idqn_seed101_t225000', '9302') {'none': 'CLEARANCE_FAILURE', 'guarantee': 'CLEARED', 'min_green': 'CLEARED', 'both': 'CLEARED'} {'none': '["development_m000_N1S1_v0299"]'}
+  ('idqn_seed101_t225000', '9303') {'none': 'CLEARANCE_FAILURE', 'guarantee': 'CLEARED', 'min_green': 'CLEARED', 'both': 'CLEARED'} {'none': '["development_m000_N1S1_v0299"]'}
+  ('idqn_seed101_t225000', '9304') {'none': 'CLEARED', 'guarantee': 'CLEARED', 'min_green': 'CLEARANCE_FAILURE', 'both': 'CLEARED'} {'min_green': '["development_m000_N1S1_v0299"]'}
+  ('idqn_seed101_t225000', '9305') {'none': 'CLEARANCE_FAILURE', 'guarantee': 'CLEARED', 'min_green': 'CLEARED', 'both': 'CLEARED'} {'none': '["development_m000_S1N1_v0298", "development_m000_N1S1_v0299"]'}
+  ('idqn_seed106_t200000', '9303') {'none': 'CLEARANCE_FAILURE', 'guarantee': 'CLEARED', 'min_green': 'CLEARED', 'both': 'CLEARED'} {'none': '["development_m000_N2S2_v0299"]'}
+  ('qmix_seed101_t350000', '9305') {'none': 'CLEARANCE_FAILURE', 'guarantee': 'CLEARED', 'min_green': 'CLEARED', 'both': 'CLEARED'} {'none': '["development_m000_S2N2_v0299"]'}
+Guarantee interventions per run (where >0):
+  qmix_seed101_t350000 9301 both guarantee 1 during demand 0
+  qmix_seed101_t350000 9303 guarantee guarantee 1 during demand 0
+  qmix_seed101_t350000 9305 guarantee guarantee 1 during demand 0
+  idqn_seed101_t225000 9302 guarantee guarantee 1 during demand 0
+  idqn_seed101_t225000 9303 guarantee guarantee 1 during demand 0
+  idqn_seed101_t225000 9304 both guarantee 1 during demand 0
+  idqn_seed101_t225000 9305 guarantee guarantee 1 during demand 0
+  idqn_seed102_t050000 9302 both guarantee 1 during demand 0
+  idqn_seed102_t050000 9303 both guarantee 1 during demand 0
+  idqn_seed102_t050000 9305 guarantee guarantee 1 during demand 0
+  idqn_seed106_t200000 9301 both guarantee 1 during demand 0
+  idqn_seed106_t200000 9303 guarantee guarantee 1 during demand 0
+  idqn_seed107_t360000 9303 guarantee guarantee 1 during demand 0
+  idqn_seed107_t360000 9304 guarantee guarantee 1 during demand 0
+  idqn_seed110_t360000 9301 guarantee guarantee 1 during demand 0
+  idqn_seed110_t360000 9303 guarantee guarantee 1 during demand 0
+  idqn_seed110_t360000 9304 guarantee guarantee 1 during demand 0
+  idqn_seed110_t360000 9304 both guarantee 1 during demand 0
+  idqn_seed110_t360000 9305 guarantee guarantee 1 during demand 0

@@ -1,0 +1,50 @@
+{
+ "status": "specification fixed before any robustness run (plans/PLAN_ROBUSTESSE.md)",
+ "family": "robustness",
+ "family_code": 80,
+ "generation_end_s": 3600,
+ "maximum_simulation_s": 7200,
+ "routes": {"WE": ["E0", "E1", "-E2"], "EW": ["E2", "-E1", "-E0"], "N1S1": ["E4", "-E5"],
+            "S1N1": ["E5", "-E4"], "N2S2": ["E7", "-E6"], "S2N2": ["E6", "-E7"]},
+ "stream_rank": {"WE": 0, "EW": 1, "N1S1": 2, "S1N1": 3, "N2S2": 4, "S2N2": 5},
+ "scenarios": {
+  "R0_reference": {
+   "code": 0, "seeds": [8001, 8002, 8003, 8004, 8005],
+   "purpose": "control: the qualification volumes (900/700 main, 300 per secondary stream, homogeneous) on traffics never seen",
+   "streams": {"WE": {"count": 900}, "EW": {"count": 700}, "N1S1": {"count": 300}, "S1N1": {"count": 300},
+               "N2S2": {"count": 300}, "S2N2": {"count": 300}}
+  },
+  "R1_sparse_secondary_heavy_main": {
+   "code": 1, "seeds": [8101, 8102, 8103, 8104, 8105],
+   "purpose": "persistent low secondary demand (60 veh/h per stream) while the main axis stays loaded (1100/900 veh/h)",
+   "streams": {"WE": {"count": 1100}, "EW": {"count": 900}, "N1S1": {"count": 60}, "S1N1": {"count": 60},
+               "N2S2": {"count": 60}, "S2N2": {"count": 60}}
+  },
+  "R2_single_secondary_trickle": {
+   "code": 2, "seeds": [8201, 8202, 8203, 8204, 8205],
+   "purpose": "one secondary stream per intersection only, 30 veh/h (isolated arrivals all hour), heavy main axis",
+   "streams": {"WE": {"count": 1000}, "EW": {"count": 800}, "N1S1": {"count": 30}, "S1N1": {"count": 0},
+               "N2S2": {"count": 0}, "S2N2": {"count": 30}}
+  },
+  "R3_time_varying": {
+   "code": 3, "seeds": [8301, 8302, 8303, 8304, 8305],
+   "purpose": "temporal change of the demand: main axis peaks in the middle half-hour, secondary streams peak at the start and end (qualification totals)",
+   "streams": {"WE": {"count": 900, "profile": [[0, 900, 0.6], [900, 2700, 1.4], [2700, 3600, 0.6]]},
+               "EW": {"count": 700, "profile": [[0, 900, 0.6], [900, 2700, 1.4], [2700, 3600, 0.6]]},
+               "N1S1": {"count": 300, "profile": [[0, 900, 1.4], [900, 2700, 0.6], [2700, 3600, 1.4]]},
+               "S1N1": {"count": 300, "profile": [[0, 900, 1.4], [900, 2700, 0.6], [2700, 3600, 1.4]]},
+               "N2S2": {"count": 300, "profile": [[0, 900, 1.4], [900, 2700, 0.6], [2700, 3600, 1.4]]},
+               "S2N2": {"count": 300, "profile": [[0, 900, 1.4], [900, 2700, 0.6], [2700, 3600, 1.4]]}}
+  },
+  "R4_isolated_tail": {
+   "code": 4, "seeds": [8401, 8402, 8403, 8404, 8405],
+   "purpose": "end of demand with isolated vehicles: the main axis stops at 3000 s, secondary streams thin to a quarter of their rate in the last 600 s",
+   "streams": {"WE": {"count": 900, "profile": [[0, 3000, 1.0], [3000, 3600, 0.0]]},
+               "EW": {"count": 700, "profile": [[0, 3000, 1.0], [3000, 3600, 0.0]]},
+               "N1S1": {"count": 300, "profile": [[0, 3000, 1.0], [3000, 3600, 0.25]]},
+               "S1N1": {"count": 300, "profile": [[0, 3000, 1.0], [3000, 3600, 0.25]]},
+               "N2S2": {"count": 300, "profile": [[0, 3000, 1.0], [3000, 3600, 0.25]]},
+               "S2N2": {"count": 300, "profile": [[0, 3000, 1.0], [3000, 3600, 0.25]]}}
+  }
+ }
+}

@@ -1,0 +1,58 @@
+[
+ {
+  "controller": "fixed:min7_C25_12_7_D0",
+  "scenario": "R2_single_secondary_trickle",
+  "status": "CLEARED",
+  "N": 1860,
+  "scheduled_count": 1860,
+  "J": 2.3913978494623658,
+  "J_total": 4448.0,
+  "end_time": 3684.0,
+  "counter_rows": 7368,
+  "counter_rows_expected": 7368,
+  "wall_s": 13.3,
+  "ok": true
+ },
+ {
+  "controller": "canonical_mp",
+  "scenario": "R2_single_secondary_trickle",
+  "status": "CLEARED",
+  "N": 1860,
+  "scheduled_count": 1860,
+  "J": 10.45483870967742,
+  "J_total": 19446.0,
+  "end_time": 3706.0,
+  "counter_rows": 7412,
+  "counter_rows_expected": 7412,
+  "wall_s": 14.2,
+  "ok": true
+ },
+ {
+  "controller": "p5:both",
+  "scenario": "R4_isolated_tail",
+  "status": "CLEARED",
+  "N": 2800,
+  "scheduled_count": 2800,
+  "J": 6.144642857142857,
+  "J_total": 17205.0,
+  "end_time": 3630.0,
+  "counter_rows": 7260,
+  "counter_rows_expected": 7260,
+  "wall_s": 13.7,
+  "ok": true
+ },
+ {
+  "controller": "learned:both",
+  "scenario": "R2_single_secondary_trickle",
+  "status": "CLEARED",
+  "N": 1860,
+  "scheduled_count": 1860,
+  "J": 3.0387096774193547,
+  "J_total": 5652.0,
+  "end_time": 3690.0,
+  "counter_rows": 7380,
+  "counter_rows_expected": 7380,
+  "wall_s": 12.2,
+  "ok": true
+ }
+]

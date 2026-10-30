@@ -1,0 +1,25 @@
+Learned run vs fixed plan on the same traffic (J; failures counted separately). Source: analysis/ablation/cells.csv + min-7 comparison_runs.csv
+qmix  none       vs old fixed C19 8/5   : valid 49/50  J lower in 0/49  mean dJ +0.333  min +0.133  max +0.610 | time loss lower in 4/49
+qmix  none       vs fixed >=7s C25 12/7 : valid 49/50  J lower in 33/49  mean dJ -0.049  min -0.347  max +0.259 | time loss lower in 0/49
+qmix  guarantee  vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +0.331  min +0.133  max +0.610 | time loss lower in 4/50
+qmix  guarantee  vs fixed >=7s C25 12/7 : valid 50/50  J lower in 34/50  mean dJ -0.052  min -0.347  max +0.259 | time loss lower in 0/50
+qmix  min_green  vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +2.056  min +1.660  max +2.500 | time loss lower in 0/50
+qmix  min_green  vs fixed >=7s C25 12/7 : valid 50/50  J lower in 0/50  mean dJ +1.672  min +1.190  max +2.225 | time loss lower in 0/50
+qmix  both       vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +2.055  min +1.660  max +2.500 | time loss lower in 0/50
+qmix  both       vs fixed >=7s C25 12/7 : valid 50/50  J lower in 0/50  mean dJ +1.671  min +1.190  max +2.225 | time loss lower in 0/50
+vdn   none       vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +0.361  min +0.101  max +0.568 | time loss lower in 11/50
+vdn   none       vs fixed >=7s C25 12/7 : valid 50/50  J lower in 30/50  mean dJ -0.023  min -0.281  max +0.320 | time loss lower in 0/50
+vdn   guarantee  vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +0.361  min +0.101  max +0.568 | time loss lower in 11/50
+vdn   guarantee  vs fixed >=7s C25 12/7 : valid 50/50  J lower in 30/50  mean dJ -0.023  min -0.281  max +0.320 | time loss lower in 0/50
+vdn   min_green  vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +1.964  min +1.544  max +2.731 | time loss lower in 0/50
+vdn   min_green  vs fixed >=7s C25 12/7 : valid 50/50  J lower in 0/50  mean dJ +1.580  min +1.059  max +2.305 | time loss lower in 0/50
+vdn   both       vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +1.964  min +1.544  max +2.731 | time loss lower in 0/50
+vdn   both       vs fixed >=7s C25 12/7 : valid 50/50  J lower in 0/50  mean dJ +1.580  min +1.059  max +2.305 | time loss lower in 0/50
+idqn  none       vs old fixed C19 8/5   : valid 46/50  J lower in 0/46  mean dJ +3.352  min +0.679  max +17.108 | time loss lower in 0/46
+idqn  none       vs fixed >=7s C25 12/7 : valid 46/50  J lower in 0/46  mean dJ +2.970  min +0.403  max +16.832 | time loss lower in 0/46
+idqn  guarantee  vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +3.534  min +0.679  max +17.108 | time loss lower in 0/50
+idqn  guarantee  vs fixed >=7s C25 12/7 : valid 50/50  J lower in 0/50  mean dJ +3.150  min +0.403  max +16.832 | time loss lower in 0/50
+idqn  min_green  vs old fixed C19 8/5   : valid 49/50  J lower in 0/49  mean dJ +3.130  min +1.792  max +6.540 | time loss lower in 0/49
+idqn  min_green  vs fixed >=7s C25 12/7 : valid 49/50  J lower in 0/49  mean dJ +2.743  min +1.304  max +6.264 | time loss lower in 0/49
+idqn  both       vs old fixed C19 8/5   : valid 50/50  J lower in 0/50  mean dJ +3.200  min +1.792  max +6.955 | time loss lower in 0/50
+idqn  both       vs fixed >=7s C25 12/7 : valid 50/50  J lower in 0/50  mean dJ +2.816  min +1.304  max +6.711 | time loss lower in 0/50
