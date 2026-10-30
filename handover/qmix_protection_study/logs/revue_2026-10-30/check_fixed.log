@@ -1,0 +1,5 @@
+fixed plan means {'C19_gH8_gV5_D9': 2.772, 'C25_gH12_gV7_D0': 3.156}
+contraintes (vert min, les deux)   vs C25_gH12_gV7_D0 : evaluations 300 | evacuees 299 | echecs 1 | J inferieur au plan fixe 0
+contraintes (vert min, les deux)   vs C19_gH8_gV5_D9  : evaluations 300 | evacuees 299 | echecs 1 | J inferieur au plan fixe 0
+tous bras                          vs C25_gH12_gV7_D0 : evaluations 600 | evacuees 594 | echecs 6 | J inferieur au plan fixe 127
+tous bras                          vs C19_gH8_gV5_D9  : evaluations 600 | evacuees 594 | echecs 6 | J inferieur au plan fixe 0

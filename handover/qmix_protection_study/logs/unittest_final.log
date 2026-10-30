@@ -1,0 +1,18 @@
+test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction) ... ok
+test_rejects_gaps_duplicates_and_early_end (test_ablation_metrics.DemandCost) ... ok
+test_window_split (test_ablation_metrics.DemandCost) ... ok
+test_censored_final_spell_excluded (test_ablation_metrics.GreenSpells) ... ok
+test_prepare_refuses_existing_root (test_ablation_metrics.RunnerGuards) ... ok
+test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter) ... ok
+test_fixed_plans_equal_frozen_make_plan (test_robustness.Adapter) ... ok
+test_exact_counts_determinism_and_ids (test_robustness.Generator) ... ok
+test_profiles_respected (test_robustness.Generator) ... ok
+test_seed_guards_and_constants (test_robustness.Generator) ... ok
+test_writer_refuses_existing_and_records_N (test_robustness.Generator) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 1.784s
+
+OK
+REFUSED: C:\Users\LENOVO\AppData\Local\Temp\tmph8nxm7qf already exists
+REFUSED: --approved-plan must be f

@@ -1,0 +1,24 @@
+cells 600 unique 600
+{'qmix': 10, 'vdn': 10, 'idqn': 10}
+arms ['both', 'guarantee', 'min_green', 'none'] traffics ['9301', '9302', '9303', '9304', '9305']
+complete grid: True
+reused: Counter({('qmix', 'none'): 50})
+failures 6 [('qmix_seed101_t350000', '9305', 'none', 'CLEARANCE_FAILURE', '', '["development_m000_S2N2_v0299"]'), ('idqn_seed101_t225000', '9302', 'none', 'CLEARANCE_FAILURE', '', '["development_m000_N1S1_v0299"]'), ('idqn_seed101_t225000', '9303', 'none', 'CLEARANCE_FAILURE', '', '["development_m000_N1S1_v0299"]'), ('idqn_seed101_t225000', '9304', 'min_green', 'CLEARANCE_FAILURE', '', '["development_m000_N1S1_v0299"]'), ('idqn_seed101_t225000', '9305', 'none', 'CLEARANCE_FAILURE', '', '["development_m000_S1N1_v0298", "development_m000_N1S1_v0299"]'), ('idqn_seed106_t200000', '9303', 'none', 'CLEARANCE_FAILURE', '', '["development_m000_N2S2_v0299"]')]
+cleared with empty J: 0
+qmix  none       cleared 49/50 Jmean 3.106 (n=49) Dbar 4.078 guar 0 (0) ming 0 (0) maxcounter 3596 maxwait 3600.0
+qmix  guarantee  cleared 50/50 Jmean 3.104 (n=50) Dbar 4.078 guar 2 (0) ming 0 (0) maxcounter 125 maxwait 128.0
+qmix  min_green  cleared 50/50 Jmean 4.828 (n=50) Dbar 5.795 guar 0 (0) ming 17827 (17590) maxcounter 334 maxwait 334.0
+qmix  both       cleared 50/50 Jmean 4.827 (n=50) Dbar 5.795 guar 1 (0) ming 17827 (17590) maxcounter 124 maxwait 124.0
+vdn   none       cleared 50/50 Jmean 3.133 (n=50) Dbar 4.108 guar 0 (0) ming 0 (0) maxcounter 114 maxwait 118.0
+vdn   guarantee  cleared 50/50 Jmean 3.133 (n=50) Dbar 4.108 guar 0 (0) ming 0 (0) maxcounter 114 maxwait 118.0
+vdn   min_green  cleared 50/50 Jmean 4.736 (n=50) Dbar 5.702 guar 0 (0) ming 16479 (16234) maxcounter 41 maxwait 41.0
+vdn   both       cleared 50/50 Jmean 4.736 (n=50) Dbar 5.702 guar 0 (0) ming 16479 (16234) maxcounter 41 maxwait 41.0
+idqn  none       cleared 46/50 Jmean 6.123 (n=46) Dbar 7.218 guar 0 (0) ming 0 (0) maxcounter 3595 maxwait 3595.0
+idqn  guarantee  cleared 50/50 Jmean 6.306 (n=50) Dbar 7.218 guar 11 (0) ming 0 (0) maxcounter 127 maxwait 169.0
+idqn  min_green  cleared 49/50 Jmean 5.902 (n=49) Dbar 6.892 guar 0 (0) ming 8928 (8818) maxcounter 3583 maxwait 3583.0
+idqn  both       cleared 50/50 Jmean 5.973 (n=50) Dbar 6.892 guar 5 (0) ming 8881 (8818) maxcounter 127 maxwait 135.0
+guarantee arms: interventions during demand 0 | evaluations with >=1 intervention 19 | max per evaluation 1 | max counter 127 | max first-green 127 | evals with vehicle wait >127 8 max 169.0
+min-green arms: shortest green 7 greens<7 0 sumo mismatch 0 cells w/o sumo check 50
+pairs 450 inconsistent 0
+comparable J pairs {('qmix', 'guarantee'): 49, ('qmix', 'min_green'): 49, ('qmix', 'both'): 49, ('vdn', 'guarantee'): 50, ('vdn', 'min_green'): 50, ('vdn', 'both'): 50, ('idqn', 'guarantee'): 46, ('idqn', 'min_green'): 45, ('idqn', 'both'): 46}
+dD == 0 {('qmix', 'guarantee'): 50, ('vdn', 'guarantee'): 50, ('idqn', 'guarantee'): 50}

@@ -1,0 +1,100 @@
+***Starting server on port 63236 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\robustness_smoke_2026-10-29\manifests\R2_single_secondary_trickle_8201.rou.xml' ... done (43ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3684.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.62s
+ TraCI-Duration: 11.78s
+ Real time factor: 292.01
+ UPS: 11421.448954
+Vehicles:
+ Inserted: 1860
+ Running: 0
+ Waiting: 0
+Statistics (avg of 1860):
+ RouteLength: 878.77
+ Speed: 11.44
+ Duration: 77.47
+ WaitingTime: 2.38
+ TimeLoss: 10.94
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+***Starting server on port 63247 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\robustness_smoke_2026-10-29\manifests\R2_single_secondary_trickle_8201.rou.xml' ... done (43ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3706.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.54s
+ TraCI-Duration: 12.56s
+ Real time factor: 273.647
+ UPS: 12520.859485
+Vehicles:
+ Inserted: 1860
+ Running: 0
+ Waiting: 0
+Statistics (avg of 1860):
+ RouteLength: 878.77
+ Speed: 9.79
+ Duration: 91.17
+ WaitingTime: 10.45
+ TimeLoss: 24.65
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+***Starting server on port 49908 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\robustness_smoke_2026-10-29\manifests\R4_isolated_tail_8401.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3630.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.06s
+ TraCI-Duration: 12.02s
+ Real time factor: 278.033
+ UPS: 14760.876225
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.18
+ Duration: 68.83
+ WaitingTime: 6.14
+ TimeLoss: 17.08
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+***Starting server on port 57406 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\robustness_smoke_2026-10-29\manifests\R2_single_secondary_trickle_8201.rou.xml' ... done (42ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.33s
+ TraCI-Duration: 10.50s
+ Real time factor: 325.627
+ UPS: 12919.343452
+Vehicles:
+ Inserted: 1860
+ Running: 0
+ Waiting: 0
+Statistics (avg of 1860):
+ RouteLength: 878.77
+ Speed: 11.28
+ Duration: 78.71
+ WaitingTime: 3.03
+ TimeLoss: 12.20
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+{"controller": "fixed:min7_C25_12_7_D0", "scenario": "R2_single_secondary_trickle", "status": "CLEARED", "N": 1860, "scheduled_count": 1860, "J": 2.3913978494623658, "J_total": 4448.0, "end_time": 3684.0, "counter_rows": 7368, "counter_rows_expected": 7368, "wall_s": 13.3, "ok": true}
+{"controller": "canonical_mp", "scenario": "R2_single_secondary_trickle", "status": "CLEARED", "N": 1860, "scheduled_count": 1860, "J": 10.45483870967742, "J_total": 19446.0, "end_time": 3706.0, "counter_rows": 7412, "counter_rows_expected": 7412, "wall_s": 14.2, "ok": true}
+{"controller": "p5:both", "scenario": "R4_isolated_tail", "status": "CLEARED", "N": 2800, "scheduled_count": 2800, "J": 6.144642857142857, "J_total": 17205.0, "end_time": 3630.0, "counter_rows": 7260, "counter_rows_expected": 7260, "wall_s": 13.7, "ok": true}
+{"controller": "learned:both", "scenario": "R2_single_secondary_trickle", "status": "CLEARED", "N": 1860, "scheduled_count": 1860, "J": 3.0387096774193547, "J_total": 5652.0, "end_time": 3690.0, "counter_rows": 7380, "counter_rows_expected": 7380, "wall_s": 12.2, "ok": true}

@@ -1,0 +1,58 @@
+test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters) ... ERROR
+test_rejects_gaps_duplicates_and_early_end (test_ablation_metrics.DemandCost.test_rejects_gaps_duplicates_and_early_end) ... ok
+test_window_split (test_ablation_metrics.DemandCost.test_window_split) ... ok
+test_censored_final_spell_excluded (test_ablation_metrics.GreenSpells.test_censored_final_spell_excluded) ... ok
+test_prepare_refuses_existing_root (test_ablation_metrics.RunnerGuards.test_prepare_refuses_existing_root) ... REFUSED: /tmp/tmpgx370q8h already exists
+REFUSED: --approved-plan must be f
+ok
+test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise) ... ERROR
+test_fixed_plans_equal_frozen_make_plan (test_robustness.Adapter.test_fixed_plans_equal_frozen_make_plan) ... ok
+test_exact_counts_determinism_and_ids (test_robustness.Generator.test_exact_counts_determinism_and_ids) ... ok
+test_profiles_respected (test_robustness.Generator.test_profiles_respected) ... ok
+test_seed_guards_and_constants (test_robustness.Generator.test_seed_guards_and_constants) ... ok
+test_writer_refuses_existing_and_records_N (test_robustness.Generator.test_writer_refuses_existing_and_records_N) ... ok
+test_a_clean_world_passes_and_uses_the_manifest_n (test_robustness_analysis.Analysis.test_a_clean_world_passes_and_uses_the_manifest_n) ... ok
+test_a_constant_denominator_is_detected (test_robustness_analysis.Analysis.test_a_constant_denominator_is_detected)
+A run whose J was divided by 2800 instead of N = 18 fails the consistency check. ... ok
+test_a_failure_under_the_guarantee_forbids_the_service_statement (test_robustness_analysis.Analysis.test_a_failure_under_the_guarantee_forbids_the_service_statement) ... ok
+test_a_logged_counter_that_does_not_recompute_is_reported (test_robustness_analysis.Analysis.test_a_logged_counter_that_does_not_recompute_is_reported) ... ok
+test_a_manifest_changed_after_preparation_fails_t4 (test_robustness_analysis.Analysis.test_a_manifest_changed_after_preparation_fails_t4) ... ok
+test_applied_once_and_bound_to_the_plan (test_robustness_analysis.Analysis.test_applied_once_and_bound_to_the_plan) ... ok
+test_contract_and_signal_violations_fail_the_technical_criteria (test_robustness_analysis.Analysis.test_contract_and_signal_violations_fail_the_technical_criteria) ... ok
+test_failures_are_kept_never_given_a_j_and_excluded_from_pairs (test_robustness_analysis.Analysis.test_failures_are_kept_never_given_a_j_and_excluded_from_pairs) ... ok
+test_guarantee_cost_is_evaluated_only_with_an_intervention_during_the_demand (test_robustness_analysis.Analysis.test_guarantee_cost_is_evaluated_only_with_an_intervention_during_the_demand) ... ok
+test_missing_cells_stop_the_analysis_unless_declared (test_robustness_analysis.Analysis.test_missing_cells_stop_the_analysis_unless_declared) ... ok
+
+======================================================================
+ERROR: test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/work/tests/test_ablation_metrics.py", line 52, in test_equals_protected_service_counters
+    from adaptive_qmix_protected.protection import ServiceCounters
+ModuleNotFoundError: No module named 'adaptive_qmix_protected'
+
+======================================================================
+ERROR: test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/work/tests/test_robustness.py", line 91, in test_equivalence_at_2800_and_denominator_otherwise
+    n_adapter.install()
+  File "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/work/tests/../tools/robustness/n_adapter.py", line 60, in install
+    mod = importlib.import_module(name)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1126, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1140, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'adaptive_qmix_protected'
+
+----------------------------------------------------------------------
+Ran 21 tests in 69.508s
+
+FAILED (errors=2)

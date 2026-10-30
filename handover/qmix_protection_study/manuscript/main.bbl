@@ -1,0 +1,255 @@
+\begin{thebibliography}{30}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Agarwal et~al.(2021)]{agarwal2021precipice}
+Rishabh Agarwal et~al.
+\newblock Deep reinforcement learning at the edge of the statistical precipice.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~34, 2021.
+
+\bibitem[Alshiekh et~al.(2018)Alshiekh, Bloem, Ehlers, Könighofer, Niekum, and
+  Topcu]{alshiekh2018shielding}
+Mohammed Alshiekh, Roderick Bloem, Rüdiger Ehlers, Bettina Könighofer, Scott
+  Niekum, and Ufuk Topcu.
+\newblock Safe reinforcement learning via shielding.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~32, 2018.
+\newblock \doi{10.1609/aaai.v32i1.11797}.
+
+\bibitem[Ault and Sharon(2021)]{ault2021resco}
+James Ault and Guni Sharon.
+\newblock Reinforcement learning benchmarks for traffic signal control.
+\newblock In \emph{Proceedings of the Neural Information Processing Systems
+  Track on Datasets and Benchmarks}, 2021.
+
+\bibitem[Ault et~al.(2020)Ault, Hanna, and Sharon]{ault2020interpretable}
+James Ault, Josiah~P. Hanna, and Guni Sharon.
+\newblock Learning an interpretable traffic signal control policy.
+\newblock In \emph{Proceedings of the 19th International Conference on
+  Autonomous Agents and MultiAgent Systems (AAMAS)}, 2020.
+\newblock arXiv:1912.11023.
+
+\bibitem[Bokade and Jin(2025)]{bokade2025pytsc}
+Rohit Bokade and Xiaoning Jin.
+\newblock {PyTSC}: A unified platform for multi-agent reinforcement learning in
+  traffic signal control.
+\newblock \emph{Sensors}, 25\penalty0 (5):\penalty0 1302, 2025.
+\newblock \doi{10.3390/s25051302}.
+
+\bibitem[Chen et~al.(2020)Chen, Wei, Xu, Zheng, Yang, Xiong, Xu, and
+  Li]{chen2020thousand}
+Chacha Chen, Hua Wei, Nan Xu, Guanjie Zheng, Ming Yang, Yuanhao Xiong, Kai Xu,
+  and Zhenhui Li.
+\newblock Toward a thousand lights: Decentralized deep reinforcement learning
+  for large-scale traffic signal control.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~34, 2020.
+\newblock \doi{10.1609/aaai.v34i04.5744}.
+
+\bibitem[Chu et~al.(2020)Chu, Wang, Codeca, and Li]{chu2020multiagent}
+Tianshu Chu, Jie Wang, Lara Codeca, and Zhaojian Li.
+\newblock Multi-agent deep reinforcement learning for large-scale traffic
+  signal control.
+\newblock \emph{IEEE Transactions on Intelligent Transportation Systems},
+  21\penalty0 (3):\penalty0 1086--1095, 2020.
+\newblock \doi{10.1109/TITS.2019.2901791}.
+
+\bibitem[El-Tantawy et~al.(2013)El-Tantawy, Abdulhai, and
+  Abdelgawad]{eltantawy2013marlin}
+Samah El-Tantawy, Baher Abdulhai, and Hossam Abdelgawad.
+\newblock Multiagent reinforcement learning for integrated network of adaptive
+  traffic signal controllers ({MARLIN-ATSC}).
+\newblock \emph{IEEE Transactions on Intelligent Transportation Systems},
+  14\penalty0 (3), 2013.
+\newblock \doi{10.1109/TITS.2013.2255286}.
+
+\bibitem[Haydari and Yilmaz(2022)]{haydari2022survey}
+Ammar Haydari and Yasin Yilmaz.
+\newblock Deep reinforcement learning for intelligent transportation systems: A
+  survey.
+\newblock \emph{IEEE Transactions on Intelligent Transportation Systems},
+  23\penalty0 (1), 2022.
+\newblock \doi{10.1109/TITS.2020.3008612}.
+
+\bibitem[Henderson et~al.(2018)Henderson, Islam, Bachman, Pineau, Precup, and
+  Meger]{henderson2018matters}
+Peter Henderson, Riashat Islam, Philip Bachman, Joelle Pineau, Doina Precup,
+  and David Meger.
+\newblock Deep reinforcement learning that matters.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~32, 2018.
+\newblock \doi{10.1609/aaai.v32i1.11694}.
+
+\bibitem[Huang and Ontañón(2022)]{huang2022masking}
+Shengyi Huang and Santiago Ontañón.
+\newblock A closer look at invalid action masking in policy gradient
+  algorithms.
+\newblock In \emph{The International FLAIRS Conference Proceedings}, volume~35,
+  2022.
+\newblock \doi{10.32473/flairs.v35i.130584}.
+
+\bibitem[{Jayawardana} et~al.(2022)]{jayawardana2022underspecification}
+{Jayawardana} et~al.
+\newblock The impact of task underspecification in evaluating deep
+  reinforcement learning.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2022.
+\newblock arXiv:2210.08607.
+
+\bibitem[Levin et~al.(2020)Levin, Hu, and Odell]{levin2020cyclical}
+Michael~W. Levin, Jeffrey Hu, and Michael Odell.
+\newblock Max-pressure signal control with cyclical phase structure.
+\newblock \emph{Transportation Research Part C: Emerging Technologies}, 2020.
+\newblock \doi{10.1016/j.trc.2020.102828}.
+
+\bibitem[Lopez et~al.(2018)Lopez, Wiessner, Behrisch, Bieker-Walz, Erdmann,
+  Flotterod, Hilbrich, Lucken, Rummel, and Wagner]{lopez2018sumo}
+Pablo~Alvarez Lopez, Evamarie Wiessner, Michael Behrisch, Laura Bieker-Walz,
+  Jakob Erdmann, Yun-Pang Flotterod, Robert Hilbrich, Leonhard Lucken, Johannes
+  Rummel, and Peter Wagner.
+\newblock Microscopic traffic simulation using {SUMO}.
+\newblock In \emph{21st International Conference on Intelligent Transportation
+  Systems (ITSC)}, 2018.
+\newblock \doi{10.1109/ITSC.2018.8569938}.
+
+\bibitem[Mei et~al.(2024)Mei, Lei, Da, Shi, and Wei]{mei2024libsignal}
+Hao Mei, Xiaoliang Lei, Longchao Da, Bin Shi, and Hua Wei.
+\newblock {LibSignal}: an open library for traffic signal control.
+\newblock \emph{Machine Learning}, 2024.
+\newblock \doi{10.1007/s10994-023-06412-y}.
+
+\bibitem[Mnih et~al.(2015)Mnih, Kavukcuoglu, Silver, Rusu, Veness, Bellemare,
+  Graves, Riedmiller, Fidjeland, Ostrovski, Petersen, Beattie, Sadik,
+  Antonoglou, King, Kumaran, Wierstra, Legg, and Hassabis]{mnih2015human}
+Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Andrei~A. Rusu, Joel Veness,
+  Marc~G. Bellemare, Alex Graves, Martin Riedmiller, Andreas~K. Fidjeland,
+  Georg Ostrovski, Stig Petersen, Charles Beattie, Amir Sadik, Ioannis
+  Antonoglou, Helen King, Dharshan Kumaran, Daan Wierstra, Shane Legg, and
+  Demis Hassabis.
+\newblock Human-level control through deep reinforcement learning.
+\newblock \emph{Nature}, 518:\penalty0 529--533, 2015.
+\newblock \doi{10.1038/nature14236}.
+
+\bibitem[Noaeen et~al.(2022)Noaeen, Naik, Goodman, Crebo, Abrar, Abad, Bazzan,
+  and Far]{noaeen2022review}
+Mohammad Noaeen, Atharva Naik, Liana Goodman, Jared Crebo, Taimoor Abrar, Zahra
+  Shakeri~Hossein Abad, Ana~L.C. Bazzan, and Behrouz Far.
+\newblock Reinforcement learning in urban network traffic signal control: A
+  systematic literature review.
+\newblock \emph{Expert Systems with Applications}, 2022.
+\newblock \doi{10.1016/j.eswa.2022.116830}.
+
+\bibitem[Papoudakis et~al.(2021)Papoudakis, Christianos, Sch{\"a}fer, and
+  Albrecht]{papoudakis2021benchmarking}
+Georgios Papoudakis, Filippos Christianos, Lukas Sch{\"a}fer, and Stefano~V.
+  Albrecht.
+\newblock Benchmarking multi-agent deep reinforcement learning algorithms in
+  cooperative tasks.
+\newblock In \emph{Proceedings of the Neural Information Processing Systems
+  Track on Datasets and Benchmarks}, 2021.
+\newblock arXiv:2006.07869.
+
+\bibitem[Raeis and Leon-Garcia(2021)]{raeis2021fair}
+Majid Raeis and Alberto Leon-Garcia.
+\newblock A deep reinforcement learning approach for fair traffic signal
+  control.
+\newblock In \emph{IEEE International Intelligent Transportation Systems
+  Conference (ITSC)}, 2021.
+\newblock \doi{10.1109/ITSC48978.2021.9564847}.
+
+\bibitem[Rashid et~al.(2020)Rashid, Samvelyan, Schroeder~de Witt, Farquhar,
+  Foerster, and Whiteson]{rashid2020qmix}
+Tabish Rashid, Mikayel Samvelyan, Christian Schroeder~de Witt, Gregory
+  Farquhar, Jakob Foerster, and Shimon Whiteson.
+\newblock Monotonic value function factorisation for deep multi-agent
+  reinforcement learning.
+\newblock \emph{Journal of Machine Learning Research}, 21\penalty0
+  (178):\penalty0 1--51, 2020.
+
+\bibitem[Sunehag et~al.(2018)]{sunehag2018vdn}
+Peter Sunehag et~al.
+\newblock Value-decomposition networks for cooperative multi-agent learning
+  based on team reward.
+\newblock In \emph{Proceedings of the 17th International Conference on
+  Autonomous Agents and MultiAgent Systems (AAMAS)}, 2018.
+\newblock arXiv:1706.05296.
+
+\bibitem[Tampuu et~al.(2017)Tampuu, Matiisen, Kodelja, Kuzovkin, Korjus, Aru,
+  Aru, and Vicente]{tampuu2017multiagent}
+Ardi Tampuu, Tambet Matiisen, Dorian Kodelja, Ilya Kuzovkin, Kristjan Korjus,
+  Juhan Aru, Jaan Aru, and Raul Vicente.
+\newblock Multiagent cooperation and competition with deep reinforcement
+  learning.
+\newblock \emph{PLOS ONE}, 12\penalty0 (4):\penalty0 e0172395, 2017.
+\newblock \doi{10.1371/journal.pone.0172395}.
+
+\bibitem[Van~Hasselt et~al.(2016)Van~Hasselt, Guez, and
+  Silver]{vanhasselt2016double}
+Hado Van~Hasselt, Arthur Guez, and David Silver.
+\newblock Deep reinforcement learning with double {Q}-learning.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~30, 2016.
+\newblock \doi{10.1609/aaai.v30i1.10295}.
+
+\bibitem[Varaiya(2013)]{varaiya2013max}
+Pravin Varaiya.
+\newblock Max pressure control of a network of signalized intersections.
+\newblock \emph{Transportation Research Part C: Emerging Technologies},
+  36:\penalty0 177--195, 2013.
+\newblock \doi{10.1016/j.trc.2013.08.014}.
+
+\bibitem[{Varela} et~al.(2021)]{varela2021methodology}
+{Varela} et~al.
+\newblock A methodology for the development of {RL}-based adaptive traffic
+  signal controllers, 2021.
+\newblock arXiv:2101.09614; final publication venue to be verified.
+
+\bibitem[Wei et~al.(2018)Wei, Zheng, Yao, and Li]{wei2018intellilight}
+Hua Wei, Guanjie Zheng, Huaxiu Yao, and Zhenhui Li.
+\newblock {IntelliLight}: A reinforcement learning approach for intelligent
+  traffic light control.
+\newblock In \emph{Proceedings of the 24th ACM SIGKDD International Conference
+  on Knowledge Discovery \& Data Mining}, 2018.
+\newblock \doi{10.1145/3219819.3220096}.
+
+\bibitem[Wei et~al.(2019{\natexlab{a}})Wei, Chen, Zheng, Wu, Gayah, Xu, and
+  Li]{wei2019presslight}
+Hua Wei, Chacha Chen, Guanjie Zheng, Kan Wu, Vikash Gayah, Kai Xu, and Zhenhui
+  Li.
+\newblock {PressLight}: Learning max pressure control to coordinate traffic
+  signals in arterial network.
+\newblock In \emph{Proceedings of the 25th ACM SIGKDD International Conference
+  on Knowledge Discovery \& Data Mining}, 2019{\natexlab{a}}.
+\newblock \doi{10.1145/3292500.3330949}.
+
+\bibitem[Wei et~al.(2019{\natexlab{b}})Wei, Xu, Zhang, Zheng, Zang, Chen,
+  Zhang, Zhu, Xu, and Li]{wei2019colight}
+Hua Wei, Nan Xu, Huichu Zhang, Guanjie Zheng, Xinshi Zang, Chacha Chen, Weinan
+  Zhang, Yanmin Zhu, Kai Xu, and Zhenhui Li.
+\newblock {CoLight}: Learning network-level cooperation for traffic signal
+  control.
+\newblock In \emph{Proceedings of the 28th ACM International Conference on
+  Information and Knowledge Management}, 2019{\natexlab{b}}.
+\newblock \doi{10.1145/3357384.3357902}.
+
+\bibitem[Wu et~al.(2018)Wu, Ghosal, Zhang, and Chuah]{wu2018delay}
+Jian Wu, Dipak Ghosal, Michael Zhang, and Chen-Nee Chuah.
+\newblock Delay-based traffic signal control for throughput optimality and
+  fairness at an isolated intersection.
+\newblock \emph{IEEE Transactions on Vehicular Technology}, 67\penalty0
+  (2):\penalty0 896--909, 2018.
+\newblock \doi{10.1109/TVT.2017.2760820}.
+
+\bibitem[Zheng et~al.(2019)Zheng, Xiong, Zang, Feng, Wei, Zhang, Li, Xu, and
+  Li]{zheng2019frap}
+Guanjie Zheng, Yuanhao Xiong, Xinshi Zang, Jie Feng, Hua Wei, Huichu Zhang,
+  Yong Li, Kai Xu, and Zhenhui Li.
+\newblock Learning phase competition for traffic signal control.
+\newblock In \emph{Proceedings of the 28th ACM International Conference on
+  Information and Knowledge Management}, 2019.
+\newblock \doi{10.1145/3357384.3357900}.
+
+\end{thebibliography}

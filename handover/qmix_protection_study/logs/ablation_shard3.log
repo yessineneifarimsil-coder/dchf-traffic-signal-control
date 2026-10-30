@@ -1,0 +1,3426 @@
+***Starting server on port 49686 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (12ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (99ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.24s
+ TraCI-Duration: 11.89s
+ Real time factor: 278.659
+ UPS: 13504.606555
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.87
+ WaitingTime: 3.15
+ TimeLoss: 12.15
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed101_t350000 9302 guarantee CLEARED 15s
+***Starting server on port 49694 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (95ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.37s
+ TraCI-Duration: 12.27s
+ Real time factor: 274.475
+ UPS: 13854.236781
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.53
+ Duration: 66.16
+ WaitingTime: 4.70
+ TimeLoss: 14.56
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed101_t350000 9303 min_green CLEARED 14s
+***Starting server on port 58692 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (70ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.70s
+ TraCI-Duration: 11.57s
+ Real time factor: 290.203
+ UPS: 14714.679477
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.50
+ Duration: 66.73
+ WaitingTime: 5.05
+ TimeLoss: 15.06
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed101_t350000 9304 both CLEARED 14s
+***Starting server on port 60622 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (4ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (108ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.09s
+ TraCI-Duration: 11.94s
+ Real time factor: 280.388
+ UPS: 13568.110627
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.69
+ Duration: 63.43
+ WaitingTime: 2.95
+ TimeLoss: 11.76
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed102_t325000 9301 guarantee CLEARED 14s
+***Starting server on port 59983 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (96ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.45s
+ TraCI-Duration: 11.42s
+ Real time factor: 295.984
+ UPS: 14907.309237
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.49
+ Duration: 66.28
+ WaitingTime: 4.83
+ TimeLoss: 14.57
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed102_t325000 9302 min_green CLEARED 13s
+***Starting server on port 49521 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (8ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (79ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.13s
+ TraCI-Duration: 11.05s
+ Real time factor: 302.68
+ UPS: 15219.628866
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.57
+ Duration: 65.91
+ WaitingTime: 4.73
+ TimeLoss: 14.33
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed102_t325000 9303 both CLEARED 13s
+***Starting server on port 51107 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.89s
+ TraCI-Duration: 10.93s
+ Real time factor: 309.582
+ UPS: 14985.530411
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.67
+ Duration: 63.62
+ WaitingTime: 3.03
+ TimeLoss: 11.88
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed102_t325000 9305 guarantee CLEARED 13s
+***Starting server on port 57245 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3665.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.96s
+ TraCI-Duration: 10.91s
+ Real time factor: 306.387
+ UPS: 15616.953687
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.46
+ Duration: 66.72
+ WaitingTime: 4.95
+ TimeLoss: 15.05
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed103_t350000 9301 min_green CLEARED 13s
+***Starting server on port 57254 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3695.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.75s
+ TraCI-Duration: 11.66s
+ Real time factor: 289.849
+ UPS: 14745.293379
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.43
+ Duration: 67.13
+ WaitingTime: 5.26
+ TimeLoss: 15.43
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed103_t350000 9302 both CLEARED 14s
+***Starting server on port 64918 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.28s
+ TraCI-Duration: 11.28s
+ Real time factor: 300.538
+ UPS: 14604.821632
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 64.04
+ WaitingTime: 3.18
+ TimeLoss: 12.36
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed103_t350000 9304 guarantee CLEARED 13s
+***Starting server on port 50372 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.10s
+ TraCI-Duration: 11.13s
+ Real time factor: 304.959
+ UPS: 15383.057851
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.53
+ Duration: 66.48
+ WaitingTime: 5.15
+ TimeLoss: 14.74
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed103_t350000 9305 min_green CLEARED 13s
+***Starting server on port 49605 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.88s
+ TraCI-Duration: 10.94s
+ Real time factor: 310.711
+ UPS: 15532.839340
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.52
+ Duration: 65.88
+ WaitingTime: 4.66
+ TimeLoss: 14.20
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed104_t325000 9301 both CLEARED 13s
+***Starting server on port 58074 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.22s
+ TraCI-Duration: 11.15s
+ Real time factor: 301.17
+ UPS: 14543.497831
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.70
+ Duration: 63.47
+ WaitingTime: 3.07
+ TimeLoss: 11.89
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed104_t325000 9303 guarantee CLEARED 13s
+***Starting server on port 58089 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.13s
+ TraCI-Duration: 11.11s
+ Real time factor: 303.717
+ UPS: 15217.835655
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.52
+ Duration: 65.94
+ WaitingTime: 4.77
+ TimeLoss: 14.26
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed104_t325000 9304 min_green CLEARED 13s
+***Starting server on port 63636 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3700.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.33s
+ TraCI-Duration: 11.30s
+ Real time factor: 300.13
+ UPS: 14976.800779
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.51
+ Duration: 65.94
+ WaitingTime: 4.70
+ TimeLoss: 14.21
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed104_t325000 9305 both CLEARED 13s
+***Starting server on port 63645 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.19s
+ TraCI-Duration: 11.22s
+ Real time factor: 301.986
+ UPS: 14727.638273
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 64.10
+ WaitingTime: 3.14
+ TimeLoss: 12.39
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed105_t350000 9302 guarantee CLEARED 13s
+***Starting server on port 63653 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.59s
+ TraCI-Duration: 11.58s
+ Real time factor: 291.991
+ UPS: 14757.349436
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.53
+ Duration: 66.33
+ WaitingTime: 4.70
+ TimeLoss: 14.76
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed105_t350000 9303 min_green CLEARED 13s
+***Starting server on port 63730 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.95s
+ TraCI-Duration: 11.90s
+ Real time factor: 284.854
+ UPS: 14451.906747
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.46
+ Duration: 66.86
+ WaitingTime: 4.96
+ TimeLoss: 15.19
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed105_t350000 9304 both CLEARED 14s
+***Starting server on port 61030 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (72ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3665.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.91s
+ TraCI-Duration: 10.94s
+ Real time factor: 307.802
+ UPS: 15019.904258
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.87
+ WaitingTime: 3.10
+ TimeLoss: 12.20
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed106_t350000 9301 guarantee CLEARED 13s
+***Starting server on port 61039 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.28s
+ TraCI-Duration: 11.36s
+ Real time factor: 300.391
+ UPS: 15086.779551
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.52
+ Duration: 66.19
+ WaitingTime: 4.87
+ TimeLoss: 14.48
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed106_t350000 9302 min_green CLEARED 13s
+***Starting server on port 61047 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.00s
+ TraCI-Duration: 11.07s
+ Real time factor: 306.692
+ UPS: 15444.203684
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.52
+ Duration: 66.18
+ WaitingTime: 4.86
+ TimeLoss: 14.61
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed106_t350000 9303 both CLEARED 13s
+***Starting server on port 49783 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.77s
+ TraCI-Duration: 10.76s
+ Real time factor: 312.208
+ UPS: 15267.691785
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 64.18
+ WaitingTime: 3.15
+ TimeLoss: 12.45
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed106_t350000 9305 guarantee CLEARED 13s
+***Starting server on port 49792 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.68s
+ TraCI-Duration: 11.61s
+ Real time factor: 289.341
+ UPS: 14624.724062
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.51
+ Duration: 66.25
+ WaitingTime: 4.86
+ TimeLoss: 14.58
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed107_t350000 9301 min_green CLEARED 14s
+***Starting server on port 49582 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.07s
+ TraCI-Duration: 11.10s
+ Real time factor: 305.641
+ UPS: 15402.633977
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.47
+ Duration: 66.41
+ WaitingTime: 4.86
+ TimeLoss: 14.71
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed107_t350000 9302 both CLEARED 13s
+***Starting server on port 49592 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.05s
+ TraCI-Duration: 11.06s
+ Real time factor: 305.394
+ UPS: 14963.236515
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.59
+ Duration: 64.39
+ WaitingTime: 3.28
+ TimeLoss: 12.71
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed107_t350000 9304 guarantee CLEARED 13s
+***Starting server on port 49601 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.03s
+ TraCI-Duration: 11.09s
+ Real time factor: 306.861
+ UPS: 15406.652807
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.54
+ Duration: 66.17
+ WaitingTime: 4.73
+ TimeLoss: 14.44
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed107_t350000 9305 min_green CLEARED 13s
+***Starting server on port 61002 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3665.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.06s
+ TraCI-Duration: 11.10s
+ Real time factor: 303.872
+ UPS: 15212.751845
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.57
+ Duration: 65.53
+ WaitingTime: 4.50
+ TimeLoss: 13.85
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed108_t350000 9301 both CLEARED 13s
+***Starting server on port 59647 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.93s
+ TraCI-Duration: 11.77s
+ Real time factor: 284.201
+ UPS: 13684.633826
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.76
+ Duration: 63.20
+ WaitingTime: 2.95
+ TimeLoss: 11.63
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed108_t350000 9303 guarantee CLEARED 14s
+***Starting server on port 49840 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.46s
+ TraCI-Duration: 11.48s
+ Real time factor: 295.393
+ UPS: 14845.641355
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.53
+ Duration: 66.05
+ WaitingTime: 4.70
+ TimeLoss: 14.38
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed108_t350000 9304 min_green CLEARED 13s
+***Starting server on port 49848 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.65s
+ TraCI-Duration: 11.67s
+ Real time factor: 291.792
+ UPS: 14558.595603
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.57
+ Duration: 65.75
+ WaitingTime: 4.56
+ TimeLoss: 14.02
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed108_t350000 9305 both CLEARED 14s
+***Starting server on port 62145 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (75ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.56s
+ TraCI-Duration: 11.34s
+ Real time factor: 293.72
+ UPS: 14228.050625
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 63.84
+ WaitingTime: 3.06
+ TimeLoss: 12.13
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed109_t325000 9302 guarantee CLEARED 13s
+***Starting server on port 64720 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.59s
+ TraCI-Duration: 11.57s
+ Real time factor: 292.295
+ UPS: 14700.317712
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.54
+ Duration: 66.10
+ WaitingTime: 4.75
+ TimeLoss: 14.52
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed109_t325000 9303 min_green CLEARED 13s
+***Starting server on port 65001 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.21s
+ TraCI-Duration: 11.24s
+ Real time factor: 301.442
+ UPS: 15153.997379
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.52
+ Duration: 66.07
+ WaitingTime: 4.78
+ TimeLoss: 14.40
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed109_t325000 9304 both CLEARED 13s
+***Starting server on port 49280 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3665.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.93s
+ TraCI-Duration: 10.91s
+ Real time factor: 307.234
+ UPS: 14871.992623
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.69
+ Duration: 63.36
+ WaitingTime: 2.93
+ TimeLoss: 11.68
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed110_t360000 9301 guarantee CLEARED 13s
+***Starting server on port 62612 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.90s
+ TraCI-Duration: 11.81s
+ Real time factor: 286.024
+ UPS: 14418.494690
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.49
+ Duration: 66.43
+ WaitingTime: 4.93
+ TimeLoss: 14.72
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+qmix_seed110_t360000 9302 min_green CLEARED 14s
+***Starting server on port 63898 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.11s
+ TraCI-Duration: 11.15s
+ Real time factor: 303.881
+ UPS: 15371.841453
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.49
+ Duration: 66.48
+ WaitingTime: 4.79
+ TimeLoss: 14.90
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed110_t360000 9303 both CLEARED 13s
+***Starting server on port 53509 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.08s
+ TraCI-Duration: 11.15s
+ Real time factor: 304.686
+ UPS: 14687.945024
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.70
+ Duration: 63.36
+ WaitingTime: 2.89
+ TimeLoss: 11.62
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+qmix_seed110_t360000 9305 guarantee CLEARED 13s
+***Starting server on port 53887 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.24s
+ TraCI-Duration: 11.27s
+ Real time factor: 300.776
+ UPS: 14754.883531
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.60
+ Duration: 64.47
+ WaitingTime: 3.22
+ TimeLoss: 12.79
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed101_t350000 9301 guarantee CLEARED 13s
+***Starting server on port 53895 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (1ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.72s
+ TraCI-Duration: 11.67s
+ Real time factor: 289.656
+ UPS: 14284.310643
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.57
+ Duration: 64.90
+ WaitingTime: 3.32
+ TimeLoss: 13.20
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed101_t350000 9302 guarantee CLEARED 14s
+***Starting server on port 60237 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.74s
+ TraCI-Duration: 11.74s
+ Real time factor: 288.394
+ UPS: 14092.521384
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.68
+ Duration: 64.14
+ WaitingTime: 3.17
+ TimeLoss: 12.56
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed101_t350000 9303 guarantee CLEARED 14s
+***Starting server on port 64883 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (83ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.44s
+ TraCI-Duration: 11.41s
+ Real time factor: 295.844
+ UPS: 14502.371573
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.62
+ Duration: 64.43
+ WaitingTime: 3.25
+ TimeLoss: 12.76
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed101_t350000 9304 guarantee CLEARED 13s
+***Starting server on port 50620 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (80ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.82s
+ TraCI-Duration: 11.73s
+ Real time factor: 287.096
+ UPS: 14059.447652
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 64.36
+ WaitingTime: 3.11
+ TimeLoss: 12.63
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed101_t350000 9305 guarantee CLEARED 14s
+***Starting server on port 65512 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (75ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.86s
+ TraCI-Duration: 10.90s
+ Real time factor: 310.208
+ UPS: 15012.391469
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.60
+ WaitingTime: 2.98
+ TimeLoss: 11.92
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed102_t360000 9301 guarantee CLEARED 13s
+***Starting server on port 50577 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (75ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.77s
+ TraCI-Duration: 11.74s
+ Real time factor: 288.891
+ UPS: 13906.051828
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.70
+ Duration: 63.44
+ WaitingTime: 3.02
+ TimeLoss: 11.73
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed102_t360000 9302 guarantee CLEARED 14s
+***Starting server on port 51354 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (7ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (92ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.75s
+ TraCI-Duration: 10.75s
+ Real time factor: 312.766
+ UPS: 15051.148936
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.77
+ Duration: 63.16
+ WaitingTime: 2.88
+ TimeLoss: 11.58
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed102_t360000 9303 guarantee CLEARED 13s
+***Starting server on port 51362 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (74ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.45s
+ TraCI-Duration: 12.27s
+ Real time factor: 273.626
+ UPS: 13375.790022
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.58
+ Duration: 64.25
+ WaitingTime: 3.23
+ TimeLoss: 12.57
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed102_t360000 9304 guarantee CLEARED 14s
+***Starting server on port 52693 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (1ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (72ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3740.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.90s
+ TraCI-Duration: 11.80s
+ Real time factor: 289.945
+ UPS: 13872.083107
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.65
+ Duration: 63.91
+ WaitingTime: 3.09
+ TimeLoss: 12.17
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed102_t360000 9305 guarantee CLEARED 14s
+***Starting server on port 58130 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (78ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.46s
+ TraCI-Duration: 11.46s
+ Real time factor: 295.274
+ UPS: 14364.278264
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.60
+ Duration: 63.94
+ WaitingTime: 3.17
+ TimeLoss: 12.26
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed103_t300000 9301 guarantee CLEARED 13s
+***Starting server on port 59817 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.02s
+ TraCI-Duration: 11.07s
+ Real time factor: 306.598
+ UPS: 14800.232964
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.53
+ WaitingTime: 3.07
+ TimeLoss: 11.83
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed103_t300000 9302 guarantee CLEARED 13s
+***Starting server on port 56300 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (1ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (74ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.37s
+ TraCI-Duration: 11.28s
+ Real time factor: 297.85
+ UPS: 14327.594568
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.72
+ Duration: 63.31
+ WaitingTime: 2.99
+ TimeLoss: 11.73
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed103_t300000 9303 guarantee CLEARED 13s
+***Starting server on port 64211 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (79ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.62s
+ TraCI-Duration: 11.52s
+ Real time factor: 292.463
+ UPS: 14170.167235
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 63.85
+ WaitingTime: 3.23
+ TimeLoss: 12.18
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed103_t300000 9304 guarantee CLEARED 13s
+***Starting server on port 63234 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.33s
+ TraCI-Duration: 12.21s
+ Real time factor: 276.173
+ UPS: 13332.757974
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.69
+ Duration: 63.45
+ WaitingTime: 2.98
+ TimeLoss: 11.72
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed103_t300000 9305 guarantee CLEARED 14s
+***Starting server on port 63245 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.46s
+ TraCI-Duration: 12.31s
+ Real time factor: 272.619
+ UPS: 13254.271282
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.72
+ WaitingTime: 3.07
+ TimeLoss: 12.05
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed104_t360000 9301 guarantee CLEARED 14s
+***Starting server on port 49909 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3695.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.70s
+ TraCI-Duration: 12.64s
+ Real time factor: 269.669
+ UPS: 13112.757262
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.62
+ Duration: 64.17
+ WaitingTime: 3.14
+ TimeLoss: 12.46
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed104_t360000 9302 guarantee CLEARED 15s
+***Starting server on port 57410 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 14.09s
+ TraCI-Duration: 12.98s
+ Real time factor: 260.505
+ UPS: 12720.329358
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 64.00
+ WaitingTime: 3.12
+ TimeLoss: 12.43
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed104_t360000 9303 guarantee CLEARED 15s
+***Starting server on port 57417 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.97s
+ TraCI-Duration: 11.94s
+ Real time factor: 283.71
+ UPS: 13788.528255
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.88
+ WaitingTime: 3.07
+ TimeLoss: 12.21
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed104_t360000 9304 guarantee CLEARED 14s
+***Starting server on port 57427 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.12s
+ TraCI-Duration: 11.18s
+ Real time factor: 303.706
+ UPS: 14773.293720
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.67
+ Duration: 63.93
+ WaitingTime: 3.02
+ TimeLoss: 12.20
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed104_t360000 9305 guarantee CLEARED 13s
+***Starting server on port 52638 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.01s
+ TraCI-Duration: 11.10s
+ Real time factor: 306.097
+ UPS: 14865.817091
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 63.74
+ WaitingTime: 3.14
+ TimeLoss: 12.07
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed105_t275000 9301 guarantee CLEARED 13s
+***Starting server on port 52647 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.32s
+ TraCI-Duration: 11.35s
+ Real time factor: 299.034
+ UPS: 14515.458898
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 63.88
+ WaitingTime: 3.25
+ TimeLoss: 12.17
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed105_t275000 9302 guarantee CLEARED 13s
+***Starting server on port 54186 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (63ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.88s
+ TraCI-Duration: 10.94s
+ Real time factor: 309.265
+ UPS: 14909.618783
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.73
+ Duration: 63.27
+ WaitingTime: 3.12
+ TimeLoss: 11.69
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed105_t275000 9303 guarantee CLEARED 13s
+***Starting server on port 56158 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.52s
+ TraCI-Duration: 10.53s
+ Real time factor: 319.389
+ UPS: 15424.752647
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.71
+ Duration: 63.47
+ WaitingTime: 3.12
+ TimeLoss: 11.80
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed105_t275000 9304 guarantee CLEARED 12s
+***Starting server on port 56167 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.48s
+ TraCI-Duration: 10.58s
+ Real time factor: 320.881
+ UPS: 15482.061999
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.69
+ Duration: 63.50
+ WaitingTime: 3.10
+ TimeLoss: 11.76
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed105_t275000 9305 guarantee CLEARED 12s
+***Starting server on port 56291 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.58s
+ TraCI-Duration: 10.67s
+ Real time factor: 318.111
+ UPS: 15416.781768
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 63.78
+ WaitingTime: 3.19
+ TimeLoss: 12.10
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed106_t275000 9301 guarantee CLEARED 12s
+***Starting server on port 54849 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (63ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.45s
+ TraCI-Duration: 10.45s
+ Real time factor: 321.834
+ UPS: 15766.812227
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.55
+ Duration: 64.47
+ WaitingTime: 3.47
+ TimeLoss: 12.77
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed106_t275000 9302 guarantee CLEARED 12s
+***Starting server on port 58024 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.46s
+ TraCI-Duration: 10.57s
+ Real time factor: 320.793
+ UPS: 15579.434358
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.67
+ Duration: 63.74
+ WaitingTime: 3.23
+ TimeLoss: 12.16
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed106_t275000 9303 guarantee CLEARED 12s
+***Starting server on port 58032 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.91s
+ TraCI-Duration: 10.94s
+ Real time factor: 309.088
+ UPS: 15056.106165
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.61
+ Duration: 64.02
+ WaitingTime: 3.35
+ TimeLoss: 12.34
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed106_t275000 9304 guarantee CLEARED 13s
+***Starting server on port 58287 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.49s
+ TraCI-Duration: 10.56s
+ Real time factor: 320.251
+ UPS: 15520.494300
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.67
+ Duration: 63.70
+ WaitingTime: 3.11
+ TimeLoss: 11.96
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed106_t275000 9305 guarantee CLEARED 12s
+***Starting server on port 52125 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.28s
+ TraCI-Duration: 10.42s
+ Real time factor: 327.186
+ UPS: 15816.811491
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.65
+ Duration: 63.71
+ WaitingTime: 3.15
+ TimeLoss: 12.03
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed107_t325000 9301 guarantee CLEARED 12s
+***Starting server on port 55307 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.77s
+ TraCI-Duration: 10.85s
+ Real time factor: 313.111
+ UPS: 15205.115133
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 63.91
+ WaitingTime: 3.27
+ TimeLoss: 12.19
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed107_t325000 9302 guarantee CLEARED 13s
+***Starting server on port 59597 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.18s
+ TraCI-Duration: 10.32s
+ Real time factor: 328.741
+ UPS: 15805.080955
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.76
+ Duration: 63.10
+ WaitingTime: 2.99
+ TimeLoss: 11.51
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed107_t325000 9303 guarantee CLEARED 12s
+***Starting server on port 59605 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.19s
+ TraCI-Duration: 10.32s
+ Real time factor: 329.012
+ UPS: 15939.293697
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.68
+ Duration: 63.67
+ WaitingTime: 3.16
+ TimeLoss: 12.00
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed107_t325000 9304 guarantee CLEARED 12s
+***Starting server on port 52167 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.76s
+ TraCI-Duration: 10.87s
+ Real time factor: 313.35
+ UPS: 15135.714286
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.69
+ Duration: 63.57
+ WaitingTime: 2.95
+ TimeLoss: 11.83
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed107_t325000 9305 guarantee CLEARED 13s
+***Starting server on port 60784 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.46s
+ TraCI-Duration: 10.55s
+ Real time factor: 321.961
+ UPS: 15517.406858
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.67
+ Duration: 63.52
+ WaitingTime: 3.11
+ TimeLoss: 11.85
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed108_t300000 9301 guarantee CLEARED 12s
+***Starting server on port 52670 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.42s
+ TraCI-Duration: 10.53s
+ Real time factor: 322.595
+ UPS: 15555.370743
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.70
+ Duration: 63.46
+ WaitingTime: 3.04
+ TimeLoss: 11.76
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed108_t300000 9302 guarantee CLEARED 12s
+***Starting server on port 55531 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3700.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.38s
+ TraCI-Duration: 10.53s
+ Real time factor: 325.218
+ UPS: 15602.619320
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.74
+ Duration: 63.40
+ WaitingTime: 3.09
+ TimeLoss: 11.82
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed108_t300000 9303 guarantee CLEARED 12s
+***Starting server on port 55547 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3700.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.35s
+ TraCI-Duration: 10.44s
+ Real time factor: 326.02
+ UPS: 15729.051018
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 63.75
+ WaitingTime: 3.26
+ TimeLoss: 12.09
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed108_t300000 9304 guarantee CLEARED 12s
+***Starting server on port 57241 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.65s
+ TraCI-Duration: 10.71s
+ Real time factor: 315.826
+ UPS: 15235.066941
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.72
+ Duration: 63.40
+ WaitingTime: 3.00
+ TimeLoss: 11.66
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed108_t300000 9305 guarantee CLEARED 12s
+***Starting server on port 57253 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.53s
+ TraCI-Duration: 10.65s
+ Real time factor: 318.678
+ UPS: 15419.441554
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.51
+ WaitingTime: 3.09
+ TimeLoss: 11.83
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed109_t360000 9301 guarantee CLEARED 12s
+***Starting server on port 61634 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.57s
+ TraCI-Duration: 10.61s
+ Real time factor: 318.496
+ UPS: 15414.261020
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.69
+ WaitingTime: 3.13
+ TimeLoss: 11.98
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed109_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 60424 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.62s
+ TraCI-Duration: 10.73s
+ Real time factor: 317.153
+ UPS: 15212.496773
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.72
+ Duration: 63.13
+ WaitingTime: 3.11
+ TimeLoss: 11.55
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed109_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 60432 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.26s
+ TraCI-Duration: 10.39s
+ Real time factor: 326.966
+ UPS: 15831.541537
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.62
+ Duration: 63.64
+ WaitingTime: 3.22
+ TimeLoss: 11.97
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed109_t360000 9304 guarantee CLEARED 12s
+***Starting server on port 54481 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.22s
+ TraCI-Duration: 10.30s
+ Real time factor: 327.599
+ UPS: 15786.503833
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.71
+ Duration: 63.25
+ WaitingTime: 3.01
+ TimeLoss: 11.51
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed109_t360000 9305 guarantee CLEARED 12s
+***Starting server on port 54489 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.13s
+ TraCI-Duration: 11.22s
+ Real time factor: 302.63
+ UPS: 14732.580193
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.65
+ Duration: 63.81
+ WaitingTime: 3.12
+ TimeLoss: 12.14
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed110_t275000 9301 guarantee CLEARED 13s
+***Starting server on port 54888 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.70s
+ TraCI-Duration: 10.78s
+ Real time factor: 314.503
+ UPS: 15285.189300
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.64
+ Duration: 63.88
+ WaitingTime: 3.15
+ TimeLoss: 12.16
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed110_t275000 9302 guarantee CLEARED 13s
+***Starting server on port 54896 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.71s
+ TraCI-Duration: 10.77s
+ Real time factor: 313.834
+ UPS: 15220.409906
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.68
+ Duration: 63.65
+ WaitingTime: 3.09
+ TimeLoss: 12.08
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed110_t275000 9303 guarantee CLEARED 13s
+***Starting server on port 54906 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.45s
+ TraCI-Duration: 10.58s
+ Real time factor: 321.51
+ UPS: 15603.966451
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.66
+ Duration: 63.79
+ WaitingTime: 3.18
+ TimeLoss: 12.10
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+vdn_seed110_t275000 9304 guarantee CLEARED 12s
+***Starting server on port 61576 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.31s
+ TraCI-Duration: 10.43s
+ Real time factor: 325.875
+ UPS: 15765.917934
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.69
+ Duration: 63.67
+ WaitingTime: 3.06
+ TimeLoss: 11.93
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+vdn_seed110_t275000 9305 guarantee CLEARED 12s
+***Starting server on port 61585 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.95s
+ TraCI-Duration: 11.03s
+ Real time factor: 308.079
+ UPS: 17551.109251
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.69
+ Duration: 74.87
+ WaitingTime: 8.10
+ TimeLoss: 23.20
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed101_t225000 9301 guarantee CLEARED 13s
+***Starting server on port 57659 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3775.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.32s
+ TraCI-Duration: 11.34s
+ Real time factor: 306.412
+ UPS: 17154.383117
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.65
+ Duration: 75.48
+ WaitingTime: 8.23
+ TimeLoss: 23.78
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed101_t225000 9302 guarantee CLEARED 13s
+***Starting server on port 49583 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3765.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.78s
+ TraCI-Duration: 11.78s
+ Real time factor: 294.624
+ UPS: 16439.627514
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.69
+ Duration: 75.03
+ WaitingTime: 8.29
+ TimeLoss: 23.45
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed101_t225000 9303 guarantee CLEARED 14s
+***Starting server on port 55394 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3770.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.27s
+ TraCI-Duration: 11.33s
+ Real time factor: 307.178
+ UPS: 17174.447975
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.67
+ Duration: 75.28
+ WaitingTime: 8.11
+ TimeLoss: 23.60
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed101_t225000 9304 guarantee CLEARED 13s
+***Starting server on port 64921 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (86ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3760.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.76s
+ TraCI-Duration: 11.77s
+ Real time factor: 294.579
+ UPS: 16287.449076
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.72
+ Duration: 74.25
+ WaitingTime: 8.16
+ TimeLoss: 22.52
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed101_t225000 9305 guarantee CLEARED 14s
+***Starting server on port 52162 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3700.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.76s
+ TraCI-Duration: 10.88s
+ Real time factor: 314.679
+ UPS: 17077.819357
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.85
+ Duration: 71.71
+ WaitingTime: 6.41
+ TimeLoss: 20.04
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed102_t050000 9301 guarantee CLEARED 13s
+***Starting server on port 55114 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3715.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.64s
+ TraCI-Duration: 10.79s
+ Real time factor: 319.24
+ UPS: 17026.381370
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.99
+ Duration: 70.76
+ WaitingTime: 5.96
+ TimeLoss: 19.05
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed102_t050000 9302 guarantee CLEARED 12s
+***Starting server on port 55126 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3695.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.73s
+ TraCI-Duration: 10.83s
+ Real time factor: 315.031
+ UPS: 17108.960696
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.90
+ Duration: 71.67
+ WaitingTime: 6.42
+ TimeLoss: 20.08
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed102_t050000 9303 guarantee CLEARED 13s
+***Starting server on port 53228 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3725.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 14.06s
+ TraCI-Duration: 13.00s
+ Real time factor: 265.011
+ UPS: 14292.472965
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.87
+ Duration: 71.75
+ WaitingTime: 6.32
+ TimeLoss: 20.08
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed102_t050000 9304 guarantee CLEARED 15s
+***Starting server on port 61825 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3880.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 29.18s
+ TraCI-Duration: 27.07s
+ Real time factor: 132.986
+ UPS: 6858.068275
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 9.89
+ Duration: 71.46
+ WaitingTime: 6.48
+ TimeLoss: 19.73
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed102_t050000 9305 guarantee CLEARED 30s
+***Starting server on port 55796 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (5ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3705.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 23.27s
+ TraCI-Duration: 21.47s
+ Real time factor: 159.218
+ UPS: 7982.595617
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.34
+ Duration: 66.34
+ WaitingTime: 5.37
+ TimeLoss: 14.66
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed103_t325000 9301 guarantee CLEARED 24s
+***Starting server on port 52332 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3720.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.65s
+ TraCI-Duration: 10.75s
+ Real time factor: 319.396
+ UPS: 15965.742251
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.32
+ Duration: 66.41
+ WaitingTime: 5.45
+ TimeLoss: 14.71
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed103_t325000 9302 guarantee CLEARED 12s
+***Starting server on port 59627 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.37s
+ TraCI-Duration: 10.44s
+ Real time factor: 323.63
+ UPS: 16363.292586
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.35
+ Duration: 66.45
+ WaitingTime: 5.37
+ TimeLoss: 14.88
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed103_t325000 9303 guarantee CLEARED 12s
+***Starting server on port 59635 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3720.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.42s
+ TraCI-Duration: 10.49s
+ Real time factor: 325.887
+ UPS: 16367.849321
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.31
+ Duration: 66.73
+ WaitingTime: 5.56
+ TimeLoss: 15.06
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed103_t325000 9304 guarantee CLEARED 12s
+***Starting server on port 59643 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.38s
+ TraCI-Duration: 10.50s
+ Real time factor: 323.871
+ UPS: 16266.215504
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.41
+ Duration: 66.10
+ WaitingTime: 5.31
+ TimeLoss: 14.37
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed103_t325000 9305 guarantee CLEARED 12s
+***Starting server on port 59651 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.16s
+ TraCI-Duration: 10.30s
+ Real time factor: 330.227
+ UPS: 15983.959136
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.63
+ Duration: 63.70
+ WaitingTime: 3.56
+ TimeLoss: 12.02
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed104_t360000 9301 guarantee CLEARED 12s
+***Starting server on port 59659 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.22s
+ TraCI-Duration: 10.34s
+ Real time factor: 328.015
+ UPS: 15980.123006
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.60
+ Duration: 64.03
+ WaitingTime: 3.60
+ TimeLoss: 12.32
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed104_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 54320 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3715.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.28s
+ TraCI-Duration: 10.37s
+ Real time factor: 329.344
+ UPS: 15739.982270
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.68
+ Duration: 63.41
+ WaitingTime: 3.57
+ TimeLoss: 11.84
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed104_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 55285 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3715.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.40s
+ TraCI-Duration: 10.51s
+ Real time factor: 325.877
+ UPS: 15699.736842
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.61
+ Duration: 63.92
+ WaitingTime: 3.73
+ TimeLoss: 12.25
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed104_t360000 9304 guarantee CLEARED 12s
+***Starting server on port 55294 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3720.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.34s
+ TraCI-Duration: 10.48s
+ Real time factor: 328.187
+ UPS: 15853.903838
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.56
+ Duration: 64.18
+ WaitingTime: 3.83
+ TimeLoss: 12.45
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed104_t360000 9305 guarantee CLEARED 12s
+***Starting server on port 49965 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.39s
+ TraCI-Duration: 10.50s
+ Real time factor: 323.176
+ UPS: 16552.384298
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.26
+ Duration: 67.31
+ WaitingTime: 5.44
+ TimeLoss: 15.65
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed105_t360000 9301 guarantee CLEARED 12s
+***Starting server on port 49974 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3695.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.55s
+ TraCI-Duration: 10.64s
+ Real time factor: 319.803
+ UPS: 16369.482430
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.22
+ Duration: 67.55
+ WaitingTime: 5.43
+ TimeLoss: 15.84
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed105_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 58670 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (63ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3675.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.51s
+ TraCI-Duration: 10.60s
+ Real time factor: 319.343
+ UPS: 16146.332986
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.39
+ Duration: 66.36
+ WaitingTime: 5.05
+ TimeLoss: 14.79
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed105_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 58679 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.45s
+ TraCI-Duration: 10.52s
+ Real time factor: 322.412
+ UPS: 16324.246396
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.34
+ Duration: 66.72
+ WaitingTime: 5.17
+ TimeLoss: 15.06
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed105_t360000 9304 guarantee CLEARED 12s
+***Starting server on port 58689 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.49s
+ TraCI-Duration: 10.56s
+ Real time factor: 320.306
+ UPS: 16256.593263
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.33
+ Duration: 66.70
+ WaitingTime: 5.16
+ TimeLoss: 14.97
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed105_t360000 9305 guarantee CLEARED 12s
+***Starting server on port 60571 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3725.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 14.08s
+ TraCI-Duration: 12.93s
+ Real time factor: 264.654
+ UPS: 21221.953819
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 8.43
+ Duration: 106.68
+ WaitingTime: 10.02
+ TimeLoss: 55.00
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed106_t200000 9301 guarantee CLEARED 15s
+***Starting server on port 53783 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3765.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 15.88s
+ TraCI-Duration: 14.52s
+ Real time factor: 237.106
+ UPS: 23231.500724
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 8.16
+ Duration: 131.75
+ WaitingTime: 9.62
+ TimeLoss: 80.03
+ DepartDelay: 10.41
+ DepartDelayWaiting: 0.00
+idqn_seed106_t200000 9302 guarantee CLEARED 17s
+***Starting server on port 50907 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3750.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 14.00s
+ TraCI-Duration: 12.72s
+ Real time factor: 267.857
+ UPS: 20367.000000
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 8.72
+ Duration: 101.83
+ WaitingTime: 9.24
+ TimeLoss: 50.26
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed106_t200000 9303 guarantee CLEARED 15s
+***Starting server on port 50917 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3735.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 14.96s
+ TraCI-Duration: 13.72s
+ Real time factor: 249.616
+ UPS: 22350.063490
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 8.28
+ Duration: 119.44
+ WaitingTime: 9.92
+ TimeLoss: 67.76
+ DepartDelay: 0.03
+ DepartDelayWaiting: 0.00
+idqn_seed106_t200000 9304 guarantee CLEARED 16s
+***Starting server on port 57649 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (1ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3755.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 14.20s
+ TraCI-Duration: 13.05s
+ Real time factor: 264.474
+ UPS: 21287.364418
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 8.55
+ Duration: 107.94
+ WaitingTime: 9.30
+ TimeLoss: 56.20
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed106_t200000 9305 guarantee CLEARED 15s
+***Starting server on port 57657 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3700.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.69s
+ TraCI-Duration: 10.78s
+ Real time factor: 316.51
+ UPS: 15611.976048
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.38
+ Duration: 65.18
+ WaitingTime: 5.47
+ TimeLoss: 13.51
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed107_t360000 9301 guarantee CLEARED 13s
+***Starting server on port 63564 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3725.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.56s
+ TraCI-Duration: 10.69s
+ Real time factor: 322.288
+ UPS: 15929.659111
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.32
+ Duration: 65.75
+ WaitingTime: 5.66
+ TimeLoss: 14.05
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed107_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 63572 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3755.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.47s
+ TraCI-Duration: 10.58s
+ Real time factor: 327.262
+ UPS: 15853.407704
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.42
+ Duration: 64.97
+ WaitingTime: 5.41
+ TimeLoss: 13.38
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed107_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 62822 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3750.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.52s
+ TraCI-Duration: 10.64s
+ Real time factor: 325.577
+ UPS: 15866.556694
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.39
+ Duration: 65.27
+ WaitingTime: 5.46
+ TimeLoss: 13.60
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed107_t360000 9304 guarantee CLEARED 12s
+***Starting server on port 52557 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3700.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.53s
+ TraCI-Duration: 10.64s
+ Real time factor: 320.902
+ UPS: 15869.124024
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.37
+ Duration: 65.35
+ WaitingTime: 5.43
+ TimeLoss: 13.61
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed107_t360000 9305 guarantee CLEARED 12s
+***Starting server on port 58093 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3665.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.50s
+ TraCI-Duration: 10.64s
+ Real time factor: 318.751
+ UPS: 15957.122978
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.37
+ Duration: 65.53
+ WaitingTime: 5.32
+ TimeLoss: 13.87
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed108_t360000 9301 guarantee CLEARED 12s
+***Starting server on port 63981 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.37s
+ TraCI-Duration: 10.47s
+ Real time factor: 324.127
+ UPS: 16145.219456
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.36
+ Duration: 65.56
+ WaitingTime: 5.21
+ TimeLoss: 13.85
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed108_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 63990 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.40s
+ TraCI-Duration: 10.54s
+ Real time factor: 323.359
+ UPS: 16119.340119
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.35
+ Duration: 65.61
+ WaitingTime: 5.45
+ TimeLoss: 14.03
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed108_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 58817 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.48s
+ TraCI-Duration: 10.61s
+ Real time factor: 321.429
+ UPS: 16070.993031
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.31
+ Duration: 65.89
+ WaitingTime: 5.57
+ TimeLoss: 14.23
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed108_t360000 9304 guarantee CLEARED 12s
+***Starting server on port 50071 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3685.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.48s
+ TraCI-Duration: 10.61s
+ Real time factor: 321.077
+ UPS: 16027.881851
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.34
+ Duration: 65.70
+ WaitingTime: 5.45
+ TimeLoss: 13.96
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed108_t360000 9305 guarantee CLEARED 12s
+***Starting server on port 56398 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.52s
+ TraCI-Duration: 10.62s
+ Real time factor: 318.604
+ UPS: 16206.528344
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.20
+ Duration: 66.67
+ WaitingTime: 6.67
+ TimeLoss: 15.01
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed109_t360000 9301 guarantee CLEARED 12s
+***Starting server on port 58667 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.39s
+ TraCI-Duration: 10.53s
+ Real time factor: 323.968
+ UPS: 16300.526778
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.28
+ Duration: 66.31
+ WaitingTime: 6.20
+ TimeLoss: 14.60
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed109_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 58675 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3670.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.41s
+ TraCI-Duration: 10.54s
+ Real time factor: 321.648
+ UPS: 16188.343558
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.33
+ Duration: 65.97
+ WaitingTime: 6.14
+ TimeLoss: 14.39
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed109_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 64227 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.47s
+ TraCI-Duration: 10.54s
+ Real time factor: 321.821
+ UPS: 16227.455085
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.28
+ Duration: 66.45
+ WaitingTime: 6.36
+ TimeLoss: 14.78
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed109_t360000 9304 guarantee CLEARED 12s
+***Starting server on port 64236 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (64ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3680.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.52s
+ TraCI-Duration: 10.60s
+ Real time factor: 319.389
+ UPS: 16178.094081
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.24
+ Duration: 66.57
+ WaitingTime: 6.39
+ TimeLoss: 14.83
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed109_t360000 9305 guarantee CLEARED 12s
+***Starting server on port 64952 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9301.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3760.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.57s
+ TraCI-Duration: 10.71s
+ Real time factor: 325.063
+ UPS: 15922.365350
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.36
+ Duration: 65.78
+ WaitingTime: 5.22
+ TimeLoss: 14.11
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed110_t360000 9301 guarantee CLEARED 12s
+***Starting server on port 64960 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9302.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3690.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.45s
+ TraCI-Duration: 10.56s
+ Real time factor: 322.355
+ UPS: 16271.774264
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.27
+ Duration: 66.52
+ WaitingTime: 5.49
+ TimeLoss: 14.82
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed110_t360000 9302 guarantee CLEARED 12s
+***Starting server on port 64968 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9303.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3750.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.65s
+ TraCI-Duration: 10.69s
+ Real time factor: 321.916
+ UPS: 15759.636020
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.43
+ Duration: 65.56
+ WaitingTime: 5.09
+ TimeLoss: 13.99
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed110_t360000 9303 guarantee CLEARED 12s
+***Starting server on port 50543 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (2ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9304.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3750.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.50s
+ TraCI-Duration: 11.51s
+ Real time factor: 300
+ UPS: 14797.600000
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.34
+ Duration: 66.06
+ WaitingTime: 5.28
+ TimeLoss: 14.39
+ DepartDelay: 0.01
+ DepartDelayWaiting: 0.00
+idqn_seed110_t360000 9304 guarantee CLEARED 13s
+***Starting server on port 64425 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (1ms).
+Loading route-files from 'D:\QMIX_Results\protection_ablation_2026-10-29\manifests\development_9305.rou.xml' ... done (65ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3755.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 11.69s
+ TraCI-Duration: 10.85s
+ Real time factor: 321.16
+ UPS: 15728.361273
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.37
+ Duration: 65.68
+ WaitingTime: 5.16
+ TimeLoss: 13.95
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+idqn_seed110_t360000 9305 guarantee CLEARED 13s
+exit 0

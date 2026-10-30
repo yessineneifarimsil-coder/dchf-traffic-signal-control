@@ -1,0 +1,13 @@
+qmix|none cleared 49/50 J n=49 mean=3.1059183673469386 Dbar=4.078 guar 0(0) ming 0(0)
+qmix|guarantee cleared 50/50 J n=50 mean=3.1038714285714284 Dbar=4.078 guar 2(0) ming 0(0)
+qmix|min_green cleared 50/50 J n=50 mean=4.828457142857143 Dbar=5.795 guar 0(0) ming 17827(17590)
+qmix|both cleared 50/50 J n=50 mean=4.826957142857143 Dbar=5.795 guar 1(0) ming 17827(17590)
+vdn|none cleared 50/50 J n=50 mean=3.1331214285714286 Dbar=4.108 guar 0(0) ming 0(0)
+vdn|guarantee cleared 50/50 J n=50 mean=3.1331214285714286 Dbar=4.108 guar 0(0) ming 0(0)
+vdn|min_green cleared 50/50 J n=50 mean=4.7362142857142855 Dbar=5.702 guar 0(0) ming 16479(16234)
+vdn|both cleared 50/50 J n=50 mean=4.7362142857142855 Dbar=5.702 guar 0(0) ming 16479(16234)
+idqn|none cleared 46/50 J n=46 mean=6.123377329192547 Dbar=7.218 guar 0(0) ming 0(0)
+idqn|guarantee cleared 50/50 J n=50 mean=6.306478571428571 Dbar=7.218 guar 11(0) ming 0(0)
+idqn|min_green cleared 49/50 J n=49 mean=5.901778425655976 Dbar=6.892 guar 0(0) ming 8928(8818)
+idqn|both cleared 50/50 J n=50 mean=5.9725 Dbar=6.892 guar 5(0) ming 8881(8818)
+{"new_none_cells": 100, "cells_with_differences": 0} sumo mismatch 0

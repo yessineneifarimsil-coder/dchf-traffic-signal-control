@@ -1,0 +1,20 @@
+qmix  guarantee  dJ n=49 zero=48 pos=0 min=-0.075 med=+0.000 max=+0.000 | dD pos=0 neg=0 zero=50 med=0.0 min=0 max=0 | dTL n=50 pos=1 neg=1
+qmix  min_green  dJ n=49 zero=0 pos=49 min=+1.290 med=+1.702 max=+2.283 | dD pos=50 neg=0 zero=0 med=4776.0 min=3596 max=6359 | dTL n=50 pos=50 neg=0
+qmix  both       dJ n=49 zero=0 pos=49 min=+1.290 med=+1.702 max=+2.283 | dD pos=50 neg=0 zero=0 med=4776.0 min=3596 max=6359 | dTL n=50 pos=50 neg=0
+vdn   guarantee  dJ n=50 zero=50 pos=0 min=+0.000 med=+0.000 max=+0.000 | dD pos=0 neg=0 zero=50 med=0.0 min=0 max=0 | dTL n=50 pos=0 neg=0
+vdn   min_green  dJ n=50 zero=0 pos=50 min=+1.203 med=+1.569 max=+2.296 | dD pos=50 neg=0 zero=0 med=4415.5 min=3323 max=6443 | dTL n=50 pos=50 neg=0
+vdn   both       dJ n=50 zero=0 pos=50 min=+1.203 med=+1.569 max=+2.296 | dD pos=50 neg=0 zero=0 med=4415.5 min=3323 max=6443 | dTL n=50 pos=50 neg=0
+idqn  guarantee  dJ n=46 zero=39 pos=0 min=-0.064 med=+0.000 max=+0.000 | dD pos=0 neg=0 zero=50 med=0.0 min=0 max=0 | dTL n=50 pos=4 neg=7
+idqn  min_green  dJ n=45 zero=0 pos=21 min=-12.531 med=-0.061 max=+1.350 | dD pos=25 neg=25 zero=0 med=56.5 min=-35004 max=4514 | dTL n=50 pos=9 neg=41
+idqn  both       dJ n=46 zero=0 pos=22 min=-12.531 med=-0.035 max=+1.626 | dD pos=25 neg=25 zero=0 med=56.5 min=-35004 max=4514 | dTL n=50 pos=9 neg=41
+qmix interaction J blocks 49 zero 47 max|.| 0.075
+vdn interaction J blocks 50 zero 50 max|.| 0.0
+idqn interaction J blocks 45 zero 36 max|.| 0.1393
+qmix none: mean time loss over all 50 runs 12.146 over cleared 12.15
+vdn none: mean time loss over all 50 runs 12.077 over cleared 12.077
+idqn none: mean time loss over all 50 runs 20.375 over cleared 19.542
+failed qmix run: time loss 11.934737406216517 max wait 3600.0
+guarantee {'qmix': 2, 'vdn': 0, 'idqn': 11}
+both {'qmix': 1, 'vdn': 0, 'idqn': 5}
+qmix min_green median overrides 354.0
+share 2s greens none arm qmix/vdn [0.607, 0.571] range [(0.557, 0.684), (0.484, 0.649)]
