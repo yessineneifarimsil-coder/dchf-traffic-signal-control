@@ -20,6 +20,7 @@
 | 8 | Manuscript check / compile | `ETAPES.cmd latex-check`; `ETAPES.cmd latex` needs a TeX distribution | static check executed; PDF compiled during the handover review (TeX Live on Linux, 2026-10-30): `manuscript/main.pdf`, 12 pages, no undefined reference; to recompile on your side with `ETAPES.cmd latex` |
 | 9 | Robustness validation | `ETAPES.cmd robustness-plan`, `robustness-prepare <fingerprint>`, `robustness-run`, `robustness-progress`, `robustness-analyse` (`plans/PLAN_ROBUSTESSE.md`) | **prepared, not launched**; analysis script written and tested on synthetic data on 2026-10-30, before any run; plan fingerprints printed before that date are void |
 | 10 | Retraining campaign | `plans/PLAN_CAMPAGNE_FUTURE.md` | **prepared, not launched** |
+| 10b | Check of the step dispatch and exit codes of `ETAPES.cmd` (stand-in scripts, nothing real runs) | `tools\etapes_check\verify_etapes_cmd.cmd` | run under Wine on Linux, CALL and conda checks excepted (`logs/revue_2026-10-31/`); **to run on Windows** |
 | 11 | Verified archive | `ETAPES.cmd archive` | executed: `D:\QMIX_Results\deliveries\qmix_protection_study_<commit>.zip` (+ `.sha256`; `MANIFEST_SHA256.txt` inside) |
 
 ## Contents

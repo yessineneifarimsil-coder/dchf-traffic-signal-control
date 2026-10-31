@@ -25,8 +25,9 @@ Written after the ablation (`docs/RAPPORT_ABLATION.md`).
 
 This is a distribution shift. It does not show what a policy **trained** under the constraint can do. The
 single-seed pilots trained with both protections give J between 4.32 and 5.48 s. That is close to the
-inference-time masked values (4.74–5.97 s) and well above the constrained fixed plan (3.16 s). One seed per
-method, however, cannot support a conclusion.
+inference-time masked values (4.74–5.97 s) and well above the fixed plan re-optimised under the constraint
+(3.16 s): an exploratory, unfavourable signal. With one seed per method it does not predict whether a full
+campaign would reach that plan or not.
 
 **Answer:**
 - A retraining campaign is **necessary only for the claim that matters most for a paper**: whether learned
@@ -36,8 +37,9 @@ method, however, cannot support a conclusion.
 - If the research decision is instead to present the work as an evaluation-methodology and negative-result
   study, the pilots can be reported as indicative only, and no retraining is needed. **That decision belongs
   to the researcher.**
-- **In both cases, the robustness validation (`PLAN_ROBUSTESSE.md`) should come first.** It is cheap (about
-  2.5 h) and tests what the ablation could not: the guarantee during the demand.
+- **The decision on new trainings is taken after the robustness validation (`PLAN_ROBUSTESSE.md`) and a full
+  reading of the closest works** (update of 2026-10-31). The robustness validation is cheap (about 2.5 h) and
+  tests what the ablation could not: the guarantee during the demand.
 
 ## 1. Questions and hypotheses (stated before any result of this campaign)
 

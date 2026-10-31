@@ -134,12 +134,12 @@
 | P1 | `ETAPES.cmd tests` sur votre pile | Valider les 21 tests sous Python 3.7, dont les 10 nouveaux | Copier ce dossier | Environ 2 min |
 | P2 | Validation de robustesse, 2 375 évaluations | Tester la desserte et la garantie **pendant** la demande, et les défauts latents, sur des trafics jamais vus | P1 ; `robustness-plan`, nouvelle empreinte ; environ 10 Go libres sur D: ; 4 cœurs | Environ 2,2–2,5 h de temps réel sur 4 processus (débit mesuré en ablation : 550 évaluations en 30 min 41 s) et environ 13 h CPU ; davantage si des évaluations échouent (7 200 s simulées chacune) |
 | P3 | Lecture intégrale de 6 à 8 travaux proches (PyTSC, RESCO, Ault 2020, Wu 2018, Levin 2020, Raeis 2021, Papoudakis 2021) | Consolider la matrice, l'introduction et la position de la contribution | Accès aux textes | Plusieurs heures de lecture, à faire par vous ou en séance dédiée |
-| P4 | Décision de recherche, après P2 | (a) Réentraînement « les deux », 30 entraînements, pour la question H3 (les politiques entraînées sous contrainte atteignent-elles le plan fixe contraint ?). (b) Réorientation vers un article méthodologique à résultat négatif. | P2 analysé. Pour (a) : un `run_kind` de campagne dans `QMIX_PROTECTED` (commit séparé et revu), les trafics finaux 3101–3120 générés après le gel, et environ 45 Go de disque pour 33 Go libres annoncés. | (a) Environ 110–120 h de temps réel (7–7,5 h mesurées par entraînement, 2 en parallèle), plus environ 4–5 h de sélection et environ 2 h de test final. (b) Rédaction. |
+| P4 | Décision de recherche, après P2 **et P3** (précisé le 2026-10-31) | (a) Réentraînement « les deux », 30 entraînements, pour la question H3 (les politiques entraînées sous contrainte atteignent-elles le plan fixe contraint ?). (b) Réorientation vers un article méthodologique à résultat négatif. | P2 analysé. Pour (a) : un `run_kind` de campagne dans `QMIX_PROTECTED` (commit séparé et revu), les trafics finaux 3101–3120 générés après le gel, et environ 45 Go de disque pour 33 Go libres annoncés. | (a) Environ 110–120 h de temps réel (7–7,5 h mesurées par entraînement, 2 en parallèle), plus environ 4–5 h de sélection et environ 2 h de test final. (b) Rédaction. |
 | P5 | Test final sur trafics nouveaux | Seule base d'une affirmation confirmatoire | P4 (a) terminé et plan gelé | Environ 2 h |
 
 **Recommandation :** P1 puis P2 avant toute autre décision.
 
-P2 est la seule étape peu coûteuse qui peut changer la conclusion sur la garantie. Si la garantie n'agit toujours pas pendant la demande dans R1, R2 et R4, l'article devra dire que son coût n'a pas pu être mesuré, et la voie (b) devient plus réaliste.
+P2 est la seule étape peu coûteuse qui peut changer la conclusion sur la garantie. Si la garantie n'agit toujours pas pendant la demande dans R1, R2 et R4, l'article devra dire que son coût n'a pas pu être mesuré. La décision sur de nouveaux entraînements (P4) ne sera prise qu'après P2 et P3 ; aucune des deux options n'est privilégiée ici.
 
 ## 8. Appréciation
 
@@ -149,6 +149,10 @@ P2 est la seule étape peu coûteuse qui peut changer la conclusion sur la garan
 - les erreurs relevées touchent la formulation, pas les données.
 
 **Contribution défendable aujourd'hui :** une évaluation honnête et un mécanisme de défaillance documenté sur un petit cas.
+
+**À formuler avec précision (2026-10-31) :**
+- sous la contrainte de 7 s, le plan fixe a été réoptimisé, tandis que les politiques historiques ont été contraintes seulement à l'évaluation, sans réentraînement : 0 de leurs 299 évaluations évacuées ne bat ce plan, et 1 échoue ;
+- les pilotes entraînés avec les protections (une graine par méthode) sont un signal exploratoire défavorable ; ils ne prédisent ni la réussite ni l'échec d'une campagne complète.
 
 **Preuves encore insuffisantes pour une revue de premier quartile** (classement non vérifié) :
 - un seul corridor ;

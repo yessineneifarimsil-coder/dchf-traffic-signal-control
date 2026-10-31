@@ -33,10 +33,13 @@ protections at inference time, to policies trained without them --- a 7\,s minim
 bounded by 127\,s --- and measure their effects on the same models and traffics (600 paired evaluations).
 The guarantee cleared all six failed runs, intervening once per run and only after the demand had ended,
 so its cost during the demand was not exercised; the minimum green raised the waiting burden of every QMIX
-and VDN policy (by 1.2--2.3\,s per vehicle) and had mixed effects on IDQN, and under this common constraint
-none of the 299 learned runs that cleared matched the constrained fixed plan (the 300th failed to clear). The results are development evidence on
-already-inspected traffics; a final test on new traffics and retraining with the protections are prepared
-but not yet run.
+and VDN policy (by 1.2--2.3\,s per vehicle) and had mixed effects on IDQN. The comparison under this common
+constraint is asymmetric: the fixed plan was re-optimised for it, whereas the historical policies were trained
+without it and constrained only at evaluation, without retraining; none of their 299 runs that cleared matched
+that plan (the 300th failed to clear). Single-seed pilots trained with both protections give an exploratory,
+unfavourable signal; they do not indicate how a full multi-seed training campaign would turn out. The results
+are development evidence on already-inspected traffics; a robustness study on new traffics is prepared, and a
+decision on retraining is deferred.
 \end{abstract}
 
 \section{Introduction}
@@ -165,8 +168,9 @@ indicators disagreeing. The ten historical QMIX policies obtain 3.106\,s on 49 v
 (145 of the 150 unprotected runs cleared; over the four arms of Section~\ref{sec:protections}, 594 of 600). Without the minimum green, QMIX and VDN obtain a lower $J$ than the constrained plan in 33
 of 49 and 30 of 50 runs, but they do so with 2\,s greens (57--61\,\% of their greens during the demand) that
 the constrained plan is not allowed; their mean time loss is never lower than that plan's. Single-seed pilots
-trained with both protections obtained 4.32--5.48\,s; one seed per method supports no conclusion, and these
-pilots are not paired by seed with the ten historical policies.
+trained with both protections obtained mean values of 4.32--5.48\,s, above both fixed plans. This is an
+exploratory, unfavourable signal only: one training seed per method, no pairing by seed with the ten
+historical policies, and no indication of how a full multi-seed campaign would turn out.
 
 \begin{table}[t]
 \centering
@@ -233,8 +237,10 @@ pairs, and the minimum green cleared four failed runs but created one.
 the demand, the interaction contrast on $D$ was zero in all 150 blocks, and on $J$ it was zero or below
 0.14\,s in absolute value.
 
-\paragraph{Fixed plans under the common constraint.} Under the 7\,s minimum green (arms with the minimum
-green), 299 of the 300 learned runs cleared, and none of these 299 had a lower $J$ or a lower mean time loss
+\paragraph{Re-optimised fixed plan versus historical policies constrained at evaluation.} The two sides of
+this comparison were not treated alike: the fixed plan was re-optimised for the 7\,s minimum green, whereas the
+learned policies are the historical ones, trained without it and constrained only at evaluation, without
+retraining. Under the 7\,s minimum green (arms with the minimum green), 299 of these 300 runs cleared, and none of these 299 had a lower $J$ or a lower mean time loss
 than the constrained fixed plan on the same traffic (mean differences $+1.58$ to $+2.82$\,s in $J$ by method).
 The remaining run (IDQN, minimum green only) failed to clear; it has no $J$ and is not counted as a comparison.
 
@@ -280,13 +286,15 @@ targets exactly that.
 \paragraph{The minimum green exposes a dependence on very short greens.} QMIX and VDN policies spend most of
 their greens in the 2\,s minimum the executor allows. Imposing 7\,s at inference removes that behaviour and
 costs 1.2--2.3\,s of waiting per vehicle. This measures the brittleness of these policies to a constraint they
-were not trained with, not the value of the constraint itself; the single-seed pilots trained with the
-constraint suggest, without establishing, that training does not close the gap to the constrained fixed plan.
+were not trained with, not the value of the constraint itself, nor what a policy trained under it can achieve.
+The single-seed pilots trained with the constraint are an exploratory, unfavourable signal on that question;
+they do not predict whether a full campaign would close the gap to the re-optimised fixed plan or not.
 
 \paragraph{Relation to the literature.} The comparison supports the concern that learned controllers are often
-compared with weak references \cite{ault2020interpretable}: here, a fixed plan optimised under the same
-constraint is not beaten by any learned run that cleared (299 of the 300 constrained runs; the other failed to
-clear). The lone-vehicle failure is a learned-controller counterpart of
+compared with weak references \cite{ault2020interpretable}: here, a fixed plan re-optimised under the same
+constraint is not beaten by any cleared run of the historical policies constrained at evaluation (299 of 300
+runs; the other failed to clear). Whether policies trained under the constraint would do better is not
+established here. The lone-vehicle failure is a learned-controller counterpart of
 the starvation that queue-based pressure control can produce for lightly loaded movements \cite{wu2018delay}.
 
 \section{Limitations and scope}
@@ -295,6 +303,9 @@ the starvation that queue-based pressure control can produce for lightly loaded 
 \item The protections were added at evaluation time to policies trained without them; the effect of training
 with them, and any effect of cooperation, are not measured here.
 \item The constrained fixed plan was selected on the same design and validation samples as the original plan.
+\item The comparison under the common constraint is asymmetric: a fixed plan re-optimised for the constraint
+against learned policies constrained only at evaluation. Policies trained under the constraint exist only as
+single-seed pilots.
 \item The 127\,s bound applies to the service counter under the stated executor assumptions; it is not a bound
 on a vehicle's total waiting or travel time.
 \item Stop-line crossings are logged for the main axis only.
@@ -308,8 +319,9 @@ SUMO 1.25.0, Windows.
 \section*{Prepared but not executed}
 A robustness validation on new traffics designed to stress service (persistent sparse secondary demand,
 time-varying demand, isolated vehicles at the end of the demand), and a retraining campaign with the
-protections, with new validation and final-test traffics, are specified with their analysis rules and costs;
-\tocomplete{results}.
+protections, with new validation and final-test traffics, are specified with their analysis rules and costs.
+The decision to run the retraining campaign will be taken after the robustness study and a full reading of the
+closest works; \tocomplete{results}.
 
 \appendix
 \section{Technical traceability}\label{app:trace}

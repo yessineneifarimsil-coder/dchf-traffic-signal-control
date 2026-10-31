@@ -131,7 +131,7 @@ Le vert minimal **améliore** certaines politiques IDQN qui oscillaient, en dég
 
 Source : `fixed_plan_comparison.txt`.
 
-**Sous la même contrainte (vert ≥ 7 s : bras « vert minimal » et « les deux ») :**
+**Sous la même contrainte (vert ≥ 7 s : bras « vert minimal » et « les deux ») :** Cette comparaison est asymétrique : le plan fixe a été réoptimisé pour la contrainte, tandis que les politiques sont les politiques historiques, entraînées sans contrainte et contraintes seulement à l'évaluation, sans réentraînement.
 - 299 des 300 évaluations apprises sont évacuées ; **aucune de ces 299** n'a un J inférieur à celui du plan contraint sur le même trafic ;
 - aucune de ces 299 n'a non plus une perte de temps plus faible ;
 - la 300e (IDQN graine 101, checkpoint 225 000, vert minimal seul, trafic 9304) est un échec d'évacuation, sans J, non comparable (précision ajoutée le 2026-10-30) ;

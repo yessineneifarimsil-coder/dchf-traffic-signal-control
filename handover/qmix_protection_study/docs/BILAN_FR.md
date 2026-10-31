@@ -47,7 +47,7 @@
 | Les conclusions dépendent-elles de l'indicateur ? | Pas pour QMIX et VDN. Oui pour IDQN et pour la comparaison des deux plans fixes. La perte de temps des véhicules arrivés masque les échecs |
 
 **Comparaison avec les plans fixes** (formulation corrigée le 2026-10-30) :
-- sous la même contrainte de vert ≥ 7 s, 299 des 300 évaluations apprises sont évacuées, et **aucune de ces 299** ne bat le plan fixe contraint, ni sur J ni sur la perte de temps ;
+- sous la même contrainte de vert ≥ 7 s, 299 des 300 évaluations apprises sont évacuées, et **aucune de ces 299** ne bat le plan fixe réoptimisé sous cette contrainte, ni sur J ni sur la perte de temps. Cette comparaison est asymétrique : le plan fixe a été réoptimisé pour la contrainte, tandis que les politiques sont les politiques historiques, entraînées sans contrainte et contraintes seulement à l'évaluation, sans réentraînement. ;
 - la 300e (IDQN graine 101, checkpoint 225 000, vert minimal seul, trafic 9304) est un **échec d'évacuation** : elle n'a pas de J et ne compte ni comme victoire ni comme défaite ;
 - sur les 600 évaluations, 594 sont évacuées, et aucune de ces 594 ne bat l'ancien plan fixe sur J ; les 6 échecs ne sont pas comparables.
 
@@ -92,7 +92,8 @@
 ## Appréciation franche
 
 **Contribution défendable aujourd'hui, mais de portée limitée :**
-- un résultat négatif soigneusement contrôlé : les contrôleurs appris ne battent pas un plan fixe optimisé sous la même contrainte ;
+- un résultat négatif soigneusement contrôlé, mais asymétrique : les politiques historiques, entraînées sans contrainte puis contraintes à l'évaluation sans réentraînement, ne battent pas le plan fixe réoptimisé sous cette contrainte (0 sur 299 évaluations évacuées, 1 échec) ;
+- les pilotes entraînés avec les deux protections (une graine par méthode) donnent un signal exploratoire défavorable ; ils ne permettent pas de prédire la réussite ou l'échec d'une campagne complète ;
 - un mécanisme de défaillance documenté, invisible dans les moyennes usuelles ;
 - une mesure appariée des protections.
 
@@ -102,8 +103,8 @@
 - des protections ajoutées sans réentraînement ;
 - la garantie jamais sollicitée pendant la demande.
 
-**Deux voies possibles :**
-- **(a)** lancer la robustesse (2,5 h), puis, si la question H3 reste centrale, les 30 entraînements « les deux » et le test final ;
-- **(b)** réorienter l'article vers la méthodologie d'évaluation et le résultat négatif, en présentant les pilotes comme indicatifs.
+**Suite (mise à jour du 2026-10-31) :**
+- d'abord la validation de robustesse et la lecture intégrale des travaux proches ;
+- la décision sur de nouveaux entraînements viendra ensuite. Les deux options restent ouvertes : une campagne « les deux » (30 entraînements) suivie d'un test final, ou un article centré sur la méthodologie d'évaluation et le résultat négatif, les pilotes y étant présentés comme un signal exploratoire.
 
-**Je ne peux pas promettre une publication Q1.** La voie (a) est celle qui donnerait une chance sérieuse.
+**Aucune publication ne peut être promise.**

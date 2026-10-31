@@ -1,0 +1,75 @@
+Copy under test: C:\users\root\Temp\etapes_check_13642_543\study
+
+== Sequential steps: exit code seen by CALL and by a separate cmd /c process ==
+  OK    tests, FAKE_RC=0: cmd /c process exits 0
+  OK    tests: the step called unittest-stub
+  OK    diagnose, FAKE_RC=0: cmd /c process exits 0
+  OK    diagnose: the step called diagnose_clearance_failure.py
+  OK    ablation-plan, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-plan: the step called ablation_runner.py plan
+  OK    ablation-prepare, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-prepare: the step called ablation_runner.py prepare
+  OK    ablation-progress, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-progress: the step called ablation_runner.py progress
+  OK    ablation-analyse, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-analyse: the step called ablation_analysis.py
+  OK    figures, FAKE_RC=0: cmd /c process exits 0
+  OK    figures: the step called make_figures.py
+  OK    latex-check, FAKE_RC=0: cmd /c process exits 0
+  OK    latex-check: the step called check_latex.py
+  OK    robustness-plan, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-plan: the step called robustness_runner.py plan
+  OK    robustness-prepare, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-prepare: the step called robustness_runner.py prepare
+  OK    robustness-progress, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-progress: the step called robustness_runner.py progress
+  OK    robustness-analyse, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-analyse: the step called robustness_analysis.py
+  OK    robustness-smoke, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-smoke: the step called smoke.py
+  OK    dois, FAKE_RC=0: cmd /c process exits 0
+  OK    dois: the step called verify_dois.py
+  OK    archive, FAKE_RC=0: cmd /c process exits 0
+  OK    archive: the step called make_archive.py
+  OK    tests, FAKE_RC=5: cmd /c process exits 1
+  OK    tests: the step called unittest-stub
+  OK    diagnose, FAKE_RC=5: cmd /c process exits 5
+  OK    diagnose: the step called diagnose_clearance_failure.py
+  OK    ablation-plan, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-plan: the step called ablation_runner.py plan
+  OK    ablation-prepare, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-prepare: the step called ablation_runner.py prepare
+  OK    ablation-progress, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-progress: the step called ablation_runner.py progress
+  OK    ablation-analyse, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-analyse: the step called ablation_analysis.py
+  OK    figures, FAKE_RC=5: cmd /c process exits 5
+  OK    figures: the step called make_figures.py
+  OK    latex-check, FAKE_RC=5: cmd /c process exits 5
+  OK    latex-check: the step called check_latex.py
+  OK    robustness-plan, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-plan: the step called robustness_runner.py plan
+  OK    robustness-prepare, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-prepare: the step called robustness_runner.py prepare
+  OK    robustness-progress, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-progress: the step called robustness_runner.py progress
+  OK    robustness-analyse, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-analyse: the step called robustness_analysis.py
+  OK    robustness-smoke, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-smoke: the step called smoke.py
+  OK    dois, FAKE_RC=5: cmd /c process exits 5
+  OK    dois: the step called verify_dois.py
+  OK    archive, FAKE_RC=5: cmd /c process exits 5
+  OK    archive: the step called make_archive.py
+
+== Refusals ==
+  OK    unknown step: returns 2
+  SKIP  conda environment missing: not evaluable under Wine
+
+== Parallel launch (4 workers each): the launcher cannot see the workers' exit codes ==
+  OK    robustness-run: 4 workers started, shards 0/4..3/4
+  OK    robustness-run: launcher returns 0 although every worker exited 5 (expected: START does not wait; check completion with the progress step)
+  OK    ablation-run: 4 workers started, shards 0/4..3/4
+  OK    ablation-run: launcher returns 0 although every worker exited 5 (expected: START does not wait; check completion with the progress step)
+
+Result: 65 checks passed, 0 failed.
