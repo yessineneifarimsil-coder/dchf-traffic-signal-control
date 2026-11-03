@@ -1,0 +1,8 @@
+== version avant correctif (robustness_analysis.py et robustness_runner.py du commit 66889c2) ==
+2. cellule 'both' declaree manquante : all_ok=True, S1_statement_allowed(R0)=True, rapport INCOMPLET=False
+3. deux metriques tronquees : progress -> 'finished 2/2' code 0 ; run -> code 0, evaluations relancees 0
+4. bras 'both' avec garantie active pendant la demande : guarantee_cost_during_demand = 'EVALUATED'
+
+point 2 : REPRODUIT
+point 3 : REPRODUIT
+point 4 : REPRODUIT

@@ -2,7 +2,8 @@
 rem ==========================================================================================
 rem Checks the step dispatch of ETAPES.cmd and how its exit codes come back. Nothing real runs:
 rem a temporary copy of the study holds stand-in scripts (stub.py) that only record their call and
-rem exit with the code in FAKE_RC; conda is replaced by a no-op. Run from the study folder, in the
+rem exit with the code in FAKE_RC; conda is replaced by a no-op; pdflatex and bibtex are replaced by
+rem tex_stub.py (through PDFLATEX and BIBTEX), which exits with FAKE_PDFLATEX_RC / FAKE_BIBTEX_RC. Run from the study folder, in the
 rem traffic_rl prompt:
 rem     tools\etapes_check\verify_etapes_cmd.cmd
 rem Exit status 0 when every expectation holds; the report lists each check.
@@ -20,7 +21,10 @@ for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robust
 mkdir "%T%\bin" 2>nul
 copy /y "%SRC%\ETAPES.cmd" "%S%\ETAPES.cmd" >nul
 copy /y "%~dp0test_stub.py" "%S%\tests\test_stub.py" >nul
-for %%F in (diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
+copy /y "%~dp0tex_stub.py" "%T%\tex_stub.py" >nul
+set "PDFLATEX=python "%T%\tex_stub.py" pdflatex"
+set "BIBTEX=python "%T%\tex_stub.py" bibtex"
+for %%F in (tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
 >"%T%\bin\conda.cmd" echo @exit /b %%FAKE_CONDA_RC%%
 set "FAKE_CONDA_RC=0"
 set "PATH=%T%\bin;%PATH%"
@@ -41,9 +45,15 @@ for %%R in (0 5) do (
   call :check robustness-progress %%R "robustness_runner.py progress"
   call :check robustness-analyse %%R robustness_analysis.py
   call :check robustness-smoke %%R smoke.py
+  call :check robustness-check-smoke %%R "cell_state.py check-smoke"
   call :check dois %%R verify_dois.py
   call :check archive %%R make_archive.py
 )
+echo.
+echo == LaTeX build: a failure of pdflatex or bibtex stops the chain and returns 1 ==
+call :latex 0 0 0 4 "pdflatex, bibtex, pdflatex, pdflatex"
+call :latex 0 2 1 2 "bibtex fails: no further pdflatex"
+call :latex 3 0 1 1 "first pdflatex fails: bibtex not run"
 echo.
 echo == Refusals ==
 call :expect_code unknown-step 2 "unknown step"
@@ -98,7 +108,7 @@ rem %1 step, %2 token, %3 log prefix
 set "FAKE_RC=5"
 del "%ETAPES_CALLS%" 2>nul
 pushd "%S%"
-cmd /c ETAPES.cmd %~1 >nul 2>&1
+cmd /c ETAPES.cmd %~1 >"%T%\launch.txt" 2>&1
 set "GOT=!ERRORLEVEL!"
 popd
 set /a WAITED=0
@@ -117,6 +127,37 @@ for %%i in (0 1 2 3) do (
   if not exist "%S%\logs\%~3%%i.log" call :ko "%~1: logs\%~3%%i.log not written"
 )
 if "!GOT!"=="0" (call :ok "%~1: launcher returns 0 although every worker exited 5 (expected: START does not wait; check completion with the progress step)") else (call :ko "%~1: launcher returns !GOT!")
+findstr /c:"covers the launch only" "%T%\launch.txt" >nul 2>&1
+if errorlevel 1 (call :ko "%~1: the launcher does not say that its code covers the launch only") else (call :ok "%~1: the launcher says that its code covers the launch only")
+exit /b 0
+
+:latex
+rem %1 FAKE_PDFLATEX_RC, %2 FAKE_BIBTEX_RC, %3 expected exit code, %4 expected number of tool calls, %5 label
+set "FAKE_PDFLATEX_RC=%~1"
+set "FAKE_BIBTEX_RC=%~2"
+if "%ETAPES_CHECK_UNDER_WINE%"=="1" goto latex_process
+del "%ETAPES_CALLS%" 2>nul
+pushd "%S%"
+call ETAPES.cmd latex >nul 2>&1
+set "GOT=!ERRORLEVEL!"
+popd
+if "!GOT!"=="%~3" (call :ok "latex, %~5: CALL returns !GOT!") else (call :ko "latex, %~5: CALL returns !GOT! [want %~3]")
+:latex_process
+del "%ETAPES_CALLS%" 2>nul
+pushd "%S%"
+cmd /c ETAPES.cmd latex >"%T%\latex.txt" 2>&1
+set "GOT=!ERRORLEVEL!"
+popd
+if "!GOT!"=="%~3" (call :ok "latex, %~5: cmd /c process exits !GOT!") else (call :ko "latex, %~5: cmd /c process exits !GOT! [want %~3]")
+set "N=0"
+if exist "%ETAPES_CALLS%" for /f "delims=" %%l in ('type "%ETAPES_CALLS%"') do set /a N+=1
+if "!N!"=="%~4" (call :ok "latex, %~5: !N! tool calls") else (call :ko "latex, %~5: !N! tool calls [want %~4]")
+if not "%~3"=="0" (
+  findstr /c:"LaTeX build failed" "%T%\latex.txt" >nul 2>&1
+  if errorlevel 1 (call :ko "latex, %~5: no failure message") else (call :ok "latex, %~5: failure message printed")
+)
+set "FAKE_PDFLATEX_RC="
+set "FAKE_BIBTEX_RC="
 exit /b 0
 
 :ok

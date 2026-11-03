@@ -4,10 +4,14 @@
 
 **Code and tests:**
 - code: `tools/robustness/`;
-- tests: `tests/test_robustness.py`, 6 tests passing, no SUMO;
+- tests (no SUMO): `tests/test_robustness.py` (6), `tests/test_robustness_analysis.py` (18),
+  `tests/test_robustness_runner.py` (9), `tests/test_robustness_end_to_end.py` (2, synthetic chain plan → run →
+  progress → analysis);
 - engineering smoke check (4 short SUMO runs, outputs not interpreted): `D:\QMIX_Results\robustness_smoke_2026-10-29\smoke_report.json`.
 
-**Plan fingerprint** (`robustness_runner.py plan`): printed by the runner; the runner refuses any other.
+**Plan fingerprint** (`robustness_runner.py plan`): printed by the runner; the runner refuses any other. It covers
+the runner, the evaluator, the analysis and `cell_state.py`. **Any fingerprint printed before 2026-11-03 is void:
+run `ETAPES.cmd robustness-plan` again** (correction of review points 2–4, section at the end).
 
 **Question:** does service hold on demand patterns that really test it, and at what cost? It is
 answered for:
@@ -76,7 +80,9 @@ The same definitions as the ablation (`tools/ablation_metrics.py`), with N per m
 ## Success criteria (fixed before execution)
 
 **Technical (all required):**
-- every cell finishes, or is a scientific failure with its residual state;
+- every planned cell has a finished result: complete, or a scientific failure (clearance failure) with its
+  residual state. A corrupted result is never counted as finished; a cell declared missing stays missing and
+  makes the analysis INCOMPLETE (T1);
 - 0 SUMO signal mismatches in protected and P5 runs;
 - maximum counter ≤ 127 s and realised green ≥ 7 s in every `both` run;
 - maximum counter ≤ 127 s in every `guarantee` run;
@@ -86,9 +92,9 @@ The same definitions as the ablation (`tools/ablation_metrics.py`), with N per m
 
 | ID | Question | Criterion |
 |---|---|---|
-| S1 | service | "The guarantee prevented indefinite denial of service in these scenarios" **if and only if** 0 clearance failures with an open counter wait at the end, in all `guarantee` and `both` runs (750 per arm). Otherwise the failures are listed and analysed. |
+| S1 | service | "The guarantee prevented indefinite denial of service in these scenarios" **if and only if** every `guarantee` and `both` run the plan expects is present (750 per arm in total: every model and traffic of the scenario), the technical criteria T2–T5 hold, and there are 0 clearance failures with an open counter wait at the end. Expected counts and identities come from the plan, never from the runs present. Otherwise the statement is not made; failures and missing runs are listed. |
 | S2 | latent defects | number of `none` runs with a failure, or with a vehicle waiting ≥ 300 s, per method and scenario |
-| S3 | cost of the protections | paired ΔJ and ΔD̄ against `none` for the same model and traffic: median, range, n comparable pairs; interventions during the demand counted separately |
+| S3 | effects of the protections | paired differences against `none` for the same model and traffic. `guarantee − none` is the effect of the guarantee alone. `both − none` is the combined effect of the minimum green and the guarantee: it is **never** the cost of the guarantee itself, which would need `both − min_green` (not in this plan; no arm or simulation is added). ΔJ covers the whole episode (pairs where both clear); ΔD̄ covers the demand window [0, 3,600) s (all pairs). Activation of the guarantee during the demand is reported separately from the identification of its cost: EVALUATED only in `guarantee − none` with an intervention during the demand; NOT IDENTIFIED in `both − none` when it acted; NOT EVALUATED when it did not act during the demand. Pairs expected (from the plan) and present are shown. |
 | S4 | comparison with the fixed plans | per method and scenario, model-level paired differences in J against the min-7 fixed plan (and the old plan) on the same traffics, only on pairs where both clear, with n; no superiority claim, no test on these 5 traffics |
 
 **Hypotheses:** none is stated as a prediction.
@@ -111,21 +117,34 @@ start "r3" python tools\robustness\robustness_runner.py run --root D:\QMIX_Resul
 python tools\robustness\robustness_runner.py progress --root D:\QMIX_Results\robustness_validation_<date>
 ```
 
-**Resumption:** rerun the same `run` commands.
-- Finished cells are skipped.
-- An interrupted cell is renamed `.incomplete1` and run once more.
+**Resumption:** rerun the same `run` commands. Cell states (`tools/robustness/cell_state.py`):
+- **complete** (CLEARED) and **scientific failure** (CLEARANCE_FAILURE): finished, verified, never rerun;
+- **corrupted**: `evaluation_metrics.json` unreadable, unknown status, identity different from the planned cell
+  (scenario, controller, traffic seed, checkpoint SHA-256 stamped by `evaluate_any.py`) or a required file
+  missing. Preserved as found, reported, never rerun automatically, never counted as finished;
+- **interrupted** (directory without `evaluation_metrics.json`): renamed `.incomplete1` and run once more; a
+  second interruption is left for diagnosis;
+- **not started**.
+
+Exit codes of `run` (per shard) and `progress` (whole plan): 0 every cell finished; 3 some cells not finished;
+5 at least one corrupted result. `ETAPES.cmd robustness-run` only launches the 4 workers: its own code covers
+the launch, not their success; check with `robustness-progress` and `logs\robustness_shard*.log`.
 
 **Analysis script (added 2026-10-30, before any robustness run):** `tools/robustness/robustness_analysis.py`.
 - Same indicator definitions as the ablation (`tools/ablation_metrics.py`, imported unchanged), N per manifest.
 - The service counters come from `service_counters.csv`, which every controller logs every second. Lanes are
   logged at decisions only here, so the ablation's reconstruction from per-second lanes does not apply. Instead,
   each logged counter is recomputed from the logged queue and executed phase and must match (T5).
-- It implements the technical criteria T1–T5 and the questions S1–S4 above. If any technical criterion fails,
-  the report states that no scientific statement is made.
+- It implements the technical criteria T1–T5 and the questions S1–S4 above. If an integrity criterion (T2–T5)
+  fails, the report states that no scientific statement is made.
+- A corrupted result, or a cell without result that is not declared missing, stops the analysis (exit 1).
+  Declared missing cells (`--declared-missing`) give an INCOMPLETE report (exit 4): every count is shown as
+  present/expected and no conclusion needing a missing cell is drawn. Exit 3: integrity criteria failed;
+  exit 0: complete and verified.
 - If the guarantee never acts during the demand of a scenario, its cost there is reported as **NOT EVALUATED**,
-  not as zero.
+  not as zero; in `both − none` it is at most NOT IDENTIFIED (see S3).
 - Applied once; refuses to run if its SHA-256 differs from the one recorded in the plan.
-- Tests: `tests/test_robustness_analysis.py`, 10 tests on synthetic runner outputs (N = 28 and 18, so a constant
+- Tests: `tests/test_robustness_analysis.py`, 10 tests at the time (18 since 2026-11-03), on synthetic runner outputs (N = 28 and 18, so a constant
   denominator would be detected), stdlib only, executed under Python 3.11 in the review environment; to be
   rerun under the Windows stack (`ETAPES.cmd tests`).
 
@@ -141,7 +160,31 @@ python tools\robustness\robustness_runner.py progress --root D:\QMIX_Results\rob
   fixed-time reference for that demand.
 - Nothing forces the guarantee to act during the demand: if the learned policies keep serving the secondary
   approaches often (2 s greens), S3 may again report the cost of the guarantee as NOT EVALUATED.
+- Even when it acts, its own cost is identified only by `guarantee − none`; `both − none` measures the two
+  protections together.
 - The comparison with fixed plans remains descriptive: 5 traffics per scenario, checkpoints selected earlier.
 
 **Commands:** `ETAPES.cmd robustness-plan`, `robustness-prepare <fingerprint>`, `robustness-run`,
 `robustness-progress`, `robustness-analyse` (root: variable `ROB`, default `D:\QMIX_Results\robustness_validation`).
+
+## Correction 2026-11-03 (review points 2–4; before any robustness run)
+
+- **Point 2, incomplete analysis.** A declared missing cell no longer passes T1. The report is marked
+  INCOMPLETE. S1, S2, S3, S4 and the classical table compare present against expected counts derived from the
+  plan for every model and traffic. S1 is refused when any expected `guarantee` or `both` run is missing,
+  including an entire arm.
+- **Point 3, corrupted results.** New `tools/robustness/cell_state.py` shared by the runner and the analysis
+  (states above). `evaluate_any.py` now stamps `traffic_seed`, `controller`, `scenario` and, for learned
+  cells, `checkpoint_sha256` into `evaluation_metrics.json`, so the identity check does not depend on fields
+  of the protected evaluator. The required files are those the smoke runs read or the ablation analysis
+  read on the 600 real protected outputs (`protection_decisions.csv`, `protection_record.json`,
+  `service_counters.csv`) plus the RunLogger tables. **To be confirmed on Windows before the plan:**
+  `ETAPES.cmd robustness-check-smoke` on the 2026-10-29 smoke runs (files, scenario, controller, status),
+  then a new smoke (`ETAPES.cmd robustness-smoke`, 4 short engineering runs, not results) followed by
+  `python tools\robustness\cell_state.py check-smoke --root <new smoke root> --stamped`.
+- **Point 4, cost attribution.** S3 as above; keys `dJ_whole_episode_s` and `dD_bar_demand_window_s`; fields
+  `contrast`, `effect_measured`, `guarantee_activated_during_demand`.
+- **ETAPES.cmd.** `latex` stops at the first failing `pdflatex`/`bibtex` and returns 1 (previously a bibtex
+  failure was masked); `robustness-run` and `ablation-run` print that their code covers the launch only;
+  new step `robustness-check-smoke`. No wait was added.
+- Evidence: `logs/revue_2026-11-03/` and `docs/REVUE_CORRECTIF_2026-11-03.md`.

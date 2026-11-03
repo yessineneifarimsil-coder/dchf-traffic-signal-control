@@ -1,0 +1,8 @@
+== version corrigee (ce correctif) ==
+2. cellule 'both' declaree manquante : all_ok=False, S1_statement_allowed(R0)=False, rapport INCOMPLET=True
+3. deux metriques tronquees : progress -> 'finished 0/2 (complete 0, scientific failures 0) | corrupted 2 | interrupted 0 | not started 0\n  CORRUPTED (preserved, not rerun): cells/R0_reference/8001/fixed__old_C19_8_5_D9 | evaluation_metrics.json unreadable: Unterminated string starting at: line 1 column 22 (char 21)\n  CORRUPTED (preserved, not rerun): cells/R0_reference/8002/fixed__old_C19_8_5_D9 | evaluation_metrics.json unreadable: Unterminated string starting at: line 1 column 22 (char 21)' code 5 ; run -> code 5, evaluations relancees 0
+4. bras 'both' avec garantie active pendant la demande : guarantee_cost_during_demand = 'NOT IDENTIFIED (the guarantee acted, but both - none also contains the minimum green; isolating it would need both - min_green, which is not in this plan)'
+
+point 2 : NON REPRODUIT
+point 3 : NON REPRODUIT
+point 4 : NON REPRODUIT

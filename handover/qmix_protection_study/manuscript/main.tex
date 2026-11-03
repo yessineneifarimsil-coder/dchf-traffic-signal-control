@@ -320,6 +320,9 @@ SUMO 1.25.0, Windows.
 A robustness validation on new traffics designed to stress service (persistent sparse secondary demand,
 time-varying demand, isolated vehicles at the end of the demand), and a retraining campaign with the
 protections, with new validation and final-test traffics, are specified with their analysis rules and costs.
+In the robustness analysis, the effect of the guarantee alone is the paired contrast guarantee $-$ none; the
+contrast both $-$ none measures the two protections together and does not identify the guarantee's own cost,
+which would require a both $-$ minimum-green contrast that is not planned.
 The decision to run the retraining campaign will be taken after the robustness study and a full reading of the
 closest works; \tocomplete{results}.
 
@@ -340,8 +343,9 @@ $\ge$ 7\,s in every run with the minimum green.
 \texttt{figures/data/}.
 \item Tests: the 31 tests of the constrained fixed-plan search were run on the Windows stack above (terminal
 output ``Ran 31 tests in 1548.888s'', ``OK'', exit status 0, transmitted by the operator; no log file of that
-run is retained); the indicator and robustness tools have 11 unit tests run on the Windows stack (log retained)
-and 10 tests of the robustness analysis on synthetic outputs.
+run is retained); the indicator and robustness tools have 11 unit tests run on the Windows stack (log retained);
+the robustness analysis, the runner's result states and their chaining have 29 tests on synthetic outputs,
+run in the review environment and to be rerun on the Windows stack.
 \end{itemize}
 
 \bibliographystyle{plainnat}

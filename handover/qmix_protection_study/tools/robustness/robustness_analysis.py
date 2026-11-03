@@ -3,8 +3,15 @@
     python tools/robustness/robustness_analysis.py --root <robustness root> --out analysis/robustness
 
 Applied once, after `robustness_runner.py progress` reports every cell finished. It reads only the files
-the runner writes; it simulates nothing and modifies nothing under --root. Its SHA-256 is part of the
-robustness plan fingerprint (robustness_runner.py), so it cannot change after the plan is approved.
+the runner writes; it simulates nothing and modifies nothing under --root. Its SHA-256 (and that of
+cell_state.py) is part of the robustness plan fingerprint (robustness_runner.py), so neither can change after
+the plan is approved.
+
+Cells are classified by tools/robustness/cell_state.py. A corrupted result stops the analysis (it is never
+analysed). A cell without a result stops it too, unless it is declared missing (--declared-missing): it then
+stays missing, the report is marked INCOMPLETE, every count is shown as present/expected (expected counts come
+from the plan) and no conclusion that needs a missing cell is drawn. A clearance failure is a finished
+observation, not a missing cell.
 
 Indicators (definitions of tools/ablation_metrics.py, unchanged, with N per manifest):
   N            the manifest's scheduled_total (metadata), cross-checked against evaluation_metrics.json
@@ -22,23 +29,31 @@ Indicators (definitions of tools/ablation_metrics.py, unchanged, with N per mani
   shield       interventions by type during the demand (decision time < 3600) and after it
                (protection_decisions.csv; learned and P5 runs), SUMO signal mismatches (protection_record.json).
 
-Technical criteria (plans/PLAN_ROBUSTESSE.md; all required, otherwise no scientific statement is printed):
-  T1 every planned cell has a result, or is declared missing in --declared-missing (then listed, not imputed);
+Technical criteria (plans/PLAN_ROBUSTESSE.md):
+  T1 completeness: every planned cell has a finished result (complete or clearance failure); declared missing
+     cells keep T1 false and make the report INCOMPLETE;
   T2 0 SUMO signal mismatches in learned and P5 runs;
   T3 max counter <= 127 s in every guarantee and both run (learned and P5), realised green >= 7 s in every
      both run;
   T4 checkpoint copies and manifests equal to the hashes recorded at preparation;
   T5 consistency: N, J against tripinfo, logged counters against their recomputation, one counter row per
      second and intersection, executor state equal to the logged phase.
+  integrity_ok = T2-T5; if false, no scientific statement is made. all_ok = integrity_ok and T1.
 
 Scientific questions (descriptive; no test, no ranking claim):
-  S1 service: per scenario, failures (with the open counter wait at the end) in the guarantee and both runs.
-  S2 latent defects: per method and scenario, `none` runs that fail or leave a vehicle waiting >= 300 s.
-  S3 cost of the protections: paired differences against `none` on the same model and traffic: dJ (pairs where
-     both clear, n given), dD_bar (all pairs), interventions during the demand. If the guarantee never acted
-     during the demand of a scenario, its cost there is reported as NOT EVALUATED, not as zero.
+  S1 service: per scenario, every learned guarantee and both run the plan expects (all models and traffics).
+     "No indefinite denial of service" is allowed only if all of them are present, integrity_ok holds and none
+     is a clearance failure with an open counter wait at the end.
+  S2 latent defects: per method and scenario, `none` runs that fail or leave a vehicle waiting >= 300 s
+     (present/expected).
+  S3 paired effects, same model and traffic: `guarantee - none` is the effect of the guarantee alone;
+     `both - none` is the combined effect of the minimum green and the guarantee and never the cost of the
+     guarantee itself (that would need `both - min_green`, not in this plan). The guarantee's own cost during
+     the demand is EVALUATED only from `guarantee - none` with an intervention during the demand; NOT EVALUATED
+     without one; NOT IDENTIFIED in `both - none`. dJ covers the whole episode (pairs where both clear);
+     dD_bar covers the demand window [0, 3600) (all pairs).
   S4 fixed plans: per method, scenario and arm, model-level means of (learned J - fixed-plan J) on the same
-     traffics, over traffics where both clear, with the number of models and traffics behind each value.
+     traffics, over traffics where both clear, with expected, missing and excluded pairs.
 """
 from __future__ import print_function
 
@@ -54,7 +69,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
+sys.path.insert(0, HERE)
 import ablation_metrics as am  # noqa: E402
+import cell_state as cs  # noqa: E402
 
 GENERATION_END_S = am.GENERATION_END_S
 COUNTER_BOUND_S = 127
@@ -234,12 +251,45 @@ def describe(values):
             "n_zero": sum(x == 0 for x in v)}
 
 
-def technical_checks(cells, plan, missing, declared, cell_problems, hash_problems):
+# ---------------------------------------------------------------------------
+# Expected cells (from the plan) and completeness.
+# ---------------------------------------------------------------------------
+
+def key_of(cell):
+    return (cell["scenario"], int(cell["seed"]), cell["controller"], cell.get("model") or "")
+
+
+def kind_of(cell):
+    return cell["controller"].split(":", 1)[0]
+
+
+def arm_of(cell):
+    return cell["controller"].split(":", 1)[1] if kind_of(cell) in SHIELDED else ""
+
+
+def expected(plan_cells, **conditions):
+    """Planned cells matching scenario / controller / method conditions, as identity keys."""
+    out = []
+    for c in plan_cells:
+        if "scenario" in conditions and c["scenario"] != conditions["scenario"]:
+            continue
+        if "controller" in conditions and c["controller"] != conditions["controller"]:
+            continue
+        if "method" in conditions and (not c.get("model") or method_of(c["model"]) != conditions["method"]):
+            continue
+        out.append(key_of(c))
+    return out
+
+
+def coverage(keys, present):
+    missing = [k for k in keys if k not in present]
+    return {"expected": len(keys), "present": len(keys) - len(missing), "missing": [list(k) for k in missing],
+            "complete": not missing}
+
+
+def technical_checks(cells, missing, cell_problems, hash_problems):
     checks = {}
-    undeclared = sorted(set(missing) - set(declared))
-    checks["T1_complete"] = {"ok": not undeclared, "missing_undeclared": undeclared,
-                             "missing_declared": sorted(set(missing) & set(declared)),
-                             "planned": len(plan["cells"]), "analysed": len(cells)}
+    checks["T1_complete"] = {"ok": not missing, "missing_declared": sorted(missing)}
     mism = [(c["scenario"], c["seed"], c["controller"], c["model"], c["sumo_mismatch_s"]) for c in cells
             if c["kind"] in SHIELDED and c["sumo_mismatch_s"] != 0]
     checks["T2_sumo_signals"] = {"ok": not mism, "runs_with_mismatch": mism}
@@ -251,46 +301,77 @@ def technical_checks(cells, plan, missing, declared, cell_problems, hash_problem
                                          "green_below_7_in_both": short}
     checks["T4_hashes"] = {"ok": not hash_problems, "problems": hash_problems}
     checks["T5_consistency"] = {"ok": not cell_problems, "cells_with_problems": cell_problems}
-    checks["all_ok"] = all(v["ok"] for k, v in checks.items() if k.startswith("T"))
+    checks["integrity_ok"] = all(checks[k]["ok"] for k in ("T2_sumo_signals", "T3_protection_contracts",
+                                                           "T4_hashes", "T5_consistency"))
+    checks["complete"] = checks["T1_complete"]["ok"]
+    checks["all_ok"] = checks["integrity_ok"] and checks["complete"]
     return checks
 
 
-def s1_service(cells):
+# ---------------------------------------------------------------------------
+# Scientific questions.
+# ---------------------------------------------------------------------------
+
+def s1_service(cells, plan_cells, integrity_ok):
+    """Per scenario: the guarantee and both runs EXPECTED by the plan (all models and traffics), present or
+    not. A recorded clearance failure is a finished observation; a missing cell is not."""
+    present = dict((key_of(c), c) for c in cells)
     out = {}
-    for scenario in sorted({c["scenario"] for c in cells}):
+    for scenario in sorted({c["scenario"] for c in plan_cells}):
         entry = {}
         for controller in GUARANTEED:
-            runs = [c for c in cells if c["scenario"] == scenario and c["controller"] == controller]
-            if not runs:
+            keys = expected(plan_cells, scenario=scenario, controller=controller)
+            if not keys:
                 continue
+            runs = [present[k] for k in keys if k in present]
             failed = [{"seed": c["seed"], "model": c["model"], "unfinished_ids": c["unfinished_ids"],
                        "open_wait_at_end_s": c["open_wait_at_end_s"]} for c in runs if c["status"] != "CLEARED"]
-            entry[controller] = {"runs": len(runs), "cleared": len(runs) - len(failed), "failures": failed,
-                                 "failures_with_open_wait": sum(f["open_wait_at_end_s"] is not None for f in failed)}
-        learned = [entry[k] for k in ("learned:guarantee", "learned:both") if k in entry]
-        entry["S1_statement_allowed"] = bool(learned) and all(e["failures_with_open_wait"] == 0 for e in learned)
+            entry[controller] = dict(coverage(keys, present), cleared=len(runs) - len(failed), failures=failed,
+                                     failures_with_open_wait=sum(f["open_wait_at_end_s"] is not None
+                                                                 for f in failed))
+        learned = [entry.get(k) for k in ("learned:guarantee", "learned:both")]
+        if not all(learned):
+            allowed, reason = False, "the plan has no learned guarantee and both runs for this scenario"
+        elif not all(e["complete"] for e in learned):
+            allowed, reason = False, "INCOMPLETE: {} of {} expected learned guarantee/both runs missing".format(
+                sum(e["expected"] - e["present"] for e in learned), sum(e["expected"] for e in learned))
+        elif not integrity_ok:
+            allowed, reason = False, "technical criteria failed"
+        elif any(e["failures_with_open_wait"] for e in learned):
+            allowed, reason = False, "{} failures with an open counter wait".format(
+                sum(e["failures_with_open_wait"] for e in learned))
+        else:
+            allowed, reason = True, "all {} expected learned guarantee/both runs present; no failure with an " \
+                                    "open counter wait".format(sum(e["expected"] for e in learned))
+        entry["S1_statement_allowed"] = allowed
+        entry["S1_reason"] = reason
         out[scenario] = entry
     return out
 
 
-def s2_latent(cells):
+def s2_latent(cells, plan_cells):
+    present = dict((key_of(c), c) for c in cells)
     out = []
-    for scenario in sorted({c["scenario"] for c in cells}):
+    for scenario in sorted({c["scenario"] for c in plan_cells}):
         for method in METHODS:
-            runs = [c for c in cells if c["scenario"] == scenario and c["controller"] == "learned:none"
-                    and c["method"] == method]
-            if not runs:
+            keys = expected(plan_cells, scenario=scenario, controller="learned:none", method=method)
+            if not keys:
                 continue
+            runs = [present[k] for k in keys if k in present]
             flagged = [c for c in runs if c["status"] != "CLEARED" or c["vehicles_waiting_ge_300s"] > 0]
-            out.append({"scenario": scenario, "method": method, "runs": len(runs),
-                        "failures": sum(c["status"] != "CLEARED" for c in runs),
-                        "runs_with_vehicle_wait_ge_300s": sum(c["vehicles_waiting_ge_300s"] > 0 for c in runs),
-                        "runs_flagged": len(flagged),
-                        "flagged": ["{} {}".format(c["model"], c["seed"]) for c in flagged]})
+            row = {"scenario": scenario, "method": method, "runs": len(runs),
+                   "failures": sum(c["status"] != "CLEARED" for c in runs),
+                   "runs_with_vehicle_wait_ge_300s": sum(c["vehicles_waiting_ge_300s"] > 0 for c in runs),
+                   "runs_flagged": len(flagged),
+                   "flagged": ["{} {}".format(c["model"], c["seed"]) for c in flagged]}
+            row.update(coverage(keys, present))
+            out.append(row)
     return out
 
 
 def learned_pairs(cells):
+    """Paired differences arm - none on the same model and traffic. dJ covers the whole episode (J is defined only
+    when both runs clear); dD_bar covers the demand window [0, 3600) only and is defined for every pair."""
     idx = dict(((c["scenario"], c["seed"], c["model"], c["arm"]), c) for c in cells if c["kind"] == "learned")
     pairs = []
     for (scenario, seed, model, arm), c in sorted(idx.items()):
@@ -301,9 +382,10 @@ def learned_pairs(cells):
             continue
         both_clear = c["J_primary_s"] is not None and base["J_primary_s"] is not None
         pairs.append({"scenario": scenario, "seed": seed, "model": model, "method": c["method"], "arm": arm,
+                      "contrast": "{} - none".format(arm),
                       "status_none": base["status"], "status_arm": c["status"],
-                      "dJ_s": c["J_primary_s"] - base["J_primary_s"] if both_clear else None,
-                      "dD_bar_s": c["D_bar_s"] - base["D_bar_s"],
+                      "dJ_whole_episode_s": c["J_primary_s"] - base["J_primary_s"] if both_clear else None,
+                      "dD_bar_demand_window_s": c["D_bar_s"] - base["D_bar_s"],
                       "dTimeLoss_s": (c["mean_completed_time_loss_s"] - base["mean_completed_time_loss_s"]
                                       if both_clear else None),
                       "dMaxVehicleWait_s": c["max_vehicle_waiting_s"] - base["max_vehicle_waiting_s"],
@@ -312,71 +394,100 @@ def learned_pairs(cells):
     return pairs
 
 
-def s3_costs(pairs):
+EFFECT = {"guarantee": "guarantee alone", "both": "combined protections (minimum green + guarantee)"}
+NOT_EVALUATED = "NOT EVALUATED (no guarantee intervention during the demand)"
+NOT_IDENTIFIED = ("NOT IDENTIFIED (the guarantee acted, but both - none also contains the minimum green; "
+                  "isolating it would need both - min_green, which is not in this plan)")
+
+
+def s3_costs(pairs, plan_cells):
+    """Cost of the protections. guarantee - none is the effect of the guarantee alone; both - none is the combined
+    effect of the two protections and never the cost of the guarantee itself."""
+    plan_keys = set(key_of(c) for c in plan_cells)
     out = []
-    for scenario in sorted({p["scenario"] for p in pairs}):
+    for scenario in sorted({c["scenario"] for c in plan_cells}):
         for method in METHODS:
             for arm in ("guarantee", "both"):
-                ps = [p for p in pairs if p["scenario"] == scenario and p["method"] == method and p["arm"] == arm]
-                if not ps:
+                planned = [k for k in expected(plan_cells, scenario=scenario, controller="learned:" + arm,
+                                               method=method)
+                           if (k[0], k[1], "learned:none", k[3]) in plan_keys]
+                if not planned:
                     continue
+                ps = [p for p in pairs if p["scenario"] == scenario and p["method"] == method and p["arm"] == arm]
                 g_demand = sum(p["interventions_guarantee_demand"] or 0 for p in ps)
-                out.append({"scenario": scenario, "method": method, "arm": arm, "pairs": len(ps),
-                            "J_comparable_pairs": sum(p["dJ_s"] is not None for p in ps),
-                            "dJ_s": describe([p["dJ_s"] for p in ps]),
-                            "dD_bar_s": describe([p["dD_bar_s"] for p in ps]),
+                if arm == "guarantee":
+                    guarantee_cost = "EVALUATED (guarantee - none)" if g_demand > 0 else NOT_EVALUATED
+                else:
+                    guarantee_cost = NOT_IDENTIFIED if g_demand > 0 else NOT_EVALUATED
+                out.append({"scenario": scenario, "method": method, "arm": arm,
+                            "contrast": "{} - none".format(arm), "effect_measured": EFFECT[arm],
+                            "pairs_expected": len(planned), "pairs": len(ps),
+                            "pairs_missing": len(planned) - len(ps), "complete": len(ps) == len(planned),
+                            "J_comparable_pairs": sum(p["dJ_whole_episode_s"] is not None for p in ps),
+                            "dJ_whole_episode_s": describe([p["dJ_whole_episode_s"] for p in ps]),
+                            "dD_bar_demand_window_s": describe([p["dD_bar_demand_window_s"] for p in ps]),
                             "guarantee_interventions_demand": g_demand,
+                            "guarantee_activated_during_demand": g_demand > 0,
                             "pairs_with_guarantee_demand_intervention":
                                 sum((p["interventions_guarantee_demand"] or 0) > 0 for p in ps),
-                            "min_green_interventions_demand": sum(p["interventions_min_green_demand"] or 0 for p in ps),
-                            "guarantee_cost_during_demand": ("EVALUATED" if g_demand > 0 else
-                                                             "NOT EVALUATED (no intervention during the demand)")})
+                            "min_green_interventions_demand": sum(p["interventions_min_green_demand"] or 0
+                                                                  for p in ps),
+                            "guarantee_cost_during_demand": guarantee_cost})
     return out
 
 
-def s4_fixed(cells):
-    fixed = dict(((c["scenario"], c["seed"], c["controller"]), c) for c in cells if c["kind"] == "fixed")
+def s4_fixed(cells, plan_cells):
+    present = dict((key_of(c), c) for c in cells)
     out = []
-    for scenario in sorted({c["scenario"] for c in cells}):
+    for scenario in sorted({c["scenario"] for c in plan_cells}):
         for method in METHODS:
             for arm in LEARNED_ARMS:
-                runs = [c for c in cells if c["scenario"] == scenario and c["kind"] == "learned"
-                        and c["method"] == method and c["arm"] == arm]
-                if not runs:
+                keys = expected(plan_cells, scenario=scenario, controller="learned:" + arm, method=method)
+                if not keys:
                     continue
+                runs = [present[k] for k in keys if k in present]
                 for plan_name, controller in sorted(FIXED.items()):
-                    per_model = {}
-                    excluded = 0
-                    for c in runs:
-                        f = fixed.get((scenario, c["seed"], controller))
-                        if f is None or c["J_primary_s"] is None or f["J_primary_s"] is None:
+                    per_model, excluded, missing = {}, 0, 0
+                    for k in keys:
+                        fixed_key = (scenario, k[1], controller, "")
+                        if k not in present or fixed_key not in present:
+                            missing += 1
+                            continue
+                        c, f = present[k], present[fixed_key]
+                        if c["J_primary_s"] is None or f["J_primary_s"] is None:
                             excluded += 1
                             continue
                         per_model.setdefault(c["model"], []).append(c["J_primary_s"] - f["J_primary_s"])
                     means = [statistics.mean(v) for v in per_model.values()]
+                    traffics = len({k[1] for k in keys})
                     out.append({"scenario": scenario, "method": method, "arm": arm, "fixed_plan": plan_name,
-                                "learned_runs": len(runs), "pairs_excluded_not_both_cleared": excluded,
+                                "pairs_expected": len(keys), "pairs_missing": missing,
+                                "complete": missing == 0, "learned_runs": len(runs),
+                                "pairs_excluded_not_both_cleared": excluded,
                                 "models_with_a_pair": len(per_model),
-                                "models_all_traffics": sum(len(v) == len({c["seed"] for c in runs})
-                                                           for v in per_model.values()),
+                                "models_all_traffics": sum(len(v) == traffics for v in per_model.values()),
                                 "pairs_learned_J_lower": sum(x < 0 for v in per_model.values() for x in v),
                                 "pairs": sum(len(v) for v in per_model.values()),
                                 "model_mean_dJ_s": describe(means)})
     return out
 
 
-def classical_summary(cells):
+def classical_summary(cells, plan_cells):
+    present = dict((key_of(c), c) for c in cells)
     out = []
-    for scenario in sorted({c["scenario"] for c in cells}):
-        for controller in sorted({c["controller"] for c in cells if c["kind"] not in ("learned",)}):
-            runs = [c for c in cells if c["scenario"] == scenario and c["controller"] == controller]
+    for scenario in sorted({c["scenario"] for c in plan_cells}):
+        for controller in sorted({c["controller"] for c in plan_cells if kind_of(c) != "learned"}):
+            keys = expected(plan_cells, scenario=scenario, controller=controller)
+            runs = [present[k] for k in keys if k in present]
             js = [c["J_primary_s"] for c in runs if c["J_primary_s"] is not None]
-            out.append({"scenario": scenario, "controller": controller, "runs": len(runs),
-                        "cleared": sum(c["status"] == "CLEARED" for c in runs),
-                        "J_mean_over_cleared": statistics.mean(js) if js else None, "J_n": len(js),
-                        "D_bar_mean": statistics.mean(c["D_bar_s"] for c in runs),
-                        "max_counter_s": max(c["max_counter_s"] for c in runs),
-                        "max_vehicle_waiting_s": max(c["max_vehicle_waiting_s"] for c in runs)})
+            row = {"scenario": scenario, "controller": controller, "runs": len(runs),
+                   "cleared": sum(c["status"] == "CLEARED" for c in runs),
+                   "J_mean_over_cleared": statistics.mean(js) if js else None, "J_n": len(js),
+                   "D_bar_mean": statistics.mean(c["D_bar_s"] for c in runs) if runs else None,
+                   "max_counter_s": max((c["max_counter_s"] for c in runs), default=None),
+                   "max_vehicle_waiting_s": max((c["max_vehicle_waiting_s"] for c in runs), default=None)}
+            row.update(coverage(keys, present))
+            out.append(row)
     return out
 
 
@@ -425,54 +536,72 @@ def fmt(x, digits=3):
     return str(x)
 
 
+def cover(row):
+    text = "{}/{}".format(row.get("present", row.get("pairs")), row.get("expected", row.get("pairs_expected")))
+    return text if row.get("complete", True) else text + " INCOMPLETE"
+
+
 def write_report(path, plan, checks, s1, s2, s3, s4, classical):
     lines = ["# Robustness validation: analysis (applied once)", "",
-             "Plan fingerprint: `{}`".format(plan.get("fingerprint")), "",
-             "## Technical criteria", ""]
+             "Plan fingerprint: `{}`".format(plan.get("fingerprint")), ""]
+    if not checks["complete"]:
+        lines += ["**INCOMPLETE (INCOMPLET): {} planned cells are missing (declared). This report is diagnostic; "
+                  "no conclusion that needs a missing cell is drawn, and counts are shown as present/expected."
+                  "**".format(len(checks["T1_complete"]["missing_declared"])), ""]
+    lines += ["## Technical criteria", ""]
     for key in sorted(k for k in checks if k.startswith("T")):
-        lines.append("- {}: {}".format(key, "OK" if checks[key]["ok"] else "FAILED"))
-    if not checks["all_ok"]:
+        lines.append("- {}: {}".format(key, "OK" if checks[key]["ok"] else
+                                       ("MISSING CELLS" if key == "T1_complete" else "FAILED")))
+    if not checks["integrity_ok"]:
         lines += ["", "**Technical criteria failed: no scientific statement is made.** The tables below are "
                       "kept for diagnosis only.", ""]
     lines += ["", "## Classical and diagnostic controllers (J over cleared runs; n shown)", "",
-              "| Scenario | Controller | Cleared | J mean (n) | D_bar mean | Max counter | Max vehicle wait |",
-              "|---|---|---|---|---|---|---|"]
+              "| Scenario | Controller | Runs present/expected | Cleared | J mean (n) | D_bar mean | Max counter | "
+              "Max vehicle wait |", "|---|---|---|---|---|---|---|---|"]
     for r in classical:
-        lines.append("| {} | {} | {}/{} | {} ({}) | {} | {} | {} |".format(
-            r["scenario"], r["controller"], r["cleared"], r["runs"], fmt(r["J_mean_over_cleared"]), r["J_n"],
-            fmt(r["D_bar_mean"]), r["max_counter_s"], fmt(r["max_vehicle_waiting_s"], 0)))
-    lines += ["", "## S1 Service under the guarantee", ""]
+        lines.append("| {} | {} | {} | {} | {} ({}) | {} | {} | {} |".format(
+            r["scenario"], r["controller"], cover(r), r["cleared"], fmt(r["J_mean_over_cleared"]), r["J_n"],
+            fmt(r["D_bar_mean"]), fmt(r["max_counter_s"]), fmt(r["max_vehicle_waiting_s"], 0)))
+    lines += ["", "## S1 Service under the guarantee (expected runs from the plan: every model and traffic)", ""]
     for scenario, entry in sorted(s1.items()):
-        parts = ["{} {}/{}".format(k, v["cleared"], v["runs"]) for k, v in sorted(entry.items())
+        parts = ["{}: {} present, {} cleared".format(k, cover(v), v["cleared"]) for k, v in sorted(entry.items())
                  if isinstance(v, dict)]
         verdict = ("no indefinite denial of service in the learned guarantee and both runs of this scenario"
-                   if entry["S1_statement_allowed"] and checks["all_ok"] else
-                   "statement NOT allowed: failures listed in s1_service.json" if checks["all_ok"] else
-                   "not interpretable (technical criteria failed)")
-        lines.append("- {}: {}; {}".format(scenario, "; ".join(parts), verdict))
+                   if entry["S1_statement_allowed"] else "statement NOT allowed: " + entry["S1_reason"])
+        lines.append("- {}: {}. {}".format(scenario, "; ".join(parts), verdict))
     lines += ["", "## S2 Latent defects without protection", "",
-              "| Scenario | Method | Runs | Failures | Runs with a vehicle waiting >= 300 s |", "|---|---|---|---|---|"]
+              "| Scenario | Method | Runs present/expected | Failures | Runs with a vehicle waiting >= 300 s |",
+              "|---|---|---|---|---|"]
     for r in s2:
-        lines.append("| {} | {} | {} | {} | {} |".format(r["scenario"], r["method"], r["runs"], r["failures"],
+        lines.append("| {} | {} | {} | {} | {} |".format(r["scenario"], r["method"], cover(r), r["failures"],
                                                          r["runs_with_vehicle_wait_ge_300s"]))
-    lines += ["", "## S3 Paired cost of the protections (same model and traffic)", "",
-              "| Scenario | Method | Arm | Pairs | dJ median [min, max] (n comparable) | dD_bar median [min, max] | "
-              "Guarantee interventions during demand | Cost of the guarantee during demand |",
-              "|---|---|---|---|---|---|---|---|"]
+    lines += ["", "## S3 Paired effects of the protections (same model and traffic)", "",
+              "`guarantee - none` measures the guarantee alone. `both - none` measures the combined effect of the "
+              "minimum green and the guarantee; it never isolates the guarantee (that would need `both - "
+              "min_green`, not in this plan). dJ covers the whole episode and exists only when both runs clear; "
+              "dD_bar covers the demand window [0, 3600) and exists for every pair.", "",
+              "| Scenario | Method | Contrast | Effect measured | Pairs present/expected | dJ whole episode median "
+              "[min, max] (n comparable) | dD_bar demand window median [min, max] | Guarantee interventions during "
+              "demand | Cost of the guarantee itself during demand |", "|---|---|---|---|---|---|---|---|---|"]
     for r in s3:
-        dj, dd = r["dJ_s"], r["dD_bar_s"]
-        lines.append("| {} | {} | {} | {} | {} [{}, {}] ({}) | {} [{}, {}] | {} | {} |".format(
-            r["scenario"], r["method"], r["arm"], r["pairs"], fmt(dj.get("median")), fmt(dj.get("min")),
-            fmt(dj.get("max")), r["J_comparable_pairs"], fmt(dd.get("median")), fmt(dd.get("min")),
-            fmt(dd.get("max")), r["guarantee_interventions_demand"], r["guarantee_cost_during_demand"]))
+        dj, dd = r["dJ_whole_episode_s"], r["dD_bar_demand_window_s"]
+        lines.append("| {} | {} | {} | {} | {} | {} [{}, {}] ({}) | {} [{}, {}] | {} | {} |".format(
+            r["scenario"], r["method"], r["contrast"], r["effect_measured"],
+            cover({"pairs": r["pairs"], "pairs_expected": r["pairs_expected"], "complete": r["complete"]}),
+            fmt(dj.get("median")), fmt(dj.get("min")), fmt(dj.get("max")), r["J_comparable_pairs"],
+            fmt(dd.get("median")), fmt(dd.get("min")), fmt(dd.get("max")), r["guarantee_interventions_demand"],
+            r["guarantee_cost_during_demand"]))
     lines += ["", "## S4 Learned minus fixed plan, model-level means (pairs where both clear)", "",
-              "| Scenario | Method | Arm | Fixed plan | Models (all 5 traffics) | Pairs (excluded) | "
-              "Pairs with learned J lower | Model mean dJ median [min, max] |", "|---|---|---|---|---|---|---|---|"]
+              "| Scenario | Method | Arm | Fixed plan | Pairs present/expected | Models (all traffics) | Pairs "
+              "(excluded) | Pairs with learned J lower | Model mean dJ median [min, max] |",
+              "|---|---|---|---|---|---|---|---|---|"]
     for r in s4:
         d = r["model_mean_dJ_s"]
-        lines.append("| {} | {} | {} | {} | {} ({}) | {} ({}) | {} | {} [{}, {}] |".format(
-            r["scenario"], r["method"], r["arm"], r["fixed_plan"], r["models_with_a_pair"],
-            r["models_all_traffics"], r["pairs"], r["pairs_excluded_not_both_cleared"],
+        lines.append("| {} | {} | {} | {} | {} | {} ({}) | {} ({}) | {} | {} [{}, {}] |".format(
+            r["scenario"], r["method"], r["arm"], r["fixed_plan"],
+            cover({"pairs": r["pairs_expected"] - r["pairs_missing"], "pairs_expected": r["pairs_expected"],
+                   "complete": r["complete"]}),
+            r["models_with_a_pair"], r["models_all_traffics"], r["pairs"], r["pairs_excluded_not_both_cleared"],
             r["pairs_learned_J_lower"], fmt(d.get("median")), fmt(d.get("min")), fmt(d.get("max"))))
     lines += ["", "Descriptive only: five traffics per scenario, checkpoints selected earlier, no retraining, "
                   "no hypothesis test, no ranking claim. Failures are never given a J."]
@@ -495,31 +624,41 @@ def write_csv(path, records):
 
 def analyse(root, out, declared_missing=()):
     plan = rj(os.path.join(root, "plan.json"))
-    if plan.get("analysis_sha256") not in (None, sha256_file(os.path.abspath(__file__))):
-        raise AnalysisError("this analysis script differs from the one fixed in the plan")
     if plan.get("analysis_sha256") is None:
         raise AnalysisError("the plan does not record the analysis script; it was prepared without it")
+    if plan["analysis_sha256"] != sha256_file(os.path.abspath(__file__)):
+        raise AnalysisError("this analysis script differs from the one fixed in the plan")
+    if plan.get("cell_state_sha256") not in (None, sha256_file(cs.__file__)):
+        raise AnalysisError("cell_state.py differs from the one fixed in the plan")
     if os.path.exists(os.path.join(out, "summary.json")):
         raise AnalysisError("analysis already written (applied once): {}".format(out))
-    cells, missing, problems, cache = [], [], [], {}
+    hashes = cs.model_hashes(plan)
+    cells, missing, corrupted, problems, cache = [], [], [], [], {}
     for cell in plan["cells"]:
-        directory = os.path.join(root, cell["directory"])
-        if not os.path.isfile(os.path.join(directory, "evaluation_metrics.json")):
+        state, why = cs.classify_planned(root, cell, hashes)
+        if state == cs.CORRUPTED:
+            corrupted.append({"cell": cell["directory"], "problems": why})
+            continue
+        if state not in cs.FINISHED:
             missing.append(cell["directory"])
             continue
         n = manifest_n(root, cell["scenario"], cell["seed"], cache)
-        record, cell_problems = cell_metrics(cell, directory, n)
+        record, cell_problems = cell_metrics(cell, os.path.join(root, cell["directory"]), n)
         cells.append(record)
         if cell_problems:
             problems.append({"cell": cell["directory"], "problems": cell_problems})
+    if corrupted:
+        raise AnalysisError("{} corrupted results (preserved, never analysed), e.g. {}".format(
+            len(corrupted), corrupted[:3]))
     undeclared = sorted(set(missing) - set(declared_missing))
     if undeclared:
         raise AnalysisError("{} cells have no result and are not declared missing, e.g. {}".format(
             len(undeclared), undeclared[:3]))
-    checks = technical_checks(cells, plan, missing, declared_missing, problems, hash_problems(plan, root))
+    checks = technical_checks(cells, missing, problems, hash_problems(plan, root))
     pairs = learned_pairs(cells)
-    s1, s2, s3, s4 = s1_service(cells), s2_latent(cells), s3_costs(pairs), s4_fixed(cells)
-    classical = classical_summary(cells)
+    s1 = s1_service(cells, plan["cells"], checks["integrity_ok"])
+    s2, s3, s4 = s2_latent(cells, plan["cells"]), s3_costs(pairs, plan["cells"]), s4_fixed(cells, plan["cells"])
+    classical = classical_summary(cells, plan["cells"])
     if not os.path.isdir(out):
         os.makedirs(out)
     write_csv(os.path.join(out, "cells.csv"), cells)
@@ -531,8 +670,8 @@ def analyse(root, out, declared_missing=()):
     write_report(os.path.join(out, "REPORT.md"), plan, checks, s1, s2, s3, s4, classical)
     summary = {"plan_fingerprint": plan.get("fingerprint"), "cells_planned": len(plan["cells"]),
                "cells_analysed": len(cells), "cells_missing_declared": sorted(missing),
-               "technical_all_ok": checks["all_ok"],
-               "analysis_sha256": sha256_file(os.path.abspath(__file__))}
+               "complete": checks["complete"], "integrity_ok": checks["integrity_ok"],
+               "all_ok": checks["all_ok"], "analysis_sha256": sha256_file(os.path.abspath(__file__))}
     with open(os.path.join(out, "summary.json"), "w") as handle:
         json.dump(summary, handle, indent=1)
     return summary
@@ -555,7 +694,9 @@ def main(argv=None):
         print("STOP:", error)
         return 1
     print(json.dumps(summary, indent=1))
-    return 0 if summary["technical_all_ok"] else 3
+    if not summary["integrity_ok"]:
+        return 3
+    return 0 if summary["complete"] else 4
 
 
 if __name__ == "__main__":

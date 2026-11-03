@@ -70,7 +70,7 @@
 - garde-fous des scripts.
 
 **Préparé, non exécuté :**
-- validation de robustesse (`plans/PLAN_ROBUSTESSE.md`) ; son script d'analyse reste à écrire avant le lancement ;
+- validation de robustesse (`plans/PLAN_ROBUSTESSE.md`) ; script d'analyse écrit le 2026-10-30 et corrigé le 2026-11-03 (analyse incomplète marquée INCOMPLET, résultats corrompus jamais comptés comme terminés, coût de la garantie seule distinct de l'effet combiné), testé sur données synthétiques uniquement ;
 - campagne de réentraînement (`plans/PLAN_CAMPAGNE_FUTURE.md`) ; elle demande d'ajouter un `run_kind` de campagne dans `QMIX_PROTECTED` ;
 - compilation PDF : faite lors de la revue de passation (TeX Live sous Linux, 2026-10-30) ; `manuscript/main.pdf`, 12 pages, sans référence indéfinie. À refaire chez vous avec `ETAPES.cmd latex` si vous modifiez le texte.
 

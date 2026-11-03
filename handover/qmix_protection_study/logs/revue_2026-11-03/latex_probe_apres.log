@@ -1,0 +1,5 @@
+pdflatex exit 0, bibtex exit 0 : ETAPES latex exits 0
+LaTeX build failed at bibtex: see manuscript\main.log and manuscript\main.blg 
+pdflatex exit 0, bibtex exit 2 : ETAPES latex exits 1
+LaTeX build failed at pdflatex pass 1: see manuscript\main.log and manuscript\main.blg 
+pdflatex exit 3, bibtex exit 0 : ETAPES latex exits 1

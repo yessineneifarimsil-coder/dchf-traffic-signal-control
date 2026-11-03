@@ -17,10 +17,10 @@
 | 5 | Ablation runs (550 new, 4 processes) | `ETAPES.cmd ablation-run`, then `ablation-progress` | executed |
 | 6 | Ablation analysis (applied once) | `ETAPES.cmd ablation-analyse` | executed; `docs/RAPPORT_ABLATION.md` |
 | 7 | Figures and their data | `ETAPES.cmd figures` | executed; `figures/*.pdf`, `figures/data/*.csv` |
-| 8 | Manuscript check / compile | `ETAPES.cmd latex-check`; `ETAPES.cmd latex` needs a TeX distribution | static check executed; PDF compiled during the handover review (TeX Live on Linux, 2026-10-30): `manuscript/main.pdf`, 12 pages, no undefined reference; to recompile on your side with `ETAPES.cmd latex` |
-| 9 | Robustness validation | `ETAPES.cmd robustness-plan`, `robustness-prepare <fingerprint>`, `robustness-run`, `robustness-progress`, `robustness-analyse` (`plans/PLAN_ROBUSTESSE.md`) | **prepared, not launched**; analysis script written and tested on synthetic data on 2026-10-30, before any run; plan fingerprints printed before that date are void |
+| 8 | Manuscript check / compile | `ETAPES.cmd latex-check`; `ETAPES.cmd latex` needs a TeX distribution | static check executed; PDF compiled during the handover review (TeX Live on Linux, 2026-10-30): `manuscript/main.pdf`, 12 pages, no undefined reference; to recompile on your side with `ETAPES.cmd latex`, which since 2026-11-03 stops and returns 1 at the first failing `pdflatex` or `bibtex` |
+| 9 | Robustness validation | `ETAPES.cmd robustness-plan`, `robustness-prepare <fingerprint>`, `robustness-run`, `robustness-progress`, `robustness-analyse` (`plans/PLAN_ROBUSTESSE.md`) | **prepared, not launched**; analysis script written and tested on synthetic data on 2026-10-30, corrected on 2026-11-03 (review points 2–4: incomplete analyses, corrupted results, attribution of the guarantee's cost; `docs/REVUE_CORRECTIF_2026-11-03.md`); **plan fingerprints printed before 2026-11-03 are void**; before the plan, run `ETAPES.cmd robustness-check-smoke` |
 | 10 | Retraining campaign | `plans/PLAN_CAMPAGNE_FUTURE.md` | **prepared, not launched** |
-| 10b | Check of the step dispatch and exit codes of `ETAPES.cmd` (stand-in scripts, nothing real runs) | `tools\etapes_check\verify_etapes_cmd.cmd` | run under Wine on Linux, CALL and conda checks excepted (`logs/revue_2026-10-31/`); **to run on Windows** |
+| 10b | Check of the step dispatch and exit codes of `ETAPES.cmd` (stand-in scripts, nothing real runs) | `tools\etapes_check\verify_etapes_cmd.cmd` | run under Wine on Linux, CALL and conda checks excepted: 79 checks passed on 2026-11-03, including the `latex` failure propagation and the launch-only message of the parallel steps (`logs/revue_2026-11-03/`); **to run on Windows** |
 | 11 | Verified archive | `ETAPES.cmd archive` | executed: `D:\QMIX_Results\deliveries\qmix_protection_study_<commit>.zip` (+ `.sha256`; `MANIFEST_SHA256.txt` inside) |
 
 ## Contents
@@ -34,8 +34,8 @@
 | `analysis/ablation/` | per-cell indicators, pairs, summary, reconstruction check |
 | `figures/` | figures (PDF / PNG), `make_figures.py`, plotted data in `figures/data/` |
 | `manuscript/` | `main.tex`, `references.bib`, `check_latex.py` |
-| `docs/` | ablation report, literature review and DOI verification, French summary; **`REVUE_PASSATION_2026-10-30.md`: handover review (checks, corrections, unverified items, prioritised next steps)** |
-| `review/` | independent recomputation scripts used by the handover review (outputs in `logs/revue_2026-10-30/`) |
+| `docs/` | ablation report, literature review and DOI verification, French summary; **`REVUE_PASSATION_2026-10-30.md`: handover review (checks, corrections, unverified items, prioritised next steps)**; `REVUE_COMPLEMENT_2026-10-31.md`; `REVUE_CORRECTIF_2026-11-03.md` (robustness tools, review points 2–4) |
+| `review/` | independent recomputation scripts used by the handover review (outputs in `logs/revue_2026-10-30/`); `repro_robustness_defects.py` (review points 2–4, outputs in `logs/revue_2026-11-03/`) |
 | `logs/` | logs of the runs and checks executed here |
 
 ## Status of each claim

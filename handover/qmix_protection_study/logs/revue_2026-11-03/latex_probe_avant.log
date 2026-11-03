@@ -1,0 +1,3 @@
+pdflatex exit 0, bibtex exit 0 : ETAPES latex exits 0
+pdflatex exit 0, bibtex exit 2 : ETAPES latex exits 0
+pdflatex exit 3, bibtex exit 0 : ETAPES latex exits 3

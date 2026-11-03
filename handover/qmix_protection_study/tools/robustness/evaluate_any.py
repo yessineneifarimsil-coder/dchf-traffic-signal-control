@@ -9,6 +9,7 @@ Controllers (all on the frozen environment, network, observation, reward and log
   learned:<arm>        a checkpoint under the frozen protected evaluator, arm <arm>.
 Manifests with N != 2800 go through tools/robustness/n_adapter.py (J denominator = N).
 """
+import hashlib
 import json
 import os
 import sys
@@ -68,6 +69,14 @@ def counted_baseline_class():
             finally:
                 super(CountedBaselineEnvironment, self).close()
     return CountedBaselineEnvironment
+
+
+def _sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def _manifest(prefix, controller, extra):
@@ -179,7 +188,12 @@ def evaluate(controller, prefix, out_dir, checkpoint=None, traci_module=None):
             rec.update({"status": status, "protection": ProtectionSpec(param).to_dict()})
             with open(os.path.join(out_dir, "protection_record.json"), "w") as f:
                 json.dump(rec, f, indent=2, sort_keys=True)
+    # Identity of the cell, stamped here for every controller kind (tools/robustness/cell_state.py checks it).
     metrics["scenario"] = meta["scenario"]
+    metrics["controller"] = controller
+    metrics["traffic_seed"] = traffic_seed
+    if kind == "learned":
+        metrics["checkpoint_sha256"] = _sha256(checkpoint)
     metrics["N_scheduled"] = int(meta["scheduled_total"])
     metrics["wall_s"] = time.time() - t0
     with open(os.path.join(out_dir, "evaluation_metrics.json"), "w") as f:

@@ -6,8 +6,13 @@
     python tools/robustness/robustness_runner.py progress --root ...
 
 Cells: 5 scenarios x 5 traffics x (5 classical/diagnostic controllers + 30 selected checkpoints x 3 arms).
-A finished cell (evaluation_metrics.json) is never rerun; an interrupted one is renamed .incompleteN and run once
-more; a clearance failure is a finished result.
+Cell states (tools/robustness/cell_state.py): a complete result or a complete scientific failure (clearance
+failure) is finished and never rerun; a corrupted result (unreadable metrics, another cell's identity, missing
+required files) is preserved, reported and never rerun automatically; a technical interruption without any
+result is renamed .incomplete1 and run once more, and a second interruption is left for diagnosis.
+
+Exit codes of `run` and `progress`: 0 every cell of the shard / plan is finished; 3 some cells are not finished
+(not started, or interrupted twice); 5 at least one corrupted result.
 """
 import argparse
 import hashlib
@@ -20,6 +25,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, ".."))
+import cell_state as cs  # noqa: E402
 import scenario_traffic as st  # noqa: E402
 
 CLASSICAL = ["fixed:old_C19_8_5_D9", "fixed:min7_C25_12_7_D0", "canonical_mp", "p5:none", "p5:both"]
@@ -56,6 +62,7 @@ def build_plan(root):
             "generator_sha256": sha256_file(os.path.join(HERE, "scenario_traffic.py")),
             # The analysis is fixed with the plan: approving the fingerprint approves it too.
             "analysis_sha256": sha256_file(os.path.join(HERE, "robustness_analysis.py")),
+            "cell_state_sha256": sha256_file(os.path.join(HERE, "cell_state.py")),
             "estimated_cpu_h": round(n * SECONDS_PER_RUN * 1.4 / 3600.0, 1),
             "estimated_wall_h_4_workers": round(n * SECONDS_PER_RUN / 4 / 3600.0, 1),
             "estimated_wall_h_4_workers_if_10pct_fail": round(n * SECONDS_PER_RUN * (0.9 + 0.1 * FAILURE_FACTOR) / 4 / 3600.0, 1),
@@ -108,36 +115,67 @@ def run(root, shard):
     if problems or stored["fingerprint"] != plan["fingerprint"]:
         raise SystemExit("REFUSED: plan mismatch or problems {}".format(problems))
     import evaluate_any as ea
+    hashes = cs.model_hashes(plan)
     i, n = (int(x) for x in shard.split("/"))
+    corrupted, unfinished = [], []
     log = open(os.path.join(plan["root"], "run_log_shard{}of{}.jsonl".format(i, n)), "a")
     for pos, c in enumerate(plan["cells"]):
         if pos % n != i:
             continue
         d = os.path.join(plan["root"], c["directory"])
-        if os.path.isfile(os.path.join(d, "evaluation_metrics.json")):
+        state, why = cs.classify_planned(plan["root"], c, hashes)
+        if state in cs.FINISHED:
             continue
-        if os.path.exists(d):
-            k = 1
-            while os.path.exists("{}.incomplete{}".format(d, k)):
-                k += 1
-            if k > 1:
-                print("NOT RERUN (retried once):", d)
+        if state == cs.CORRUPTED:
+            print("CORRUPTED, preserved, NOT rerun: {} ({})".format(c["directory"], "; ".join(why)))
+            corrupted.append(c["directory"])
+            continue
+        if state == cs.INTERRUPTED:
+            if os.path.exists("{}.incomplete1".format(d)):
+                print("INTERRUPTED TWICE, preserved, NOT rerun: {}".format(c["directory"]))
+                unfinished.append(c["directory"])
                 continue
-            os.rename(d, "{}.incomplete{}".format(d, k))
+            os.rename(d, "{}.incomplete1".format(d))
         prefix = os.path.join(plan["root"], "manifests", "{}_{}".format(c["scenario"], c["seed"]))
         ck = os.path.join(plan["root"], "checkpoints", c["model"] + ".pth") if "model" in c else None
         t0 = time.time()
-        m = ea.evaluate(c["controller"], prefix, d, checkpoint=ck)
-        log.write(json.dumps({"cell": c["directory"], "status": m["clearance_status"], "wall_s": time.time() - t0}) + "\n")
+        try:
+            ea.evaluate(c["controller"], prefix, d, checkpoint=ck)
+        except Exception as error:  # noqa: BLE001 - a technical interruption; the resume rule applies
+            print("INTERRUPTED: {} ({!r})".format(c["directory"], error))
+        state, why = cs.classify_planned(plan["root"], c, hashes)
+        log.write(json.dumps({"cell": c["directory"], "state": state, "problems": why,
+                              "wall_s": time.time() - t0}) + "\n")
         log.flush()
-    return 0
+        if state == cs.CORRUPTED:
+            print("CORRUPTED after evaluation, preserved: {} ({})".format(c["directory"], "; ".join(why)))
+            corrupted.append(c["directory"])
+        elif state not in cs.FINISHED:
+            unfinished.append(c["directory"])
+    log.close()
+    if corrupted or unfinished:
+        print("shard {}/{}: {} corrupted, {} not finished".format(i, n, len(corrupted), len(unfinished)))
+    return 5 if corrupted else (3 if unfinished else 0)
 
 
 def progress(root):
-    plan = json.load(open(os.path.join(root, "plan.json")))
-    done = sum(os.path.isfile(os.path.join(root, c["directory"], "evaluation_metrics.json")) for c in plan["cells"])
-    print("finished {}/{}".format(done, plan["n_cells"]))
-    return 0 if done == plan["n_cells"] else 3
+    with open(os.path.join(root, "plan.json")) as f:
+        plan = json.load(f)
+    hashes = cs.model_hashes(plan)
+    states = {}
+    for c in plan["cells"]:
+        state, why = cs.classify_planned(root, c, hashes)
+        states.setdefault(state, []).append((c["directory"], why))
+    finished = sum(len(states.get(s, [])) for s in cs.FINISHED)
+    print("finished {}/{} (complete {}, scientific failures {}) | corrupted {} | interrupted {} | not started {}"
+          .format(finished, plan["n_cells"], len(states.get(cs.COMPLETE, [])),
+                  len(states.get(cs.SCIENTIFIC_FAILURE, [])), len(states.get(cs.CORRUPTED, [])),
+                  len(states.get(cs.INTERRUPTED, [])), len(states.get(cs.NOT_STARTED, []))))
+    for directory, why in states.get(cs.CORRUPTED, [])[:20]:
+        print("  CORRUPTED (preserved, not rerun):", directory, "|", "; ".join(why))
+    if states.get(cs.CORRUPTED):
+        return 5
+    return 0 if finished == plan["n_cells"] else 3
 
 
 def main(argv=None):
