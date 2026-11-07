@@ -1,0 +1,161 @@
+Copy under test: C:\users\root\Temp\etapes_check_22036_437\study
+
+== Sequential steps: exit code seen by CALL and by a separate cmd /c process ==
+  OK    tests, FAKE_RC=0: cmd /c process exits 0
+  OK    tests: the step called unittest-stub
+  OK    diagnose, FAKE_RC=0: cmd /c process exits 0
+  OK    diagnose: the step called diagnose_clearance_failure.py
+  OK    ablation-plan, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-plan: the step called ablation_runner.py plan
+  OK    ablation-prepare, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-prepare: the step called ablation_runner.py prepare
+  OK    ablation-progress, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-progress: the step called ablation_runner.py progress
+  OK    ablation-analyse, FAKE_RC=0: cmd /c process exits 0
+  OK    ablation-analyse: the step called ablation_analysis.py
+  OK    figures, FAKE_RC=0: cmd /c process exits 0
+  OK    figures: the step called make_figures.py
+  OK    latex-check, FAKE_RC=0: cmd /c process exits 0
+  OK    latex-check: the step called check_latex.py
+  OK    robustness-plan, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-plan: the step called robustness_runner.py plan
+  OK    robustness-prepare, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-prepare: the step called robustness_runner.py prepare
+  OK    robustness-progress, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-progress: the step called robustness_runner.py progress
+  OK    robustness-analyse, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-analyse: the step called robustness_analysis.py
+  OK    robustness-smoke, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-smoke: the step called smoke.py
+  OK    robustness-check-smoke, FAKE_RC=0: cmd /c process exits 0
+  OK    robustness-check-smoke: the step called cell_state.py check-smoke
+  OK    comparators-plan, FAKE_RC=0: cmd /c process exits 0
+  OK    comparators-plan: the step called comparator_search.py plan
+  OK    comparators-measure, FAKE_RC=0: cmd /c process exits 0
+  OK    comparators-measure: the step called comparator_search.py measure
+  OK    comparators-prepare, FAKE_RC=0: cmd /c process exits 0
+  OK    comparators-prepare: the step called comparator_search.py prepare
+  OK    comparators-verify-manifests, FAKE_RC=0: cmd /c process exits 0
+  OK    comparators-verify-manifests: the step called comparator_search.py verify-manifests
+  OK    comparators-progress, FAKE_RC=0: cmd /c process exits 0
+  OK    comparators-progress: the step called comparator_search.py progress
+  OK    comparators-finalise, FAKE_RC=0: cmd /c process exits 0
+  OK    comparators-finalise: the step called comparator_search.py finalise
+  OK    mp-check-static, FAKE_RC=0: cmd /c process exits 0
+  OK    mp-check-static: the step called mp_check.py static
+  OK    mp-check-robustness, FAKE_RC=0: cmd /c process exits 0
+  OK    mp-check-robustness: the step called mp_check.py robustness
+  OK    j-cycle, FAKE_RC=0: cmd /c process exits 0
+  OK    j-cycle: the step called j_cycle_curve.py
+  OK    cp-ablation, FAKE_RC=0: cmd /c process exits 0
+  OK    cp-ablation: the step called clopper_pearson.py --ablation
+  OK    cp-robustness, FAKE_RC=0: cmd /c process exits 0
+  OK    cp-robustness: the step called clopper_pearson.py --robustness
+  OK    guarantee-diagnostic, FAKE_RC=0: cmd /c process exits 0
+  OK    guarantee-diagnostic: the step called guarantee_diagnostic.py
+  OK    check-r0-demand, FAKE_RC=0: cmd /c process exits 0
+  OK    check-r0-demand: the step called check_r0_demand.py
+  OK    check-statistics, FAKE_RC=0: cmd /c process exits 0
+  OK    check-statistics: the step called check_statistics.py --a004 A004.py
+  OK    dois, FAKE_RC=0: cmd /c process exits 0
+  OK    dois: the step called verify_dois.py
+  OK    archive, FAKE_RC=0: cmd /c process exits 0
+  OK    archive: the step called make_archive.py
+  OK    tests, FAKE_RC=5: cmd /c process exits 1
+  OK    tests: the step called unittest-stub
+  OK    diagnose, FAKE_RC=5: cmd /c process exits 5
+  OK    diagnose: the step called diagnose_clearance_failure.py
+  OK    ablation-plan, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-plan: the step called ablation_runner.py plan
+  OK    ablation-prepare, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-prepare: the step called ablation_runner.py prepare
+  OK    ablation-progress, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-progress: the step called ablation_runner.py progress
+  OK    ablation-analyse, FAKE_RC=5: cmd /c process exits 5
+  OK    ablation-analyse: the step called ablation_analysis.py
+  OK    figures, FAKE_RC=5: cmd /c process exits 5
+  OK    figures: the step called make_figures.py
+  OK    latex-check, FAKE_RC=5: cmd /c process exits 5
+  OK    latex-check: the step called check_latex.py
+  OK    robustness-plan, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-plan: the step called robustness_runner.py plan
+  OK    robustness-prepare, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-prepare: the step called robustness_runner.py prepare
+  OK    robustness-progress, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-progress: the step called robustness_runner.py progress
+  OK    robustness-analyse, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-analyse: the step called robustness_analysis.py
+  OK    robustness-smoke, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-smoke: the step called smoke.py
+  OK    robustness-check-smoke, FAKE_RC=5: cmd /c process exits 5
+  OK    robustness-check-smoke: the step called cell_state.py check-smoke
+  OK    comparators-plan, FAKE_RC=5: cmd /c process exits 5
+  OK    comparators-plan: the step called comparator_search.py plan
+  OK    comparators-measure, FAKE_RC=5: cmd /c process exits 5
+  OK    comparators-measure: the step called comparator_search.py measure
+  OK    comparators-prepare, FAKE_RC=5: cmd /c process exits 5
+  OK    comparators-prepare: the step called comparator_search.py prepare
+  OK    comparators-verify-manifests, FAKE_RC=5: cmd /c process exits 5
+  OK    comparators-verify-manifests: the step called comparator_search.py verify-manifests
+  OK    comparators-progress, FAKE_RC=5: cmd /c process exits 5
+  OK    comparators-progress: the step called comparator_search.py progress
+  OK    comparators-finalise, FAKE_RC=5: cmd /c process exits 5
+  OK    comparators-finalise: the step called comparator_search.py finalise
+  OK    mp-check-static, FAKE_RC=5: cmd /c process exits 5
+  OK    mp-check-static: the step called mp_check.py static
+  OK    mp-check-robustness, FAKE_RC=5: cmd /c process exits 5
+  OK    mp-check-robustness: the step called mp_check.py robustness
+  OK    j-cycle, FAKE_RC=5: cmd /c process exits 5
+  OK    j-cycle: the step called j_cycle_curve.py
+  OK    cp-ablation, FAKE_RC=5: cmd /c process exits 5
+  OK    cp-ablation: the step called clopper_pearson.py --ablation
+  OK    cp-robustness, FAKE_RC=5: cmd /c process exits 5
+  OK    cp-robustness: the step called clopper_pearson.py --robustness
+  OK    guarantee-diagnostic, FAKE_RC=5: cmd /c process exits 5
+  OK    guarantee-diagnostic: the step called guarantee_diagnostic.py
+  OK    check-r0-demand, FAKE_RC=5: cmd /c process exits 5
+  OK    check-r0-demand: the step called check_r0_demand.py
+  OK    check-statistics, FAKE_RC=5: cmd /c process exits 5
+  OK    check-statistics: the step called check_statistics.py --a004 A004.py
+  OK    dois, FAKE_RC=5: cmd /c process exits 5
+  OK    dois: the step called verify_dois.py
+  OK    archive, FAKE_RC=5: cmd /c process exits 5
+  OK    archive: the step called make_archive.py
+
+== LaTeX build: a failure of pdflatex or bibtex stops the chain and returns 1 ==
+  OK    latex, pdflatex, bibtex, pdflatex, pdflatex: cmd /c process exits 0
+  OK    latex, pdflatex, bibtex, pdflatex, pdflatex: 4 tool calls
+  OK    latex, bibtex fails: no further pdflatex: cmd /c process exits 1
+  OK    latex, bibtex fails: no further pdflatex: 2 tool calls
+  OK    latex, bibtex fails: no further pdflatex: failure message printed
+  OK    latex, first pdflatex fails: bibtex not run: cmd /c process exits 1
+  OK    latex, first pdflatex fails: bibtex not run: 1 tool calls
+  OK    latex, first pdflatex fails: bibtex not run: failure message printed
+
+== Refusals ==
+  OK    unknown step: returns 2
+  OK    robustness-progress with a missing ROB folder: returns 2
+  OK    robustness-progress with a missing ROB folder: robustness_runner.py not called
+  OK    robustness-run with a missing ROB folder: returns 2
+  OK    robustness-run with a missing ROB folder: robustness_runner.py not called
+  OK    guarantee-diagnostic with a missing ROB folder: returns 2
+  OK    guarantee-diagnostic with a missing ROB folder: guarantee_diagnostic.py not called
+  OK    mp-check-robustness with a missing ROB folder: returns 2
+  OK    mp-check-robustness with a missing ROB folder: mp_check.py not called
+  OK    comparators-verify-manifests with a missing ROB folder: returns 2
+  OK    comparators-verify-manifests with a missing ROB folder: comparator_search.py not called
+  OK    ROB default is robustness_validation_2026-11-04
+  SKIP  conda environment missing: not evaluable under Wine
+
+== Parallel launch (4 workers each): the launcher cannot see the workers' exit codes ==
+  OK    robustness-run: 4 workers started, shards 0/4..3/4
+  OK    robustness-run: launcher returns 0 although every worker exited 5 (expected: START does not wait; check completion with the progress step)
+  OK    robustness-run: the launcher says that its code covers the launch only
+  OK    ablation-run: 4 workers started, shards 0/4..3/4
+  OK    ablation-run: launcher returns 0 although every worker exited 5 (expected: START does not wait; check completion with the progress step)
+  OK    ablation-run: the launcher says that its code covers the launch only
+  OK    comparators-run: 4 workers started, shards 0/4..3/4
+  OK    comparators-run: launcher returns 0 although every worker exited 5 (expected: START does not wait; check completion with the progress step)
+  OK    comparators-run: the launcher says that its code covers the launch only
+
+Result: 149 checks passed, 0 failed.

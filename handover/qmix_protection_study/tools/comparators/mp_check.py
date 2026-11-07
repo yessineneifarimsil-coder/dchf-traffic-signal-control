@@ -2,7 +2,7 @@
 
     python tools/comparators/mp_check.py static --protected-root C:\\Users\\LENOVO\\QMIX_PROTECTED
     python tools/comparators/mp_check.py logs --runs <dir> [<dir> ...] --out analysis\\mp_check.json
-    python tools/comparators/mp_check.py robustness --root D:\\QMIX_Results\\robustness_validation --out ...
+    python tools/comparators/mp_check.py robustness --root D:\\QMIX_Results\\robustness_validation_2026-11-04 --out ...
 
 static: reads the frozen code and both frozen configurations (nothing is run): the settings the robustness
 evaluator really uses (qualification config + executor defaults) against the official baseline configuration.
@@ -17,6 +17,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -128,16 +129,20 @@ def summarise(stats):
     rows = []
     for s in stats:
         for tl, v in s["intersections"].items():
-            rows.append(dict(scenario=s["scenario"], seed=s["traffic_seed"], intersection=tl, J_s=s["J_s"], **v))
+            rows.append(dict(scenario=s["scenario"], seed=s["traffic_seed"], intersection=tl, J_s=s["J_s"],
+                             status=s["status"], **v))
     by = {}
     for r in rows:
         by.setdefault(r["scenario"], []).append(r)
     summary = {}
     for sc, rs in sorted(by.items(), key=lambda kv: str(kv[0])):
+        finite_j = [r["J_s"] for r in rs if r["J_s"] is not None and math.isfinite(float(r["J_s"]))
+                    and r["status"] == "CLEARED"]
         summary[str(sc)] = {
             "runs": len(set(r["seed"] for r in rs)),
-            "J_s_range": [min(r["J_s"] for r in rs if r["J_s"] is not None),
-                          max(r["J_s"] for r in rs if r["J_s"] is not None)] if any(r["J_s"] is not None for r in rs) else None,
+            "J_s_range_cleared": [min(finite_j), max(finite_j)] if finite_j else None,
+            "clearance_failures": len(set(r["seed"] for r in rs if r["status"] != "CLEARED")),
+            "J_note": "J is undefined for a clearance failure (NaN in its metrics) and is never imputed",
             "switches_per_hour_range": [min(r["switches_per_hour_demand"] for r in rs),
                                         max(r["switches_per_hour_demand"] for r in rs)],
             "green_median_range_s": [min(r["green_s_median"] for r in rs), max(r["green_s_median"] for r in rs)],

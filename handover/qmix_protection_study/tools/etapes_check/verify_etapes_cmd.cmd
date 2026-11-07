@@ -19,6 +19,9 @@ set "ETAPES_CALLS=%T%\calls.txt"
 set /a PASS=0, FAIL=0
 for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses tools\confirmation bin) do mkdir "%S%\%%D" 2>nul
 mkdir "%T%\bin" 2>nul
+rem The steps that read ROB stop with code 2 when the folder does not exist: give them an existing one.
+set "ROB=%T%\rob"
+mkdir "%ROB%" 2>nul
 copy /y "%SRC%\ETAPES.cmd" "%S%\ETAPES.cmd" >nul
 copy /y "%~dp0test_stub.py" "%S%\tests\test_stub.py" >nul
 copy /y "%~dp0tex_stub.py" "%T%\tex_stub.py" >nul
@@ -71,6 +74,13 @@ call :latex 3 0 1 1 "first pdflatex fails: bibtex not run"
 echo.
 echo == Refusals ==
 call :expect_code unknown-step 2 "unknown step"
+call :rob_missing robustness-progress robustness_runner.py
+call :rob_missing robustness-run robustness_runner.py
+call :rob_missing guarantee-diagnostic guarantee_diagnostic.py
+call :rob_missing mp-check-robustness mp_check.py
+call :rob_missing comparators-verify-manifests comparator_search.py
+findstr /c:"set ROB=%%QMIX_RESULTS%%\robustness_validation_2026-11-04" "%S%\ETAPES.cmd" >nul 2>&1
+if errorlevel 1 (call :ko "ROB default is not robustness_validation_2026-11-04") else (call :ok "ROB default is robustness_validation_2026-11-04")
 if "%ETAPES_CHECK_UNDER_WINE%"=="1" (echo   SKIP  conda environment missing: not evaluable under Wine) else (
   set "FAKE_CONDA_RC=1"
   call :expect_code tests 2 "conda environment missing"
@@ -108,6 +118,24 @@ popd
 if "!GOT!"=="!WANT!" (call :ok "%~1, FAKE_RC=%~2: cmd /c process exits !GOT!") else (call :ko "%~1, FAKE_RC=%~2: cmd /c process exits !GOT! [want !WANT!]")
 findstr /c:"%~3" "%ETAPES_CALLS%" >nul 2>&1
 if errorlevel 1 (call :ko "%~1: the step did not call %~3") else (call :ok "%~1: the step called %~3")
+exit /b 0
+
+:rob_missing
+rem %1 step, %2 script that must NOT be called when ROB does not exist
+set "FAKE_RC=0"
+set "SAVED_ROB=%ROB%"
+set "ROB=%T%\no_such_robustness_root"
+del "%ETAPES_CALLS%" 2>nul
+pushd "%S%"
+cmd /c ETAPES.cmd %~1 >"%T%\rob_missing.txt" 2>&1
+set "GOT=!ERRORLEVEL!"
+popd
+set "ROB=%SAVED_ROB%"
+if "!GOT!"=="2" (call :ok "%~1 with a missing ROB folder: returns 2") else (call :ko "%~1 with a missing ROB folder: returns !GOT! [want 2]")
+set "CALLED=0"
+if exist "%ETAPES_CALLS%" findstr /c:"%~2" "%ETAPES_CALLS%" >nul 2>&1
+if exist "%ETAPES_CALLS%" if not errorlevel 1 set "CALLED=1"
+if "!CALLED!"=="0" (call :ok "%~1 with a missing ROB folder: %~2 not called") else (call :ko "%~1 with a missing ROB folder: %~2 was called")
 exit /b 0
 
 :expect_code

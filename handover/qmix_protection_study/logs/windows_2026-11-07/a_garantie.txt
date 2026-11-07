@@ -1,0 +1,51 @@
+{
+ "selection_counts": {
+  "idqn_pairs": {
+   "guarantee": {
+    "pairs": 250,
+    "D1": 31,
+    "D2": 35,
+    "D3": 36
+   },
+   "both": {
+    "pairs": 250,
+    "D1": 183,
+    "D2": 200,
+    "D3": 201
+   }
+  },
+  "qmix_runs_where_guarantee_acts": 47,
+  "qmix_runs_where_guarantee_acts_in_demand": 34,
+  "reported_elsewhere_not_recomputed": {
+   "idqn_degraded_pairs": 35,
+   "qmix_evaluations_guarantee_acts": 17
+  }
+ },
+ "primary_idqn_definition": "D2 (dD_bar_demand_window_s > 0)",
+ "idqn_degraded_D2": {
+  "interventions": 221,
+  "in_demand": 211,
+  "runs": 35,
+  "with_opposite_green": 212,
+  "opposite_green_gt_60s": 146,
+  "runs_with_opposite_green_gt_60s": 27,
+  "opposite_green_median_s": 114.5,
+  "located_by": {
+   "column": 221
+  }
+ },
+ "qmix_guarantee_acts": {
+  "interventions": 114,
+  "in_demand": 97,
+  "runs": 47,
+  "with_opposite_green": 112,
+  "opposite_green_gt_60s": 43,
+  "runs_with_opposite_green_gt_60s": 27,
+  "opposite_green_median_s": 32.0,
+  "located_by": {
+   "column": 114
+  }
+ },
+ "threshold_opposite_green_s": 60,
+ "cells_not_readable": []
+}

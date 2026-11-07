@@ -165,7 +165,7 @@ the launch, not their success; check with `robustness-progress` and `logs\robust
 - The comparison with fixed plans remains descriptive: 5 traffics per scenario, checkpoints selected earlier.
 
 **Commands:** `ETAPES.cmd robustness-plan`, `robustness-prepare <fingerprint>`, `robustness-run`,
-`robustness-progress`, `robustness-analyse` (root: variable `ROB`, default `D:\QMIX_Results\robustness_validation`).
+`robustness-progress`, `robustness-analyse` (root: variable `ROB`, default `D:\QMIX_Results\robustness_validation_2026-11-04` since 2026-11-07; the steps that read it stop with code 2 if the folder is absent).
 
 ## Correction 2026-11-03 (review points 2–4; before any robustness run)
 

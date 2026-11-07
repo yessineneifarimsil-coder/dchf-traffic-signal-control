@@ -1,0 +1,145 @@
+***Starting server on port 65303 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (16ms).
+Loading route-files from 'D:\QMIX_Results\comparators_robustness_profiles\manifests\R0_reference_8011.rou.xml' ... done (75ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3687.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.60s
+ TraCI-Duration: 11.77s
+ Real time factor: 292.619
+ UPS: 14096.666667
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.76
+ Duration: 63.44
+ WaitingTime: 2.71
+ TimeLoss: 11.66
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+***Starting server on port 54881 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (3ms).
+Loading route-files from 'D:\QMIX_Results\comparators_robustness_profiles\manifests\R0_reference_8011.rou.xml' ... done (66ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3687.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.55s
+ TraCI-Duration: 11.69s
+ Real time factor: 293.738
+ UPS: 14150.573614
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.76
+ Duration: 63.44
+ WaitingTime: 2.71
+ TimeLoss: 11.66
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+***Starting server on port 54883 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (7ms).
+Loading route-files from 'D:\QMIX_Results\comparators_robustness_profiles\manifests\R0_reference_8011.rou.xml' ... done (67ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3678.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.96s
+ TraCI-Duration: 12.08s
+ Real time factor: 283.731
+ UPS: 14243.385019
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.40
+ Duration: 65.94
+ WaitingTime: 6.51
+ TimeLoss: 14.18
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+***Starting server on port 61338 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (7ms).
+Loading route-files from 'D:\QMIX_Results\comparators_robustness_profiles\manifests\R0_reference_8011.rou.xml' ... done (70ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3678.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 12.84s
+ TraCI-Duration: 11.98s
+ Real time factor: 286.449
+ UPS: 14379.828660
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.40
+ Duration: 65.94
+ WaitingTime: 6.51
+ TimeLoss: 14.18
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+***Starting server on port 52086 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (5ms).
+Loading route-files from 'D:\QMIX_Results\comparators_robustness_profiles\manifests\R0_reference_8011.rou.xml' ... done (78ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3715.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.18s
+ TraCI-Duration: 12.30s
+ Real time factor: 281.952
+ UPS: 14718.655131
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.18
+ Duration: 69.26
+ WaitingTime: 7.37
+ TimeLoss: 17.49
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+***Starting server on port 61158 ***
+Loading net-file from 'C:\Users\LENOVO\QMIX_PROTECTED\sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml' ... done (7ms).
+Loading route-files from 'D:\QMIX_Results\comparators_robustness_profiles\manifests\R0_reference_8011.rou.xml' ... done (68ms).
+Loading done.
+Simulation version 1.25.0 started with time: 0.00.
+Simulation ended at time: 3715.00.
+Reason: TraCI requested termination.
+Performance:
+ Duration: 13.11s
+ TraCI-Duration: 12.28s
+ Real time factor: 283.393
+ UPS: 14793.882066
+Vehicles:
+ Inserted: 2800
+ Running: 0
+ Waiting: 0
+Statistics (avg of 2800):
+ RouteLength: 680.61
+ Speed: 10.18
+ Duration: 69.26
+ WaitingTime: 7.37
+ TimeLoss: 17.49
+ DepartDelay: 0.00
+ DepartDelayWaiting: 0.00
+{"machine_note": "measured by comparator_search.py measure on the machine that will run the stages", "seconds_per_run": 13.810352563858032, "bytes_per_run_compact": 82030, "bytes_per_run_full": 2712403, "walls_s": [13.30440640449524, 13.169940710067749, 13.607560396194458, 13.460805177688599, 13.810352563858032, 13.75083613395691], "sizes": {"compact": [80665, 82030, 81944], "full": [2161867, 2169923, 2162572]}, "note_full": "x1.25 for the per-second service counters absent from these runs"}

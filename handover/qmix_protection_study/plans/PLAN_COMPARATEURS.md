@@ -1,6 +1,8 @@
 # Comparateurs équitables pour les profils de robustesse R0–R4
 
-**Statut.** Préparé, testé et chiffré le 2026-11-07, puis mis à jour avec les décisions du même jour. **Non lancé.**
+**Statut.** Préparé, testé et chiffré le 2026-11-07, puis mis à jour avec les décisions et la mesure Windows du même jour. **Non lancé.**
+
+**Avant toute recherche longue :** repasser `tools\etapes_check\verify_etapes_cmd.cmd` sous Windows (correction des codes de sortie d'`ETAPES.cmd`, `docs/RETOURS_2026-11-07.md` § 1).
 
 **Pas d'entraînement.** Le plan de robustesse et ses outils restent inchangés.
 
@@ -91,23 +93,25 @@ Inchangé. Périodes [0, 900), [900, 2700), [2700, 3600). Transition sans interr
 
 `comparators-verify-manifests` vérifie d'abord l'identité des manifestes de R1–R3 avec ceux de la campagne.
 
-## 7. Chiffrage exact
+## 7. Chiffrage exact, avec la mesure Windows du 2026-11-07
 
-**Mesure Windows non reçue.** Les résultats de `comparators-measure` annoncés comme joints ne me sont pas parvenus. Les durées ci-dessous sont donc données pour 6, 10 et 15 s par exécution, plus la mesure cloud (17,6 s).
+`measure.json` (Windows, SUMO 1.25) donne 13,81 s par exécution, en mode compact à 82 Ko. Le calcul est celui de `comparators-plan`, sur 4 processus. Le détail et les réserves sont dans `docs/RETOURS_2026-11-07.md` § 2.
 
-**Calcul exact sur ta machine.** La racine `%CMP%` contient déjà `measure.json`. `ETAPES.cmd comparators-plan` affiche donc la durée exacte de chaque étape (`estimate_by_stage`) avec ta mesure. Formule : heures = exécutions × s / 4 / 3600.
+| Étape | Exécutions | Durée | Disque |
+|---|---|---|---|
+| coarse (1117 × 5 × 3) | 16 755 | 16,1 h | 1,37 Go |
+| validations g5 et min7 | 300 | 0,3 h | 0,02 Go |
+| actionné, conception et validation | 480 | 0,5 h | 0,04 Go |
+| plans par période R3, conception et validation | 320 | 0,3 h | 0,03 Go |
+| **Total connu avant la recherche fine** | **17 855** | **17,1 h** | **1,46 Go** |
+| fine-g5 et fine-min7 | exact après `finalise coarse` ; borne 2 × 38 025 | borne 2 × 36,5 h | borne 6,2 Go |
+| robustness-eval (journaux complets) | 55 | < 0,1 h | 0,15 Go |
 
-| Étape | Exécutions (exactes) | 6 s | 10 s | 15 s | cloud 17,6 s | Disque (compact, 82 Ko) |
-|---|---|---|---|---|---|---|
-| coarse (1117 × 5 × 3) | 16 755 | 7,0 h | 11,6 h | 17,5 h | 20,5 h | 1,4 Go |
-| validation-g5 et validation-min7 | 150 + 150 | 0,1 h | 0,2 h | 0,3 h | 0,4 h | 0,02 Go |
-| actuated-design et actuated-validation | 405 + 75 | 0,2 h | 0,3 h | 0,5 h | 0,6 h | 0,04 Go |
-| tod-design et tod-validation (g5, min7) | 270 + 50 | 0,1 h | 0,2 h | 0,3 h | 0,4 h | 0,03 Go |
-| **Total connu avant la recherche fine** | **17 855** | **7,4 h** | **12,4 h** | **18,6 h** | **21,8 h** | **1,5 Go** |
-| fine-g5 et fine-min7 | exact après `finalise coarse` ; borne 38 025 + 38 025 | borne 31,7 h | borne 52,8 h | borne 79,2 h | borne 93,1 h | borne 6,2 Go |
-| robustness-eval (journaux complets, 2,7 Mo) | 55 | < 0,1 h | < 0,1 h | < 0,1 h | < 0,1 h | 0,15 Go |
+**Ordre de grandeur de la recherche fine (illustration).** Avec les gagnants de l'audit de qualification, on compte environ 2175 exécutions fines par profil et par version, soit environ 13 000 au total (12,5 h). Le total serait alors d'environ 30 h. La borne haute est de 90 h.
 
-**À propos de la borne fine.** C'est une borne théorique : elle somme les 5 plus grands voisinages, sans recouvrement. Des gagnants voisins se recouvrent largement, et les plans déjà simulés ne sont pas relancés.
+**Réserves.**
+- La mesure est prise sur un seul processus et sur R0 ; 4 processus simultanés peuvent ralentir chaque exécution.
+- Un échec d'évacuation dure jusqu'à 7200 s.
 
 ## 8. Commandes Windows (`traffic_rl`)
 

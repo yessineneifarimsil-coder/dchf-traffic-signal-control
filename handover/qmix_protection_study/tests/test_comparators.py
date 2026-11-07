@@ -170,6 +170,21 @@ class R0Demand(unittest.TestCase):
         self.assertTrue(any("profile" in p for p in changed["problems"]))
 
 
+class MpCheckSummary(unittest.TestCase):
+    """A clearance failure (J = NaN in its metrics) must not turn the J range into NaN (seen on R1, 2026-11-07)."""
+
+    def test_failures_are_counted_and_excluded_from_the_j_range(self):
+        import mp_check as M
+        stats = [{"scenario": "R1", "traffic_seed": 8101 + k, "status": "CLEARED" if k else "CLEARANCE_FAILURE",
+                  "J_s": float("nan") if k == 0 else 10.0 + k,
+                  "intersections": {"J1": {"switches_per_hour_demand": 260, "green_s_median": 10,
+                                           "share_greens_at_minimum": 0.8, "greens_below_minimum": 0,
+                                           "yellow_share_of_demand_time": 0.22}}} for k in range(5)]
+        _rows, summary = M.summarise(stats)
+        self.assertEqual(summary["R1"]["J_s_range_cleared"], [11.0, 14.0])
+        self.assertEqual(summary["R1"]["clearance_failures"], 1)
+
+
 class Seeds(unittest.TestCase):
 
     def test_registry_is_disjoint_and_guards_the_confirmation_seeds(self):

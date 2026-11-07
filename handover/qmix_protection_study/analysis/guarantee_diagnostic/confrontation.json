@@ -1,0 +1,127 @@
+{
+ "counts": {
+  "qmix_runs_where_guarantee_acts": 47,
+  "qmix_guarantee_arm_runs": 26,
+  "qmix_guarantee_arm_runs_with_intervention_in_demand": 17,
+  "qmix_both_arm_runs": 21,
+  "qmix_both_arm_runs_with_intervention_in_demand": 17
+ },
+ "reported": {
+  "idqn_D2_pairs": 35,
+  "qmix_evaluations": 17
+ },
+ "idqn_D2": {
+  "runs": 35,
+  "by_scenario": {
+   "R1_sparse_secondary_heavy_main": 17,
+   "R2_single_secondary_trickle": 18
+  },
+  "interventions_in_demand": 211,
+  "served_phase_counts": {
+   "H": 14,
+   "V": 197
+  },
+  "served_green_median_s": 37.0,
+  "opposite_green_median_s": 117.0,
+  "share_opposite_green_gt_60s": 0.6872037914691943,
+  "runs_with_opposite_green_gt_60s": 27,
+  "served_phase_red_again_median_s": 123.0,
+  "per_stream": {
+   "EW": {
+    "runs": 35,
+    "median_d_mean_wait_s": 1.2544444444444445,
+    "max_wait_s": 127.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "N1S1": {
+    "runs": 35,
+    "median_d_mean_wait_s": -1.0666666666666664,
+    "max_wait_s": 126.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "N2S2": {
+    "runs": 17,
+    "median_d_mean_wait_s": -0.8166666666666664,
+    "max_wait_s": 165.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "S1N1": {
+    "runs": 17,
+    "median_d_mean_wait_s": 0.18333333333333357,
+    "max_wait_s": 121.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "S2N2": {
+    "runs": 35,
+    "median_d_mean_wait_s": -3.200000000000003,
+    "max_wait_s": 214.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "WE": {
+    "runs": 35,
+    "median_d_mean_wait_s": 0.8700000000000001,
+    "max_wait_s": 130.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   }
+  }
+ },
+ "qmix_guarantee_arm_in_demand": {
+  "runs": 17,
+  "by_scenario": {
+   "R2_single_secondary_trickle": 15,
+   "R4_isolated_tail": 2
+  },
+  "interventions_in_demand": 47,
+  "served_phase_counts": {
+   "H": 0,
+   "V": 47
+  },
+  "served_green_median_s": 2.0,
+  "opposite_green_median_s": 32.0,
+  "share_opposite_green_gt_60s": 0.40425531914893614,
+  "runs_with_opposite_green_gt_60s": 13,
+  "served_phase_red_again_median_s": 38.0,
+  "per_stream": {
+   "EW": {
+    "runs": 17,
+    "median_d_mean_wait_s": 0.020000000000000018,
+    "max_wait_s": 14.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "N1S1": {
+    "runs": 17,
+    "median_d_mean_wait_s": -19.733333333333334,
+    "max_wait_s": 127.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "N2S2": {
+    "runs": 2,
+    "median_d_mean_wait_s": 0.0033333333333334103,
+    "max_wait_s": 23.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "S1N1": {
+    "runs": 2,
+    "median_d_mean_wait_s": -0.07166666666666677,
+    "max_wait_s": 61.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "S2N2": {
+    "runs": 17,
+    "median_d_mean_wait_s": -0.033333333333333215,
+    "max_wait_s": 127.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   },
+   "WE": {
+    "runs": 17,
+    "median_d_mean_wait_s": 0.010999999999999954,
+    "max_wait_s": 17.0,
+    "runs_with_a_vehicle_waiting_ge_300s": 0
+   }
+  }
+ },
+ "matches_reported": {
+  "idqn_D2": true,
+  "qmix_guarantee_arm_in_demand": true
+ }
+}

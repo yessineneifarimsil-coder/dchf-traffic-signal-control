@@ -1,0 +1,74 @@
+{
+ "verdict": "IDENTICAL_LAW",
+ "problems": [],
+ "notes": [
+  "vehicle identifiers differ (robustness_0_s<seed>_... vs benchmark_design_m000_...): naming only",
+  "traffic and SUMO seeds differ by construction (robustness family code 80): new realisations of the same law",
+  "realised draws differ (Generator.choice with equal weights vs Generator.integers): same law, i.i.d. uniform on the integer seconds [0, 3600)"
+ ],
+ "empirical_informative": {
+  "WE": {
+   "r0_departures": 4500,
+   "qualification_departures": 4500,
+   "ks_distance": 0.019111111111111106,
+   "ks_pvalue_asymptotic": 0.380618009471092,
+   "mean_depart_r0": 1805.6762222222221,
+   "mean_depart_qualification": 1783.2384444444444
+  },
+  "EW": {
+   "r0_departures": 3500,
+   "qualification_departures": 3500,
+   "ks_distance": 0.024571428571428577,
+   "ks_pvalue_asymptotic": 0.23832856989764417,
+   "mean_depart_r0": 1800.578,
+   "mean_depart_qualification": 1770.2271428571428
+  },
+  "N1S1": {
+   "r0_departures": 1500,
+   "qualification_departures": 1500,
+   "ks_distance": 0.024666666666666726,
+   "ks_pvalue_asymptotic": 0.7465278124895991,
+   "mean_depart_r0": 1817.998,
+   "mean_depart_qualification": 1786.4073333333333
+  },
+  "S1N1": {
+   "r0_departures": 1500,
+   "qualification_departures": 1500,
+   "ks_distance": 0.02866666666666673,
+   "ks_pvalue_asymptotic": 0.5627572705611763,
+   "mean_depart_r0": 1837.4713333333334,
+   "mean_depart_qualification": 1798.0653333333332
+  },
+  "N2S2": {
+   "r0_departures": 1500,
+   "qualification_departures": 1500,
+   "ks_distance": 0.023333333333333317,
+   "ks_pvalue_asymptotic": 0.804436967144028,
+   "mean_depart_r0": 1826.38,
+   "mean_depart_qualification": 1805.9093333333333
+  },
+  "S2N2": {
+   "r0_departures": 1500,
+   "qualification_departures": 1500,
+   "ks_distance": 0.03400000000000003,
+   "ks_pvalue_asymptotic": 0.3458128164821633,
+   "mean_depart_r0": 1803.4833333333333,
+   "mean_depart_qualification": 1761.6566666666668
+  }
+ },
+ "r0_seeds": [
+  8011,
+  8012,
+  8013,
+  8014,
+  8015
+ ],
+ "qualification_seeds_regenerated": [
+  2001,
+  2002,
+  2003,
+  2004,
+  2005
+ ],
+ "scenario_spec_sha256": "cc5c7ae5aa34e6befb3c1a4d3c77614207bf69bac8dd7585e4fb68ad7d6f35f0"
+}

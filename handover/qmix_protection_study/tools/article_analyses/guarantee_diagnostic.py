@@ -1,8 +1,13 @@
 """Generalisation of the IDQN 107 / traffic 8203 diagnosis to every degraded IDQN pair and every QMIX run in
 which the guarantee acts (no simulation; reads the robustness outputs, writes only --out).
 
-    python tools/article_analyses/guarantee_diagnostic.py --root D:\\QMIX_Results\\robustness_validation ^
+    python tools/article_analyses/guarantee_diagnostic.py --root D:\\QMIX_Results\\robustness_validation_2026-11-04 ^
         --analysis analysis\\robustness --out analysis\\guarantee_diagnostic
+    python tools/article_analyses/guarantee_diagnostic.py --confront analysis\\guarantee_diagnostic
+
+--confront recomputes, from the CSVs written by the first command only, the comparison between the 35 IDQN
+pairs (D2) and the QMIX evaluations of the guarantee arm with at least one intervention during the demand (the
+17 reported), and writes confrontation.json next to them.
 
 Selections (from the robustness analysis tables, definitions fixed here):
   IDQN degraded pairs, contrast guarantee - none on the same model and traffic (also reported for both - none):
@@ -178,12 +183,67 @@ def summary_of(events, label):
             "located_by": dict((k, sum(1 for e in ev if e["located_by"] == k)) for k in set(e["located_by"] for e in ev))}
 
 
+def confront(outputs):
+    """IDQN D2 pairs versus QMIX guarantee-arm runs with an intervention during the demand, from the CSVs."""
+    events = rows(os.path.join(outputs, "interventions.csv"))
+    streams = rows(os.path.join(outputs, "stream_waits.csv"))
+    key = lambda r: (r["scenario"], r["seed"], r["model"], r["arm"])  # noqa: E731
+    qmix = [r for r in events if r["selection"] == "qmix_guarantee_acts"]
+    groups = {
+        "idqn_D2": set(key(r) for r in events if r["selection"] == "idqn_degraded_D2"),
+        "qmix_guarantee_arm_in_demand": set(key(r) for r in qmix if r["arm"] == "guarantee" and r["in_demand"] == "True"),
+    }
+    counts = {"qmix_runs_where_guarantee_acts": len(set(key(r) for r in qmix))}
+    for arm in ("guarantee", "both"):
+        counts["qmix_{}_arm_runs".format(arm)] = len(set(key(r) for r in qmix if r["arm"] == arm))
+        counts["qmix_{}_arm_runs_with_intervention_in_demand".format(arm)] = len(
+            set(key(r) for r in qmix if r["arm"] == arm and r["in_demand"] == "True"))
+    out = {"counts": counts, "reported": {"idqn_D2_pairs": 35, "qmix_evaluations": 17}}
+    labels = {"idqn_D2": "idqn_degraded_D2", "qmix_guarantee_arm_in_demand": "qmix_guarantee_acts"}
+    for name, selected in groups.items():
+        ev = [r for r in events if r["selection"] == labels[name] and key(r) in selected and r["in_demand"] == "True"]
+        num = lambda field: [float(r[field]) for r in ev if r[field] not in ("", "None")]  # noqa: E731
+        opposite = num("opposite_green_s")
+        per_stream = {}
+        sw = [r for r in streams if r["selection"] == labels[name] and key(r) in selected]
+        for st in sorted(set(r["stream"] for r in sw)):
+            rs = [r for r in sw if r["stream"] == st]
+            dm = [float(r["d_mean_wait_s"]) for r in rs if r["d_mean_wait_s"] not in ("", "None")]
+            per_stream[st] = {"runs": len(rs), "median_d_mean_wait_s": statistics.median(dm) if dm else None,
+                              "max_wait_s": max(float(r["max_wait_s"]) for r in rs),
+                              "runs_with_a_vehicle_waiting_ge_300s": sum(1 for r in rs if int(r["n_ge_300s"]) > 0)}
+        out[name] = {
+            "runs": len(selected), "by_scenario": dict((sc, sum(1 for k in selected if k[0] == sc))
+                                                       for sc in sorted(set(k[0] for k in selected))),
+            "interventions_in_demand": len(ev),
+            "served_phase_counts": dict((ph, sum(1 for r in ev if r["served_phase"] == ph)) for ph in ("H", "V")),
+            "served_green_median_s": statistics.median(num("served_green_s")) if ev else None,
+            "opposite_green_median_s": statistics.median(opposite) if opposite else None,
+            "share_opposite_green_gt_60s": (sum(1 for x in opposite if x > LONG_OPPOSITE_GREEN_S) / float(len(opposite))
+                                            if opposite else None),
+            "runs_with_opposite_green_gt_60s": len(set(key(r) for r in ev if r["opposite_green_gt_60s"] == "True")),
+            "served_phase_red_again_median_s": statistics.median(num("served_phase_red_after_s")) if ev else None,
+            "per_stream": per_stream}
+    out["matches_reported"] = {"idqn_D2": out["idqn_D2"]["runs"] == 35,
+                               "qmix_guarantee_arm_in_demand": out["qmix_guarantee_arm_in_demand"]["runs"] == 17}
+    with open(os.path.join(outputs, "confrontation.json"), "w") as f:
+        json.dump(out, f, indent=1)
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--root", required=True, help="robustness root (cells/, manifests/)")
-    ap.add_argument("--analysis", required=True, help="robustness analysis output (pairs.csv, cells.csv)")
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--root", help="robustness root (cells/, manifests/)")
+    ap.add_argument("--analysis", help="robustness analysis output (pairs.csv, cells.csv)")
+    ap.add_argument("--out")
+    ap.add_argument("--confront", help="output folder of an earlier run: compare the 35 D2 pairs and the 17 runs")
     a = ap.parse_args(argv)
+    if a.confront:
+        result = confront(a.confront)
+        print(json.dumps(result, indent=1))
+        return 0 if all(result["matches_reported"].values()) else 1
+    if not (a.root and a.analysis and a.out):
+        ap.error("--root, --analysis and --out are required (or --confront)")
     sel = select(a.analysis)
     counts = {"idqn_pairs": dict((arm, dict((k, len(v)) if isinstance(v, list) else (k, v) for k, v in d.items()))
                                  for arm, d in sel["idqn"].items()),

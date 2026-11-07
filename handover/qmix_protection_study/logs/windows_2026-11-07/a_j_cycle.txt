@@ -1,0 +1,38 @@
+{
+ "design_metric_files_read": 18520,
+ "plans": 3681,
+ "valid_plans": 3681,
+ "best_overall_g5": {
+  "plan": [
+   18,
+   7,
+   5,
+   9
+  ],
+  "mean_J": 2.768142857142857
+ },
+ "best_grid_40_140_g5": {
+  "plan": [
+   40,
+   23,
+   11,
+   25
+  ],
+  "mean_J": 5.790357142857143
+ },
+ "best_overall_min7": {
+  "plan": [
+   25,
+   12,
+   7,
+   1
+  ],
+  "mean_J": 3.232285714285714
+ },
+ "design_J_of": {
+  "old plan C19 8/5 D9": 2.8040714285714285,
+  "min-7 plan C25 12/7 D0": 3.2800714285714285,
+  "original 40-140 winner (40, 650, 23)": 5.832642857142857
+ }
+}
+conflicts: 0 | figure: True

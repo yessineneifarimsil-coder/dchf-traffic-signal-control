@@ -1,0 +1,196 @@
+test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters) ... skipped 'QMIX_PROTECTED not available'
+test_rejects_gaps_duplicates_and_early_end (test_ablation_metrics.DemandCost.test_rejects_gaps_duplicates_and_early_end) ... ok
+test_window_split (test_ablation_metrics.DemandCost.test_window_split) ... ok
+test_censored_final_spell_excluded (test_ablation_metrics.GreenSpells.test_censored_final_spell_excluded) ... ok
+test_prepare_refuses_existing_root (test_ablation_metrics.RunnerGuards.test_prepare_refuses_existing_root) ... REFUSED: /tmp/tmpm6a0_vjt already exists
+REFUSED: --approved-plan must be f
+ok
+test_bounds_satisfy_their_defining_equalities (test_article_analyses.ClopperPearson.test_bounds_satisfy_their_defining_equalities) ... ok
+test_closed_forms_at_the_edges (test_article_analyses.ClopperPearson.test_closed_forms_at_the_edges) ... ok
+test_event_definitions (test_article_analyses.ClopperPearson.test_event_definitions) ... ok
+test_on_the_ablation_table_when_present (test_article_analyses.ClopperPearson.test_on_the_ablation_table_when_present) ... ok
+test_selection_definitions_and_long_opposite_green (test_article_analyses.GuaranteeDiagnostic.test_selection_definitions_and_long_opposite_green) ... {
+ "selection_counts": {
+  "idqn_pairs": {
+   "guarantee": {
+    "pairs": 2,
+    "D1": 1,
+    "D2": 1,
+    "D3": 2
+   },
+   "both": {
+    "pairs": 0,
+    "D1": 0,
+    "D2": 0,
+    "D3": 0
+   }
+  },
+  "qmix_runs_where_guarantee_acts": 1,
+  "qmix_runs_where_guarantee_acts_in_demand": 0,
+  "reported_elsewhere_not_recomputed": {
+   "idqn_degraded_pairs": 35,
+   "qmix_evaluations_guarantee_acts": 17
+  }
+ },
+ "primary_idqn_definition": "D2 (dD_bar_demand_window_s > 0)",
+ "idqn_degraded_D2": {
+  "interventions": 1,
+  "in_demand": 1,
+  "runs": 1,
+  "with_opposite_green": 1,
+  "opposite_green_gt_60s": 1,
+  "runs_with_opposite_green_gt_60s": 1,
+  "opposite_green_median_s": 80,
+  "located_by": {
+   "yellow_start": 1
+  }
+ },
+ "qmix_guarantee_acts": {
+  "interventions": 0,
+  "in_demand": 0,
+  "runs": 0,
+  "with_opposite_green": 0,
+  "opposite_green_gt_60s": 0,
+  "runs_with_opposite_green_gt_60s": 0,
+  "opposite_green_median_s": null,
+  "located_by": {}
+ },
+ "threshold_opposite_green_s": 60,
+ "cells_not_readable": [
+  {
+   "cell": [
+    "R2_single_secondary_trickle",
+    "8203",
+    "qmix_seed101_t350000",
+    "both"
+   ],
+   "selection": "qmix_guarantee_acts",
+   "error": "[Errno 2] No such file or directory: '/tmp/tmpayriqfu5/rob/cells/R2_single_secondary_trickle/8203/qmix_seed101_t350000/both/signal_phases.csv'"
+  }
+ ]
+}
+ok
+test_curve_validity_conflicts_and_minimum_green (test_article_analyses.JCycle.test_curve_validity_conflicts_and_minimum_green) ... ok
+test_a_corrupted_result_blocks_finalise_and_is_never_rerun (test_comparator_search.Pipeline.test_a_corrupted_result_blocks_finalise_and_is_never_rerun) ... ok
+test_a_scientific_failure_is_kept_excluded_and_never_rerun (test_comparator_search.Pipeline.test_a_scientific_failure_is_kept_excluded_and_never_rerun) ... ok
+test_code_changed_after_the_plan_is_refused (test_comparator_search.Pipeline.test_code_changed_after_the_plan_is_refused) ... ok
+test_every_stage_chains_and_selects_by_the_frozen_rules (test_comparator_search.Pipeline.test_every_stage_chains_and_selects_by_the_frozen_rules) ... ok
+test_orders_are_written_once_and_checked_against_their_seal (test_comparator_search.Pipeline.test_orders_are_written_once_and_checked_against_their_seal) ... ok
+test_scope_and_declared_deviation_of_2026_11_07 (test_comparator_search.Pipeline.test_scope_and_declared_deviation_of_2026_11_07) ... ok
+test_gap_out_after_the_7_s_minimum_green (test_comparators.Actuated.test_gap_out_after_the_7_s_minimum_green) ... ok
+test_max_out_with_continuous_detection (test_comparators.Actuated.test_max_out_with_continuous_detection) ... ok
+test_minimum_green_holds_on_both_phases_and_yellow_is_3_s (test_comparators.Actuated.test_minimum_green_holds_on_both_phases_and_yellow_is_3_s) ... ok
+test_refuses_a_minimum_green_below_7_s (test_comparators.Actuated.test_refuses_a_minimum_green_below_7_s) ... ok
+test_rests_in_green_without_a_conflicting_call (test_comparators.Actuated.test_rests_in_green_without_a_conflicting_call) ... ok
+test_canonical_split_names_the_realized_plan (test_comparators.Grids.test_canonical_split_names_the_realized_plan) ... ok
+test_counts_reproduce_amendment_002_and_min7 (test_comparators.Grids.test_counts_reproduce_amendment_002_and_min7) ... ok
+test_fine_rule_equals_the_frozen_generator_on_the_original_bounds (test_comparators.Grids.test_fine_rule_equals_the_frozen_generator_on_the_original_bounds) ... ok
+test_reduced_coarse_grid_declared_on_2026_11_07 (test_comparators.Grids.test_reduced_coarse_grid_declared_on_2026_11_07) ... ok
+test_failures_are_counted_and_excluded_from_the_j_range (test_comparators.MpCheckSummary.test_failures_are_counted_and_excluded_from_the_j_range) ... ok
+test_r0_is_the_qualification_demand_and_a_change_is_reported (test_comparators.R0Demand.test_r0_is_the_qualification_demand_and_a_change_is_reported) ... ok
+test_registry_is_disjoint_and_guards_the_confirmation_seeds (test_comparators.Seeds.test_registry_is_disjoint_and_guards_the_confirmation_seeds) ... ok
+test_dwell_transition_keeps_cycles_whole_and_restores_the_offset (test_comparators.TimeOfDay.test_dwell_transition_keeps_cycles_whole_and_restores_the_offset) ... ok
+test_refuses_periods_that_do_not_start_at_zero (test_comparators.TimeOfDay.test_refuses_periods_that_do_not_start_at_zero) ... ok
+test_a_missing_cell_gives_no_decision (test_confirmation_analysis.Analysis.test_a_missing_cell_gives_no_decision) ... ok
+test_an_open_wait_failure_is_a_service_failure_with_a_descriptive_sensitivity (test_confirmation_analysis.Analysis.test_an_open_wait_failure_is_a_service_failure_with_a_descriptive_sensitivity) ... ok
+test_decisions_follow_the_preregistered_rules (test_confirmation_analysis.Analysis.test_decisions_follow_the_preregistered_rules) ... ok
+test_only_the_reference_statistics_module_is_accepted (test_confirmation_analysis.Analysis.test_only_the_reference_statistics_module_is_accepted) ... ok
+test_classification_order_and_boundaries (test_confirmation_analysis.Plan.test_classification_order_and_boundaries) ... ok
+test_margin_rule_of_2026_11_07 (test_confirmation_analysis.Plan.test_margin_rule_of_2026_11_07) ... ok
+test_the_plan_fingerprint_and_its_fields (test_confirmation_analysis.Plan.test_the_plan_fingerprint_and_its_fields) ... ok
+test_identical_and_different_bootstraps_are_told_apart (test_confirmation_analysis.StatisticsCheck.test_identical_and_different_bootstraps_are_told_apart) ... {
+ "a004_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
+ "a004_hash_ok": true,
+ "verdict": "IDENTICAL_BOOTSTRAP",
+ "signature": {
+  "a004": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)",
+  "frozen_8c14f32": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)"
+ }
+}
+{
+ "a004_sha256": "588a27b8209054db20366a567028d361311264230f719ccd860e4f3907a27e66",
+ "a004_hash_ok": true,
+ "verdict": "DIFFERENT_BOOTSTRAP",
+ "signature": {
+  "a004": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)",
+  "frozen_8c14f32": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)"
+ }
+}
+ok
+test_wrong_file_is_refused (test_confirmation_analysis.StatisticsCheck.test_wrong_file_is_refused) ... {
+ "a004_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
+ "a004_hash_ok": false,
+ "verdict": "A004_FILE_NOT_VERIFIED",
+ "signature": null
+}
+ok
+test_crlf_only (test_etapes_cmd.EtapesCmd.test_crlf_only) ... ok
+test_every_step_has_a_block_ending_with_an_explicit_exit (test_etapes_cmd.EtapesCmd.test_every_step_has_a_block_ending_with_an_explicit_exit) ... ok
+test_no_goto_eof_after_a_command (test_etapes_cmd.EtapesCmd.test_no_goto_eof_after_a_command) ... ok
+test_parallel_steps_return_the_launch_code_and_say_so (test_etapes_cmd.EtapesCmd.test_parallel_steps_return_the_launch_code_and_say_so) ... ok
+test_rob_default_and_guard (test_etapes_cmd.EtapesCmd.test_rob_default_and_guard) ... ok
+test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise) ... skipped 'QMIX_PROTECTED not available'
+test_fixed_plans_equal_frozen_make_plan (test_robustness.Adapter.test_fixed_plans_equal_frozen_make_plan) ... skipped 'QMIX_PROTECTED not available'
+test_exact_counts_determinism_and_ids (test_robustness.Generator.test_exact_counts_determinism_and_ids) ... ok
+test_profiles_respected (test_robustness.Generator.test_profiles_respected) ... ok
+test_seed_guards_and_constants (test_robustness.Generator.test_seed_guards_and_constants) ... ok
+test_writer_refuses_existing_and_records_N (test_robustness.Generator.test_writer_refuses_existing_and_records_N) ... ok
+test_a_clean_world_passes_and_uses_the_manifest_n (test_robustness_analysis.Analysis.test_a_clean_world_passes_and_uses_the_manifest_n) ... ok
+test_a_constant_denominator_is_detected (test_robustness_analysis.Analysis.test_a_constant_denominator_is_detected)
+A run whose J was divided by 2800 instead of N = 18 fails the consistency check. ... ok
+test_a_failure_under_the_guarantee_forbids_the_service_statement (test_robustness_analysis.Analysis.test_a_failure_under_the_guarantee_forbids_the_service_statement) ... ok
+test_a_logged_counter_that_does_not_recompute_is_reported (test_robustness_analysis.Analysis.test_a_logged_counter_that_does_not_recompute_is_reported) ... ok
+test_a_manifest_changed_after_preparation_fails_t4 (test_robustness_analysis.Analysis.test_a_manifest_changed_after_preparation_fails_t4) ... ok
+test_applied_once_and_bound_to_the_plan (test_robustness_analysis.Analysis.test_applied_once_and_bound_to_the_plan) ... ok
+test_contract_and_signal_violations_fail_the_technical_criteria (test_robustness_analysis.Analysis.test_contract_and_signal_violations_fail_the_technical_criteria) ... ok
+test_failures_are_kept_never_given_a_j_and_excluded_from_pairs (test_robustness_analysis.Analysis.test_failures_are_kept_never_given_a_j_and_excluded_from_pairs) ... ok
+test_guarantee_cost_is_evaluated_only_with_an_intervention_during_the_demand (test_robustness_analysis.Analysis.test_guarantee_cost_is_evaluated_only_with_an_intervention_during_the_demand) ... ok
+test_missing_cells_stop_the_analysis_unless_declared (test_robustness_analysis.Analysis.test_missing_cells_stop_the_analysis_unless_declared) ... ok
+test_a_complete_grid_with_a_scientific_failure_is_complete (test_robustness_analysis.Completeness.test_a_complete_grid_with_a_scientific_failure_is_complete) ... {
+ "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+ "cells_planned": 44,
+ "cells_analysed": 44,
+ "cells_missing_declared": [],
+ "complete": true,
+ "integrity_ok": true,
+ "all_ok": true,
+ "analysis_sha256": "f48f12ec0ebcc8089cbe14b075047eb16f72891e45060366b0ec62ce0a2e0336"
+}
+ok
+test_a_corrupted_result_stops_the_analysis_even_if_declared (test_robustness_analysis.Completeness.test_a_corrupted_result_stops_the_analysis_even_if_declared) ... ok
+test_a_result_of_another_cell_stops_the_analysis (test_robustness_analysis.Completeness.test_a_result_of_another_cell_stops_the_analysis) ... ok
+test_an_entire_absent_arm_forbids_s1_and_shows_zero_present (test_robustness_analysis.Completeness.test_an_entire_absent_arm_forbids_s1_and_shows_zero_present) ... ok
+test_one_absent_both_cell_makes_the_report_incomplete_and_forbids_s1 (test_robustness_analysis.Completeness.test_one_absent_both_cell_makes_the_report_incomplete_and_forbids_s1) ... {
+ "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+ "cells_planned": 44,
+ "cells_analysed": 43,
+ "cells_missing_declared": [
+  "cells/R0_reference/8001/qmix_seed101_t350000/both"
+ ],
+ "complete": false,
+ "integrity_ok": true,
+ "all_ok": false,
+ "analysis_sha256": "f48f12ec0ebcc8089cbe14b075047eb16f72891e45060366b0ec62ce0a2e0336"
+}
+ok
+test_a_guarantee_intervention_in_both_is_activation_not_an_identified_cost (test_robustness_analysis.CostAttribution.test_a_guarantee_intervention_in_both_is_activation_not_an_identified_cost) ... ok
+test_no_guarantee_intervention_during_the_demand_stays_not_evaluated_in_both_arms (test_robustness_analysis.CostAttribution.test_no_guarantee_intervention_during_the_demand_stays_not_evaluated_in_both_arms) ... ok
+test_the_paired_differences_are_computed_against_none (test_robustness_analysis.CostAttribution.test_the_paired_differences_are_computed_against_none) ... ok
+test_a_result_corrupted_after_the_run_blocks_progress_and_analysis (test_robustness_end_to_end.EndToEnd.test_a_result_corrupted_after_the_run_blocks_progress_and_analysis) ... ok
+test_plan_run_progress_analysis (test_robustness_end_to_end.EndToEnd.test_plan_run_progress_analysis) ... STOP: 1 cells have no result and are not declared missing, e.g. ['cells/R0_reference/8001/qmix_seed101_t350000/both']
+ok
+test_a_clean_run_finishes_every_cell_and_progress_returns_0 (test_robustness_runner.Runner.test_a_clean_run_finishes_every_cell_and_progress_returns_0) ... ok
+test_a_complete_scientific_failure_is_finished_and_never_rerun (test_robustness_runner.Runner.test_a_complete_scientific_failure_is_finished_and_never_rerun) ... ok
+test_a_first_interruption_is_resumed_and_then_complete (test_robustness_runner.Runner.test_a_first_interruption_is_resumed_and_then_complete) ... ok
+test_an_inconsistent_identity_is_corrupted (test_robustness_runner.Runner.test_an_inconsistent_identity_is_corrupted) ... ok
+test_an_interruption_without_result_is_retried_once_then_left_for_diagnosis (test_robustness_runner.Runner.test_an_interruption_without_result_is_retried_once_then_left_for_diagnosis) ... ok
+test_an_unknown_status_is_corrupted_not_finished (test_robustness_runner.Runner.test_an_unknown_status_is_corrupted_not_finished) ... ok
+test_missing_required_files_are_corrupted (test_robustness_runner.Runner.test_missing_required_files_are_corrupted) ... ok
+test_truncated_metrics_are_corrupted_preserved_reported_and_never_rerun (test_robustness_runner.Runner.test_truncated_metrics_are_corrupted_preserved_reported_and_never_rerun) ... ok
+test_check_smoke (test_robustness_runner.SmokeCheck.test_check_smoke) ... ok
+
+----------------------------------------------------------------------
+Ran 80 tests in 135.892s
+
+OK (skipped=3)
+exit 0

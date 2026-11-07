@@ -1,0 +1,7 @@
+ERROR: test_parallel_steps_return_the_launch_code_and_say_so
+FAIL: test_crlf_only
+FAIL: test_every_step_has_a_block_ending_with_an_explicit_exit
+FAIL: test_no_goto_eof_after_a_command
+FAIL: test_rob_default_and_guard
+Ran 5 tests in 0.001s
+FAILED (failures=4, errors=1)

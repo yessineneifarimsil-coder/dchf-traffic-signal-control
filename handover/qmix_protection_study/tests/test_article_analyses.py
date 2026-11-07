@@ -186,6 +186,12 @@ class GuaranteeDiagnostic(unittest.TestCase):
         self.assertEqual(summary["idqn_degraded_D2"]["opposite_green_gt_60s"], 1)    # the 8203 pair is D2, not D1
         self.assertEqual(summary["idqn_degraded_D2"]["runs"], 1)
         self.assertEqual(len(summary["cells_not_readable"]), 1)         # the QMIX cell has no outputs here
+        result = GD.confront(out)
+        self.assertEqual(result["idqn_D2"]["runs"], 1)
+        self.assertEqual(result["idqn_D2"]["opposite_green_median_s"], 80.0)
+        self.assertEqual(result["idqn_D2"]["served_phase_counts"], {"H": 0, "V": 1})
+        self.assertEqual(result["matches_reported"], {"idqn_D2": False, "qmix_guarantee_arm_in_demand": False})
+        self.assertTrue(os.path.isfile(os.path.join(out, "confrontation.json")))
 
 
 if __name__ == "__main__":
