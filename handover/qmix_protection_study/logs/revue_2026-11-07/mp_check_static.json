@@ -1,0 +1,41 @@
+{
+ "counted_lane_lengths_m": {
+  "H_in": [
+   279.2,
+   289.6
+  ],
+  "V_in": [
+   189.6
+  ]
+ },
+ "decision_rule": "after the minimum green, every second: switch (3 s yellow) iff the other phase's pressure is strictly greater; a tie retains; no maximum green; J1 and J2 independent",
+ "forbidden_accessors": [
+  "lane_halting_number",
+  "lane_occupancy"
+ ],
+ "frozen_file_sha256": {
+  "config/adaptive_qmix/baselines_300m_medium.json": "822fd3e9f85844a8a0acd2825d7ee180176708f77a17bb95b2fc48ce6eb10cb5",
+  "config/adaptive_qmix/qualification_300m_medium.json": "299aa0e73719ff10d346e262ff022fe9ae7e1147a6fc7bc723f143deca9daffa",
+  "src/adaptive_qmix/baselines/executors.py": "74596d0784a8ac5d4c9c7b90e5af0edfee8fa6df59e34fb2eacbb810031f4710",
+  "src/adaptive_qmix/baselines/pressure.py": "9a98712c64493bd1b118d6833b8dffb56af7431461892163a192e0ef2c06ff5b",
+  "src/adaptive_qmix/baselines/runner.py": "dc43729eedf75835660c60614f708fc8019fdbd17e9c98e163500c66476988e6"
+ },
+ "minimum_green_identical": true,
+ "movement_pairs_identical": true,
+ "official_baseline_config": {
+  "decision_clock": "decentralised_per_intersection_1s",
+  "minimum_green_s": 10,
+  "pressure_input": "lane_vehicle_number",
+  "tie_rule": "an exact tie retains the current phase",
+  "yellow_duration_s": 3
+ },
+ "pressure_accessor": "lane_vehicle_number",
+ "pressure_definition": "P_i(p,t) = sum over the 4 straight-through lane pairs of phase p of [vehicles on the whole incoming lane - vehicles on the whole outgoing lane]; moving and halted vehicles count alike",
+ "robustness_evaluator_config": "qualification_300m_medium.json (no 'baselines' section: executor defaults)",
+ "same_network_executor_demand": true,
+ "used_by_robustness": {
+  "minimum_green_s": 10,
+  "yellow_duration_s": 3
+ },
+ "yellow_identical": true
+}

@@ -1,0 +1,21 @@
+== measure
+Simulation ended at time: 3715.00.
+Reason: TraCI requested termination.
+{"machine_note": "measured by comparator_search.py measure on the machine that will run the stages", "seconds_per_run": 17.619929790496826, "bytes_per_run_compact": 82117, "bytes_per_run_full": 2709188, "walls_s": [14.360938310623169, 15.675236225128174, 15.576887607574463, 15.695581197738647, 16.496097087860107, 17.619929790496826], "sizes": {"compact": [80881, 82117, 81994], "full": [2159380, 2167351, 2160015]}, "note_full": "x1.25 for the per-second service counters absent from these runs"}
+fingerprint 33bb9bc71245758557273e9a198530ef21c98fab552662a4bc4416d7246fb10b
+== prepare
+order coarse: 55375 jobs (55375 distinct run directories), sha256 e2d54335c0a41ef245774732982054f442734e61ff4f44fef37734c023a0b2d4
+order actuated-design: 675 jobs (675 distinct run directories), sha256 70fe059ce591ff0ad0a675aabe640253c8c9ba967faa12538360a7684c9d240d
+prepared <cloud-scratch>/cmp_smoke/realroot
+
+real	0m6.090s
+user	0m6.238s
+sys	0m0.155s
+== run coarse shard 0/13844 (4 real runs)
+stage coarse shard 0/13844: 0 corrupted, 0 not finished
+exit 0
+== progress coarse
+coarse                 finished 4/55375 (scientific failures 0) | corrupted 0 | interrupted 0 | not started 55371
+exit 3
+== rerun same shard (nothing to do)
+stage coarse shard 0/13844: 0 corrupted, 0 not finished

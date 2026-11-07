@@ -1,0 +1,4 @@
+{"stage": "coarse", "dir": "runs/R0_reference/8011/fixed_ef0fd31017e65ef6", "state": "complete", "problems": [], "wall_s": 17.801379919052124}
+{"stage": "coarse", "dir": "runs/R1_sparse_secondary_heavy_main/8112/fixed_d072127b074b3e38", "state": "complete", "problems": [], "wall_s": 16.941624641418457}
+{"stage": "coarse", "dir": "runs/R2_single_secondary_trickle/8213/fixed_2eaa81398230cbb4", "state": "complete", "problems": [], "wall_s": 13.65461015701294}
+{"stage": "coarse", "dir": "runs/R3_time_varying/8314/fixed_79105ef0e1738da3", "state": "complete", "problems": [], "wall_s": 16.058830976486206}

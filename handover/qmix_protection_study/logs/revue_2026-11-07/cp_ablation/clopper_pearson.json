@@ -1,0 +1,415 @@
+{
+ "source": "ablation",
+ "input": "<cloud-scratch>/work/analysis/ablation/cells.csv",
+ "confidence": 0.95,
+ "rows": [
+  {
+   "group": "idqn / both",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "idqn / both",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "idqn / both",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "idqn / guarantee",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "idqn / guarantee",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "idqn / guarantee",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "idqn / min_green",
+   "event": "failure",
+   "k": 1,
+   "n": 50,
+   "rate": 0.02,
+   "cp_low": 0.0005062279830408253,
+   "cp_high": 0.10646954571150036,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "idqn / min_green",
+   "event": "open_wait",
+   "k": 1,
+   "n": 50,
+   "rate": 0.02,
+   "cp_low": 0.0005062279830408253,
+   "cp_high": 0.10646954571150036,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "idqn / min_green",
+   "event": "wait_ge_300s",
+   "k": 1,
+   "n": 50,
+   "rate": 0.02,
+   "cp_low": 0.0005062279830408253,
+   "cp_high": 0.10646954571150036,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "idqn / none",
+   "event": "failure",
+   "k": 4,
+   "n": 50,
+   "rate": 0.08,
+   "cp_low": 0.022227963654929718,
+   "cp_high": 0.19234278359596307,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "idqn / none",
+   "event": "open_wait",
+   "k": 4,
+   "n": 50,
+   "rate": 0.08,
+   "cp_low": 0.022227963654929718,
+   "cp_high": 0.19234278359596307,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "idqn / none",
+   "event": "wait_ge_300s",
+   "k": 4,
+   "n": 50,
+   "rate": 0.08,
+   "cp_low": 0.022227963654929718,
+   "cp_high": 0.19234278359596307,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "qmix / both",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / both",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / both",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / guarantee",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / guarantee",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / guarantee",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / min_green",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / min_green",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "qmix / min_green",
+   "event": "wait_ge_300s",
+   "k": 1,
+   "n": 50,
+   "rate": 0.02,
+   "cp_low": 0.0005062279830408253,
+   "cp_high": 0.10646954571150036,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "qmix / none",
+   "event": "failure",
+   "k": 1,
+   "n": 50,
+   "rate": 0.02,
+   "cp_low": 0.0005062279830408253,
+   "cp_high": 0.10646954571150036,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "qmix / none",
+   "event": "open_wait",
+   "k": 1,
+   "n": 50,
+   "rate": 0.02,
+   "cp_low": 0.0005062279830408253,
+   "cp_high": 0.10646954571150036,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "qmix / none",
+   "event": "wait_ge_300s",
+   "k": 2,
+   "n": 50,
+   "rate": 0.04,
+   "cp_low": 0.004881433426164311,
+   "cp_high": 0.13713762560396797,
+   "one_sided_upper_if_zero": null
+  },
+  {
+   "group": "vdn / both",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / both",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / both",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / guarantee",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / guarantee",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / guarantee",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / min_green",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / min_green",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / min_green",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / none",
+   "event": "failure",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / none",
+   "event": "open_wait",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "vdn / none",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 50,
+   "rate": 0.0,
+   "cp_low": 0.0,
+   "cp_high": 0.07112173646419778,
+   "one_sided_upper_if_zero": 0.058155079116972264
+  },
+  {
+   "group": "all methods / guarantee or both",
+   "event": "failure",
+   "k": 0,
+   "n": 300,
+   "cp_low": 0.0,
+   "cp_high": 0.012220974694292897
+  },
+  {
+   "group": "all methods / guarantee or both",
+   "event": "open_wait",
+   "k": 0,
+   "n": 300,
+   "cp_low": 0.0,
+   "cp_high": 0.012220974694292897
+  },
+  {
+   "group": "all methods / guarantee or both",
+   "event": "wait_ge_300s",
+   "k": 0,
+   "n": 300,
+   "cp_low": 0.0,
+   "cp_high": 0.012220974694292897
+  },
+  {
+   "group": "all methods / none",
+   "event": "failure",
+   "k": 5,
+   "n": 150,
+   "cp_low": 0.010910186468911114,
+   "cp_high": 0.07607232253734733
+  },
+  {
+   "group": "all methods / none",
+   "event": "open_wait",
+   "k": 5,
+   "n": 150,
+   "cp_low": 0.010910186468911114,
+   "cp_high": 0.07607232253734733
+  },
+  {
+   "group": "all methods / none",
+   "event": "wait_ge_300s",
+   "k": 6,
+   "n": 150,
+   "cp_low": 0.014818521114897846,
+   "cp_high": 0.08502781471819926
+  }
+ ]
+}

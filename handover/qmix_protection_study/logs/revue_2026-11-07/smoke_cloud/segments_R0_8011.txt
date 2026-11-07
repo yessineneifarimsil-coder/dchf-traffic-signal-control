@@ -1,0 +1,10 @@
+J1 segments 349 direct green-green 0 yellow lengths {3: 174} min green (complete) 7 max green 45 {'H': 88, 'V': 87}
+J2 segments 345 direct green-green 0 yellow lengths {3: 172} min green (complete) 7 max green 45 {'H': 87, 'V': 86}
+J1 segments 551 direct green-green 0 yellow lengths {3: 275} min green (complete) 10 max green 47 {'H': 138, 'V': 138}
+J2 segments 559 direct green-green 0 yellow lengths {3: 279} min green (complete) 10 max green 23 {'H': 140, 'V': 140}
+J1 segments 429 direct green-green 0 yellow lengths {3: 214} min green (complete) 11 max green 22 {'H': 108, 'V': 107}
+    [('Y', 868, 3), ('H', 871, 13), ('Y', 884, 3), ('V', 887, 11), ('Y', 898, 3), ('H', 901, 22), ('Y', 923, 3), ('V', 926, 12), ('Y', 938, 3), ('H', 941, 22), ('Y', 963, 3), ('V', 966, 12), ('Y', 978, 3), ('H', 981, 22)]
+J2 segments 426 direct green-green 0 yellow lengths {3: 213} min green (complete) 11 max green 35 {'V': 107, 'H': 106}
+    [('Y', 864, 3), ('V', 867, 11), ('Y', 878, 3), ('H', 881, 13), ('Y', 894, 3), ('V', 897, 11), ('Y', 908, 3), ('H', 911, 35), ('Y', 946, 3), ('V', 949, 12), ('Y', 961, 3), ('H', 964, 22), ('Y', 986, 3), ('V', 989, 12)]
+    [('Y', 2683, 3), ('V', 2686, 12), ('Y', 2698, 3), ('H', 2701, 13), ('Y', 2714, 3), ('V', 2717, 11), ('Y', 2728, 3), ('H', 2731, 13), ('Y', 2744, 3), ('V', 2747, 11), ('Y', 2758, 3), ('H', 2761, 13), ('Y', 2774, 3), ('V', 2777, 11)]
+    [('Y', 2681, 3), ('H', 2684, 22), ('Y', 2706, 3), ('V', 2709, 12), ('Y', 2721, 3), ('H', 2724, 30), ('Y', 2754, 3), ('V', 2757, 11), ('Y', 2768, 3), ('H', 2771, 13)]

@@ -1,0 +1,27 @@
+{
+ "machine_note": "measured by comparator_search.py measure on the machine that will run the stages",
+ "seconds_per_run": 17.619929790496826,
+ "bytes_per_run_compact": 82117,
+ "bytes_per_run_full": 2709188,
+ "walls_s": [
+  14.360938310623169,
+  15.675236225128174,
+  15.576887607574463,
+  15.695581197738647,
+  16.496097087860107,
+  17.619929790496826
+ ],
+ "sizes": {
+  "compact": [
+   80881,
+   82117,
+   81994
+  ],
+  "full": [
+   2159380,
+   2167351,
+   2160015
+  ]
+ },
+ "note_full": "x1.25 for the per-second service counters absent from these runs"
+}

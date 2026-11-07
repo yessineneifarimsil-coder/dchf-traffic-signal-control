@@ -1,0 +1,184 @@
+{
+ "status": "PRE-REGISTRATION DRAFT, not frozen, not launched. To be frozen (fingerprint) after the comparators of A are selected and BEFORE any confirmation run; every field below is fixed in advance and must not change after the freeze.",
+ "question": "On traffics never used for any choice, do the frozen QMIX and VDN policies with the guarantee alone serve every vehicle, and how does their J compare with comparators re-optimised for each robustness profile?",
+ "profiles": [
+  "R0_reference",
+  "R1_sparse_secondary_heavy_main",
+  "R2_single_secondary_trickle",
+  "R3_time_varying",
+  "R4_isolated_tail"
+ ],
+ "traffic_seeds": {
+  "R0_reference": [
+   8051,
+   8052,
+   8053,
+   8054,
+   8055,
+   8056,
+   8057,
+   8058,
+   8059,
+   8060
+  ],
+  "R1_sparse_secondary_heavy_main": [
+   8151,
+   8152,
+   8153,
+   8154,
+   8155,
+   8156,
+   8157,
+   8158,
+   8159,
+   8160
+  ],
+  "R2_single_secondary_trickle": [
+   8251,
+   8252,
+   8253,
+   8254,
+   8255,
+   8256,
+   8257,
+   8258,
+   8259,
+   8260
+  ],
+  "R3_time_varying": [
+   8351,
+   8352,
+   8353,
+   8354,
+   8355,
+   8356,
+   8357,
+   8358,
+   8359,
+   8360
+  ],
+  "R4_isolated_tail": [
+   8451,
+   8452,
+   8453,
+   8454,
+   8455,
+   8456,
+   8457,
+   8458,
+   8459,
+   8460
+  ]
+ },
+ "traffic_seed_rules": [
+  "family robustness (code 80), tools/robustness/scenario_traffic.py, unchanged spec",
+  "seeds 8c51-8c60 were reserved on 2026-11-07 in tools/comparators/seeds.py and are refused by every search entry point",
+  "never used: 3001-3010, 3101-3120, the robustness evaluation seeds 8c01-8c05, the comparator design/validation seeds 8c11-8c25"
+ ],
+ "learned_policies": {
+  "qmix": [
+   "qmix_seed101_t350000",
+   "qmix_seed102_t325000",
+   "qmix_seed103_t350000",
+   "qmix_seed104_t325000",
+   "qmix_seed105_t350000",
+   "qmix_seed106_t350000",
+   "qmix_seed107_t350000",
+   "qmix_seed108_t350000",
+   "qmix_seed109_t325000",
+   "qmix_seed110_t360000"
+  ],
+  "vdn": [
+   "vdn_seed101_t350000",
+   "vdn_seed102_t360000",
+   "vdn_seed103_t300000",
+   "vdn_seed104_t360000",
+   "vdn_seed105_t275000",
+   "vdn_seed106_t275000",
+   "vdn_seed107_t325000",
+   "vdn_seed108_t300000",
+   "vdn_seed109_t360000",
+   "vdn_seed110_t275000"
+  ]
+ },
+ "learned_policy_rules": [
+  "the 10 checkpoints per method selected earlier on learner_validation (selection records), SHA-256 verified before copy; no retraining, no new selection",
+  "IDQN is not part of the confirmation"
+ ],
+ "arms": {
+  "primary": "guarantee",
+  "secondary": [
+   "none"
+  ]
+ },
+ "comparators": {
+  "primary": "oft_g5",
+  "secondary": [
+   "oft_min7",
+   "actuated_min7",
+   "canonical_mp",
+   "old_fixed_C19_8_5_D9",
+   "min7_fixed_C25_12_7_D0",
+   "tod_g5 (R3 only)",
+   "tod_min7 (R3 only)"
+  ],
+  "source": "A selections (selections/<profile>__g5.json, __min7.json, __actuated.json, R3__tod-*.json), their SHA-256 entering the fingerprint; canonical MP and the two historical plans as frozen"
+ },
+ "endpoints": {
+  "primary": "J_primary (mean waitingTime + departDelay over the N scheduled vehicles of the manifest), per (model, traffic)",
+  "service": "per evaluation: clearance failure; failure with an open service counter at the end; at least one vehicle waiting >= 300 s",
+  "secondary": [
+   "D_bar over the demand window [0, 3600)",
+   "mean completed time loss",
+   "maximum vehicle waiting time"
+  ]
+ },
+ "statistics": {
+  "procedure": "adaptive_qmix.protocol.statistics.paired_crossed_bootstrap (frozen code, official=False): training seeds 101-110 (models) x 10 traffic seeds; deterministic comparator broadcast per traffic: D_ij = J_learned(i,j) - J_comparator(j)",
+  "replicates": 10000,
+  "rng_namespace": "frozen BOOTSTRAP_RNG_NAMESPACE",
+  "interval": "percentile",
+  "primary_family": "5 profiles x 2 methods = 10 comparisons with the primary comparator",
+  "decision_confidence": 0.995,
+  "decision_confidence_rule": "Bonferroni over the 10 primary comparisons (two-sided 0.05/10)",
+  "descriptive_confidence": 0.95,
+  "equivalence_margin": {
+   "rule": "delta_profile = 0.10 x mean validation J of the selected primary comparator (oft_g5) of that profile, read from its sealed selection record; fixed before any confirmation run",
+   "relative": 0.1
+  }
+ },
+ "decision_rules": {
+  "order": [
+   "SERVICE FAILURE: at least one learned guarantee evaluation of the (profile, method) fails with an open counter wait -> the J comparison is not interpreted as a success; counts and Clopper-Pearson intervals reported",
+   "NOT ESTIMABLE: any other learned failure, or a comparator failure on a traffic (J undefined; never imputed); a descriptive sensitivity without the failing model or traffic is reported, never used for the decision",
+   "SUPERIOR BEYOND MARGIN: U < -delta",
+   "SUPERIOR: U < 0",
+   "EQUIVALENT: -delta < L and U < delta",
+   "INFERIOR BEYOND MARGIN: L > delta",
+   "INFERIOR: L > 0",
+   "INCONCLUSIVE: otherwise"
+  ],
+  "interval": "[L, U] = 99.5 % crossed-bootstrap interval of mean D (learned minus comparator; negative = learned better)",
+  "claims_allowed": [
+   "per profile and method only; no pooling across profiles for a decision",
+   "service claim per method: 'no indefinite denial of service on these 50 traffics' only if 0 open-wait failures in the 500 guarantee evaluations of that method, with the Clopper-Pearson upper bound stated",
+   "secondary comparisons and the none arm are descriptive (95 %), no decision"
+  ]
+ },
+ "secondary_analyses": [
+  "guarantee - none on the same model and traffic (learned comparator, crossed bootstrap, 95 %)",
+  "each learned arm versus each secondary comparator (95 %, descriptive)",
+  "Clopper-Pearson intervals for every service event"
+ ],
+ "costs": {
+  "learned_evaluations": 2000,
+  "comparator_evaluations": 320,
+  "total": 2320,
+  "wall_h_4_workers": "about 2.3 h at 14-15 s per evaluation (learned evaluations measured at 13-14 s in the ablation on Windows); up to about 2.6 h if 10 % of runs go to the 7,200 s cut-off",
+  "disk_gb": "about 10 (full logs and per-second counters, about 4 MB per evaluation)"
+ },
+ "not_done_before_freeze": [
+  "no confirmation traffic is generated before the freeze",
+  "no run, no look at any confirmation output"
+ ]
+}

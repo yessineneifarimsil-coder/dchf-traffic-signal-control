@@ -17,14 +17,14 @@ set "T=%TEMP%\etapes_check_%RANDOM%_%RANDOM%"
 set "S=%T%\study"
 set "ETAPES_CALLS=%T%\calls.txt"
 set /a PASS=0, FAIL=0
-for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness bin) do mkdir "%S%\%%D" 2>nul
+for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses bin) do mkdir "%S%\%%D" 2>nul
 mkdir "%T%\bin" 2>nul
 copy /y "%SRC%\ETAPES.cmd" "%S%\ETAPES.cmd" >nul
 copy /y "%~dp0test_stub.py" "%S%\tests\test_stub.py" >nul
 copy /y "%~dp0tex_stub.py" "%T%\tex_stub.py" >nul
 set "PDFLATEX=python "%T%\tex_stub.py" pdflatex"
 set "BIBTEX=python "%T%\tex_stub.py" bibtex"
-for %%F in (tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
+for %%F in (tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
 >"%T%\bin\conda.cmd" echo @exit /b %%FAKE_CONDA_RC%%
 set "FAKE_CONDA_RC=0"
 set "PATH=%T%\bin;%PATH%"
@@ -46,6 +46,18 @@ for %%R in (0 5) do (
   call :check robustness-analyse %%R robustness_analysis.py
   call :check robustness-smoke %%R smoke.py
   call :check robustness-check-smoke %%R "cell_state.py check-smoke"
+  call :check comparators-plan %%R "comparator_search.py plan"
+  call :check comparators-measure %%R "comparator_search.py measure"
+  call :check comparators-prepare %%R "comparator_search.py prepare" FPRINT
+  call :check comparators-verify-manifests %%R "comparator_search.py verify-manifests"
+  call :check comparators-progress %%R "comparator_search.py progress"
+  call :check comparators-finalise %%R "comparator_search.py finalise" coarse
+  call :check mp-check-static %%R "mp_check.py static"
+  call :check mp-check-robustness %%R "mp_check.py robustness"
+  call :check j-cycle %%R j_cycle_curve.py
+  call :check cp-ablation %%R "clopper_pearson.py --ablation"
+  call :check cp-robustness %%R "clopper_pearson.py --robustness"
+  call :check guarantee-diagnostic %%R guarantee_diagnostic.py
   call :check dois %%R verify_dois.py
   call :check archive %%R make_archive.py
 )
@@ -66,6 +78,7 @@ echo.
 echo == Parallel launch (4 workers each): the launcher cannot see the workers' exit codes ==
 call :parallel robustness-run "robustness_runner.py run" robustness_shard
 call :parallel ablation-run "ablation_runner.py run" ablation_shard
+call :parallel comparators-run "comparator_search.py run" comparators_coarse_shard coarse
 echo.
 echo Result: %PASS% checks passed, %FAIL% failed.
 if %FAIL% gtr 0 (exit /b 1)
@@ -104,11 +117,11 @@ if "!GOT!"=="%~2" (call :ok "%~3: returns !GOT!") else (call :ko "%~3: returns !
 exit /b 0
 
 :parallel
-rem %1 step, %2 token, %3 log prefix
+rem %1 step, %2 token, %3 log prefix, %4 optional step argument
 set "FAKE_RC=5"
 del "%ETAPES_CALLS%" 2>nul
 pushd "%S%"
-cmd /c ETAPES.cmd %~1 >"%T%\launch.txt" 2>&1
+cmd /c ETAPES.cmd %~1 %~4 >"%T%\launch.txt" 2>&1
 set "GOT=!ERRORLEVEL!"
 popd
 set /a WAITED=0

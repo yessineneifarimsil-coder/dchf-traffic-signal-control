@@ -1,0 +1,26 @@
+{
+ "qmix_none_9301_9305": {
+  "evaluations": 50,
+  "cleared": 49,
+  "failures": 1,
+  "mean_J_over_cleared": 3.1059183673469386,
+  "model_means_range": [
+   2.9790714285714284,
+   3.2059821428571427
+  ]
+ },
+ "Fixed plan, greens \u22657 s C25 12/7 s": {
+  "runs": 5,
+  "mean_J": 3.156285714285714,
+  "plan": [
+   "C25_gH12_gV7_D0"
+  ]
+ },
+ "Old fixed plan C19 8/5 s": {
+  "runs": 5,
+  "mean_J": 2.7724285714285712,
+  "plan": [
+   "C19_gH8_gV5_D9"
+  ]
+ }
+}
