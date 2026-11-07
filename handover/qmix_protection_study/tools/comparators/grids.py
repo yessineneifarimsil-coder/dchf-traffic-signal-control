@@ -11,7 +11,8 @@ threshold changes between the two versions:
 
 Stages: coarse = original grid C 40..140 step 10 (1980 labels) + short cycles {20, 25, 30, 35} + the floor
 extension C in [2*g_min + 6, 20) (16..19 for g5, empty for min7), splits 0.30..0.75 step 0.05, offsets
-0, 5, .., C-5; ranking unit = realized plan (C, g_H, g_V, offset mod C); top 5; fine = frozen rule (C +/-10
+0, s, 2s, .., < C with s = offset_step (5 in the original procedure; 10 in the reduced variant decided on
+2026-11-07, before any result: plans/PLAN_COMPARATEURS.md, deviation D1); ranking unit = realized plan (C, g_H, g_V, offset mod C); top 5; fine = frozen rule (C +/-10
 step 5 clipped to [floor, 140], split +/-0.050 step 0.025 in [0.25, 0.80], offset +/-10 step 1) around every
 coarse alias of each winner, union collapsed to realized plans; top 10 on design; selection on validation.
 """
@@ -42,23 +43,27 @@ def label_key(plan):
     return P.candidate_key(plan)
 
 
-def _grid(cycles):
+ORIGINAL_OFFSET_STEP_S = P.COARSE_OFFSET_STEP_S       # 5 s
+
+
+def _grid(cycles, offset_step=ORIGINAL_OFFSET_STEP_S):
     out = []
     for cycle in cycles:
         for split in P.COARSE_SPLIT_THOUSANDTHS:
-            for offset in range(0, cycle, P.COARSE_OFFSET_STEP_S):
+            for offset in range(0, cycle, int(offset_step)):
                 out.append(P.make_plan(cycle, split, offset))
     return out
 
 
-def coarse_parts(min_green):
+def coarse_parts(min_green, offset_step=ORIGINAL_OFFSET_STEP_S):
     floor = tuple(range(floor_cycle(min_green), min(SHORT_CYCLES_S)))
-    parts = {"original": _grid(P.COARSE_CYCLES_S), "short": _grid(SHORT_CYCLES_S), "floor": _grid(floor)}
+    parts = {"original": _grid(P.COARSE_CYCLES_S, offset_step), "short": _grid(SHORT_CYCLES_S, offset_step),
+             "floor": _grid(floor, offset_step)}
     return dict((k, [p for p in v if admissible(p, min_green)]) for k, v in parts.items()), floor
 
 
-def coarse_labels(min_green):
-    parts, _floor = coarse_parts(min_green)
+def coarse_labels(min_green, offset_step=ORIGINAL_OFFSET_STEP_S):
+    parts, _floor = coarse_parts(min_green, offset_step)
     return parts["original"] + parts["short"] + parts["floor"]
 
 
@@ -97,9 +102,9 @@ def fine_candidates(winners, min_green):
     return out
 
 
-def fine_union(winner_keys, min_green):
+def fine_union(winner_keys, min_green, offset_step=ORIGINAL_OFFSET_STEP_S):
     """Realized plans of the fine union around EVERY coarse alias of every winning realized plan."""
-    g = groups(coarse_labels(min_green))
+    g = groups(coarse_labels(min_green, offset_step))
     seeds = []
     for key in winner_keys:
         if tuple(key) not in g:
@@ -108,20 +113,21 @@ def fine_union(winner_keys, min_green):
     return canonical(fine_candidates(seeds, min_green))
 
 
-def report(min_green):
-    parts, floor = coarse_parts(min_green)
-    combined = coarse_labels(min_green)
+def report(min_green, offset_step=ORIGINAL_OFFSET_STEP_S):
+    parts, floor = coarse_parts(min_green, offset_step)
+    combined = coarse_labels(min_green, offset_step)
     return {"min_green_s": min_green, "structural_floor_cycle_s": floor_cycle(min_green),
+            "coarse_offset_step_s": int(offset_step),
             "floor_cycles_s": list(floor),
             "labels": dict((k, len(v)) for k, v in parts.items()),
             "realized_plans": dict((k, len(groups(v))) for k, v in parts.items()),
             "combined_labels": len(combined), "combined_realized_plans": len(groups(combined))}
 
 
-def fine_bound(min_green, already=()):
+def fine_bound(min_green, already=(), offset_step=ORIGINAL_OFFSET_STEP_S):
     """Upper bound on NEW fine plans for 5 winners (largest five single-winner unions minus `already`)."""
-    done = set(tuple(k) for k in already) | set(groups(coarse_labels(min_green)))
-    g = groups(coarse_labels(min_green))
+    g = groups(coarse_labels(min_green, offset_step))
+    done = set(tuple(k) for k in already) | set(g)
     sizes = []
     by_cycle = {}
     for key, aliases in g.items():

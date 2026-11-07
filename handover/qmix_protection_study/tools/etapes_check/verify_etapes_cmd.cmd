@@ -17,14 +17,14 @@ set "T=%TEMP%\etapes_check_%RANDOM%_%RANDOM%"
 set "S=%T%\study"
 set "ETAPES_CALLS=%T%\calls.txt"
 set /a PASS=0, FAIL=0
-for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses bin) do mkdir "%S%\%%D" 2>nul
+for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses tools\confirmation bin) do mkdir "%S%\%%D" 2>nul
 mkdir "%T%\bin" 2>nul
 copy /y "%SRC%\ETAPES.cmd" "%S%\ETAPES.cmd" >nul
 copy /y "%~dp0test_stub.py" "%S%\tests\test_stub.py" >nul
 copy /y "%~dp0tex_stub.py" "%T%\tex_stub.py" >nul
 set "PDFLATEX=python "%T%\tex_stub.py" pdflatex"
 set "BIBTEX=python "%T%\tex_stub.py" bibtex"
-for %%F in (tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
+for %%F in (tools\comparators\check_r0_demand.py tools\confirmation\check_statistics.py tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
 >"%T%\bin\conda.cmd" echo @exit /b %%FAKE_CONDA_RC%%
 set "FAKE_CONDA_RC=0"
 set "PATH=%T%\bin;%PATH%"
@@ -58,6 +58,8 @@ for %%R in (0 5) do (
   call :check cp-ablation %%R "clopper_pearson.py --ablation"
   call :check cp-robustness %%R "clopper_pearson.py --robustness"
   call :check guarantee-diagnostic %%R guarantee_diagnostic.py
+  call :check check-r0-demand %%R check_r0_demand.py
+  call :check check-statistics %%R "check_statistics.py --a004 A004.py" A004.py
   call :check dois %%R verify_dois.py
   call :check archive %%R make_archive.py
 )

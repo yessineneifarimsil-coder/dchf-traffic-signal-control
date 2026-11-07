@@ -1,5 +1,18 @@
 # Compléments pour l'article (2026-11-07) : comparateurs, confirmation, analyses sans simulation
 
+> **Mise à jour : décisions du 2026-11-07, intégrées le même jour.** Elles sont détaillées dans les plans ; le chiffrage de la section 3 est remplacé par celui de `PLAN_COMPARATEURS.md` § 7.
+>
+> - A1 : recherche pour R1, R2 et R3 seulement, avec une grille grossière au pas de 10 s, écart déclaré D1 (la recherche fine reste au pas de 1 s).
+> - R0 : réutilisation de C19 et C25. La demande R0 est identique en loi à la demande de qualification, ce que confirme `check_r0_demand.py`.
+> - R4 : comparateurs gelés seulement, déclaré.
+> - Plan B :
+>   - marge δ = max(0,05 × J_val ; 0,10 s) ;
+>   - référence statistique A004 = statistics-1.2, dont le fichier est absent ici : vérification sous Windows avec `check-statistics` ;
+>   - justification de l'exclusion d'IDQN ;
+>   - 2260 évaluations.
+> - Diagnostic de la garantie : la définition principale des 35 paires est D2 (ΔD̄ > 0).
+> - Les résultats joints (analyses sans risque et `comparators-measure`) ne sont pas parvenus dans l'environnement de revue : ils n'ont pas pu être lus.
+
 **Ce qui n'a pas été fait.** Aucun entraînement. Aucune étape longue n'a été lancée. Le plan de robustesse, les 600 évaluations, les dépôts figés et les trafics finaux réservés n'ont pas été touchés.
 
 Plans détaillés :
@@ -131,9 +144,9 @@ Script : `tools/article_analyses/guarantee_diagnostic.py`. **Il n'a pas été ex
 
 **Sélections :**
 - **Paires IDQN dégradées** (« guarantee − none ») :
-  - D1 : ΔJ > 0, ou le bras échoue alors que `none` évacue (définition principale) ;
-  - D2 : ΔD̄ > 0 ;
-  - D3 : D1 ou D2.
+  - **D2 : ΔD̄ > 0 sur la fenêtre de demande. C'est la définition principale, celle des 35 paires (décision du 2026-11-07).** Ce sont ces paires qui sont diagnostiquées ;
+  - D1 : ΔJ > 0, ou le bras échoue alors que `none` évacue (rapporté) ;
+  - D3 : D1 ou D2 (rapporté).
 - **Évaluations QMIX où la garantie agit :** au moins une intervention, pendant ou après la demande.
 
 Les effectifs de chaque définition sont imprimés face aux 35 et 17 rapportés. Si aucune définition ne retrouve 35, la tienne diffère : il faudra me la donner pour l'ajouter.

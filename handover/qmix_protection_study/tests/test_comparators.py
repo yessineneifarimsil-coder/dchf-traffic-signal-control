@@ -109,6 +109,19 @@ class Grids(unittest.TestCase):
         self.assertTrue(set(G.groups(G.coarse_labels(7))) <= set(G.groups(G.coarse_labels(5))))
         self.assertEqual(G.fine_bound(7)["upper_bound_new_plans"], 2475)
 
+    def test_reduced_coarse_grid_declared_on_2026_11_07(self):
+        import grids as G
+        g5, m7 = G.report(5, 10), G.report(7, 10)
+        self.assertEqual((g5["labels"], g5["realized_plans"]), ({"original": 990, "short": 114, "floor": 34},
+                                                                 {"original": 990, "short": 107, "floor": 20}))
+        self.assertEqual((g5["combined_realized_plans"], m7["combined_realized_plans"]), (1117, 1077))
+        self.assertTrue(set(G.groups(G.coarse_labels(7, 10))) <= set(G.groups(G.coarse_labels(5, 10))))
+        self.assertTrue(all(p["offset_s"] % 10 == 0 for p in G.coarse_labels(5, 10)))
+        # the fine rule is unchanged: offsets every 1 s around a winner
+        winner = G.groups(G.coarse_labels(5, 10))[(30, 13, 11, 10)]
+        offsets = set(p["offset_s"] for p in G.fine_candidates(winner, 5) if p["cycle_s"] == 30)
+        self.assertEqual(offsets, set(range(0, 21)))
+
     def test_fine_rule_equals_the_frozen_generator_on_the_original_bounds(self):
         import grids as G
         winner = P.make_plan(60, 550, 25)
@@ -123,6 +136,38 @@ class Grids(unittest.TestCase):
                 spec = CS.fixed_spec((cycle, g_h, cycle - 6 - g_h, 3))
                 plan = P.make_plan(cycle, spec["plan"]["split_thousandths"], 3)
                 self.assertEqual((plan["green_H_s"], plan["green_V_s"]), (g_h, cycle - 6 - g_h))
+
+
+@unittest.skipUnless(HAVE_FROZEN, "frozen adaptive_qmix not available")
+class R0Demand(unittest.TestCase):
+    """Condition for reusing C19 and C25 on R0 (decision of 2026-11-07)."""
+
+    def config(self):
+        import adaptive_qmix
+        from adaptive_qmix.config import load_config
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(adaptive_qmix.__file__))))
+        return load_config(os.path.join(root, "config", "adaptive_qmix", "qualification_300m_medium.json"))
+
+    def test_r0_is_the_qualification_demand_and_a_change_is_reported(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "tools", "robustness"))
+        import check_r0_demand as R
+        import scenario_traffic as st
+        result = R.check(self.config())
+        self.assertEqual((result["verdict"], result["problems"]), ("IDENTICAL_LAW", []))
+        self.assertTrue(all(v["ks_distance"] < 0.06 for v in result["empirical_informative"].values()))
+        original = st.load_spec
+
+        def altered(*args, **kwargs):
+            spec = original(*args, **kwargs)
+            spec["scenarios"]["R0_reference"]["streams"]["WE"] = {"count": 900, "profile": [[0, 1800, 2.0], [1800, 3600, 1.0]]}
+            return spec
+        st.load_spec = altered
+        try:
+            changed = R.check(self.config())
+        finally:
+            st.load_spec = original
+        self.assertEqual(changed["verdict"], "DIFFERS")
+        self.assertTrue(any("profile" in p for p in changed["problems"]))
 
 
 class Seeds(unittest.TestCase):

@@ -8,8 +8,14 @@
     python tools/comparators/comparator_search.py finalise --root ... --stage <stage>
     python tools/comparators/comparator_search.py verify-manifests --root ... --robustness-root <robustness root>
 
-Comparators, per profile, all selected on that profile's own design (8c11-8c15) and validation (8c21-8c25)
-seeds, never on the robustness evaluation seeds (8c01-8c05) nor on the reserved confirmation seeds (8c51-8c60):
+Scope (decisions of 2026-11-07, before any result; DECLARATIONS below): the search runs for R1, R2 and R3 only;
+R0 reuses the qualification OFT plans C19 8/5 D9 (g5) and C25 12/7 D0 (min7) provided its demand is identical in
+law to the qualification demand (check_r0_demand.py); R4 keeps frozen comparators only. The coarse grid uses
+offsets every 10 s (declared deviation D1); the fine rule is unchanged.
+
+Comparators, per searched profile, all selected on that profile's own design (8c11-8c15) and validation
+(8c21-8c25) seeds, never on the robustness evaluation seeds (8c01-8c05) nor on the reserved confirmation seeds
+(8c51-8c60):
   A1 OFT g5 and OFT min7: the original OFT procedure (grids.py): coarse (with short cycles and the floor
      extension) -> top 5 realized plans -> fine union -> top 10 -> validation -> select_timing_plan order
      (mean J, mean time loss, shorter cycle, realized key). The min-7 coarse plans are a subset of the g5 ones:
@@ -56,6 +62,24 @@ import seeds as SD  # noqa: E402
 import scenario_traffic as st  # noqa: E402
 
 VERSIONS = (("g5", 5), ("min7", 7))
+# Decisions of 2026-11-07, fixed before any comparator result (plans/PLAN_COMPARATEURS.md section 0):
+SEARCH_PROFILES = ("R1_sparse_secondary_heavy_main", "R2_single_secondary_trickle", "R3_time_varying")
+COARSE_OFFSET_STEP_S = 10
+DECLARATIONS = {
+    "D1_reduced_coarse_grid": "DEVIATION from the original OFT procedure, decided on 2026-11-07 before any comparator "
+                              "result: coarse offsets every 10 s (0, 10, ..., < C) instead of every 5 s, on every "
+                              "coarse part (original grid, short cycles, floor); the fine rule is unchanged (offsets "
+                              "+/-10 s every 1 s around every coarse alias of each winner)",
+    "D2_search_profiles": "the per-profile search (A1 OFT g5/min7, A2 actuated, A3 plans by period) runs for R1, R2 "
+                          "and R3 only",
+    "D3_R0_reused": "R0: no search; the existing plans of the qualification OFT searches are reused, C19 8/5 D9 "
+                    "(g >= 5) and C25 12/7 D0 (g >= 7), on the condition that the R0 demand is identical in law to "
+                    "the qualification demand (tools/comparators/check_r0_demand.py)",
+    "D4_R4_frozen": "R4: no search; frozen comparators only (C19 8/5 D9, C25 12/7 D0, canonical max pressure), "
+                    "declared as not re-optimised for R4",
+}
+REUSED = {"R0_reference": {"g5": (19, 8, 5, 9), "min7": (25, 12, 7, 0)},
+          "R4_isolated_tail": {"g5": (19, 8, 5, 9), "min7": (25, 12, 7, 0)}}
 ACTUATED_GRID = [{"gap_s": g, "max_green_H_s": h, "max_green_V_s": v, "zone_m": 40}
                  for g in (2, 3, 4) for h in (30, 45, 60) for v in (15, 25, 35)]
 ACTUATED_RETAINED = 5
@@ -156,7 +180,7 @@ def code_hashes():
 
 def coarse_specs():
     import grids as G
-    return [fixed_spec(k) for k in sorted(G.groups(G.coarse_labels(5)))]
+    return [fixed_spec(k) for k in sorted(G.groups(G.coarse_labels(5, COARSE_OFFSET_STEP_S)))]
 
 
 def estimate(runs, measure, mode="compact"):
@@ -178,23 +202,31 @@ def build_plan(root):
     measure_path = os.path.join(root, "measure.json")
     measure = read_json(measure_path) if os.path.isfile(measure_path) else None
     n_coarse = len(coarse_specs())
-    per_profile = {"coarse": n_coarse * 5, "fine_upper_bound_per_version": G.fine_bound(5)["upper_bound_new_plans"] * 5,
-                   "validation_per_version": G.FINE_RETAINED * 5,
-                   "actuated": len(ACTUATED_GRID) * 5 + ACTUATED_RETAINED * 5}
-    n = len(SD.PROFILES)
-    tod = 2 * (TOD_PER_PERIOD ** len(TOD_PERIODS) * 5 + TOD_RETAINED * 5)
-    robust = n * 5 * 3 + 2 * 5
-    known = n * (per_profile["coarse"] + 2 * per_profile["validation_per_version"] + per_profile["actuated"]) + tod
-    worst = known + n * 2 * per_profile["fine_upper_bound_per_version"]
+    n = len(SEARCH_PROFILES)
+    fine_bound = G.fine_bound(5, offset_step=COARSE_OFFSET_STEP_S)["upper_bound_new_plans"] * 5
+    stages = {"coarse": n * n_coarse * 5,
+              "validation-g5": n * G.FINE_RETAINED * 5, "validation-min7": n * G.FINE_RETAINED * 5,
+              "actuated-design": n * len(ACTUATED_GRID) * 5, "actuated-validation": n * ACTUATED_RETAINED * 5,
+              "tod-design-g5": TOD_PER_PERIOD ** len(TOD_PERIODS) * 5, "tod-design-min7": TOD_PER_PERIOD ** len(TOD_PERIODS) * 5,
+              "tod-validation-g5": TOD_RETAINED * 5, "tod-validation-min7": TOD_RETAINED * 5,
+              "robustness-eval": n * 3 * 5 + 2 * 5}
+    bounds = {"fine-g5": n * fine_bound, "fine-min7": n * fine_bound}
+    known = sum(v for k, v in stages.items() if k != "robustness-eval")
     plan = {"study": "fair_comparators_robustness_profiles", "root": os.path.abspath(root),
-            "profiles": list(SD.PROFILES), "seed_registry": SD.registry(), "scenario_spec_sha256": spec["_sha256"],
-            "versions": dict(VERSIONS), "grids": {"g5": G.report(5), "min7": G.report(7)},
+            "profiles": list(SEARCH_PROFILES), "declarations": DECLARATIONS,
+            "reused_or_frozen_comparators": dict((p, dict((v, list(k)) for v, k in d.items())) for p, d in REUSED.items()),
+            "coarse_offset_step_s": COARSE_OFFSET_STEP_S,
+            "seed_registry": SD.registry(), "scenario_spec_sha256": spec["_sha256"],
+            "versions": dict(VERSIONS), "grids": {"g5": G.report(5, COARSE_OFFSET_STEP_S),
+                                                  "min7": G.report(7, COARSE_OFFSET_STEP_S)},
             "coarse_plans_shared": n_coarse, "actuated_grid": ACTUATED_GRID, "tod_periods": [list(p) for p in TOD_PERIODS],
             "tod_per_period": TOD_PER_PERIOD, "code_sha256": code_hashes(), "stages": STAGES,
-            "runs_per_profile": per_profile, "tod_runs": tod, "robustness_eval_runs": robust,
-            "runs_known_before_coarse": known, "runs_upper_bound": worst + robust,
-            "estimate_known": estimate(known, measure), "estimate_upper_bound": estimate(worst, measure),
-            "estimate_robustness_eval": estimate(robust, measure, "full"),
+            "runs_by_stage_exact": stages, "runs_by_stage_upper_bound": bounds,
+            "runs_known_before_fine": known, "runs_upper_bound": known + sum(bounds.values()) + stages["robustness-eval"],
+            "estimate_by_stage": dict((k, estimate(v, measure, "full" if k == "robustness-eval" else "compact"))
+                                      for k, v in list(stages.items()) + list(bounds.items())),
+            "estimate_known": estimate(known, measure),
+            "estimate_upper_bound": estimate(known + sum(bounds.values()), measure),
             "measure": measure, "measure_sha256": sha256_file(measure_path) if measure else None}
     plan["fingerprint"] = sha_obj(plan)
     return plan
@@ -509,14 +541,15 @@ def finalise(root, stage):
     if stage == "coarse":
         report = {}
         for version, g in VERSIONS:
-            jobs, admissible_keys = [], set(G.groups(G.coarse_labels(g)))
+            jobs, admissible_keys = [], set(G.groups(G.coarse_labels(g, COARSE_OFFSET_STEP_S)))
             for profile in profiles:
                 recs = candidate_records(root, [j for j in order["jobs"] if j["profile"] == profile
                                                 and realized(j["spec"]) in admissible_keys])
                 winners = rank(recs, G.COARSE_RETAINED)
                 done = set(admissible_keys)
                 new = [k for k in (realized(fixed_spec(G.realized_key(p))) for p in
-                                   G.fine_union([realized(w["spec"]) for w in winners], g)) if k not in done]
+                                   G.fine_union([realized(w["spec"]) for w in winners], g, COARSE_OFFSET_STEP_S))
+                       if k not in done]
                 jobs += search_jobs(profile, "comparator_design", [fixed_spec(k) for k in new])
                 report[profile + "/" + version] = {"winners": [realized(w["spec"]) for w in winners],
                                                    "new_fine_plans": len(new)}
@@ -601,12 +634,12 @@ def maybe_robustness_order(root, plan):
 # Preparation and measurement.
 # ---------------------------------------------------------------------------
 
-def write_manifests(root, roles):
+def write_manifests(root, roles, profiles=SD.PROFILES):
     from adaptive_qmix.config import load_config
     import evaluate_any as ea
     config = load_config(os.path.join(ea.PROTECTED, ea.CONFIG_REL))
     spec = st.load_spec()
-    for profile in SD.PROFILES:
+    for profile in profiles:
         for role in roles:
             for seed in SD.seeds(profile, role):
                 prefix = manifest_prefix(root, profile, seed)
@@ -618,7 +651,7 @@ def write_manifests(root, roles):
 def verify_manifests(root, robustness_root):
     """The regenerated robustness evaluation manifests must equal those of the robustness campaign."""
     bad, checked = [], 0
-    for profile in SD.PROFILES:
+    for profile in SEARCH_PROFILES:
         for seed in SD.seeds(profile, "robustness_evaluation"):
             for ext in (".csv", ".rou.xml", ".metadata.json"):
                 name = "{}_{}{}".format(profile, seed, ext)
@@ -640,7 +673,7 @@ def prepare(root, approved):
     if os.path.exists(os.path.join(root, "plan.json")):
         print("REFUSED: already prepared")
         return 2
-    write_manifests(root, ("comparator_design", "comparator_validation", "robustness_evaluation"))
+    write_manifests(root, ("comparator_design", "comparator_validation", "robustness_evaluation"), SEARCH_PROFILES)
     hashes = dict((n, sha256_file(os.path.join(root, "manifests", n)))
                   for n in sorted(os.listdir(os.path.join(root, "manifests"))))
     with open(os.path.join(root, "manifests_sha256.json"), "w") as f:
@@ -691,10 +724,12 @@ def main(argv=None):
     try:
         if a.action == "plan":
             plan = build_plan(a.root)
-            print(json.dumps({k: plan[k] for k in ("runs_per_profile", "tod_runs", "robustness_eval_runs",
-                                                   "runs_known_before_coarse", "runs_upper_bound", "estimate_known",
-                                                   "estimate_upper_bound", "estimate_robustness_eval", "measure")},
-                             indent=1))
+            print(json.dumps({k: plan[k] for k in ("profiles", "coarse_offset_step_s", "runs_by_stage_exact",
+                                                   "runs_by_stage_upper_bound", "runs_known_before_fine",
+                                                   "runs_upper_bound", "estimate_by_stage", "estimate_known",
+                                                   "estimate_upper_bound", "measure")}, indent=1))
+            for key, text in sorted(plan["declarations"].items()):
+                print("[DECLARED] {}: {}".format(key, text))
             print("plan fingerprint:", plan["fingerprint"])
             return 0
         if a.action == "measure":

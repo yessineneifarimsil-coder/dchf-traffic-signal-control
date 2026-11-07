@@ -6,9 +6,10 @@ which the guarantee acts (no simulation; reads the robustness outputs, writes on
 
 Selections (from the robustness analysis tables, definitions fixed here):
   IDQN degraded pairs, contrast guarantee - none on the same model and traffic (also reported for both - none):
-    D1  dJ_whole_episode_s > 0 (both runs clear), or the arm fails while `none` clears   (primary)
-    D2  dD_bar_demand_window_s > 0
-    D3  D1 or D2
+    D2  dD_bar_demand_window_s > 0                                                        (primary: the
+        definition of the 35 pairs, decided on 2026-11-07)
+    D1  dJ_whole_episode_s > 0 (both runs clear), or the arm fails while `none` clears   (reported)
+    D3  D1 or D2                                                                         (reported)
   QMIX runs where the guarantee acts: learned guarantee or both, at least one guarantee intervention
   (demand window or after). Counts are printed for every definition, so that they can be compared with the
   counts reported elsewhere (35 IDQN pairs, 17 QMIX evaluations: reported, not recomputed here).
@@ -191,7 +192,7 @@ def main(argv=None):
                   1 for c in sel["qmix_acting"] if int(float(c.get("interventions_guarantee_demand") or 0)) > 0),
               "reported_elsewhere_not_recomputed": {"idqn_degraded_pairs": 35, "qmix_evaluations_guarantee_acts": 17}}
     events, streams, missing = [], [], []
-    todo = [(p["scenario"], p["seed"], p["model"], "guarantee", "idqn_degraded_D1") for p in sel["idqn"]["guarantee"]["D1"]]
+    todo = [(p["scenario"], p["seed"], p["model"], "guarantee", "idqn_degraded_D2") for p in sel["idqn"]["guarantee"]["D2"]]
     todo += [(c["scenario"], c["seed"], c["model"], c["arm"], "qmix_guarantee_acts") for c in sel["qmix_acting"]]
     for scenario, seed, model, arm, label in todo:
         try:
@@ -205,7 +206,8 @@ def main(argv=None):
         os.makedirs(a.out)
     write_csv(os.path.join(a.out, "interventions.csv"), events)
     write_csv(os.path.join(a.out, "stream_waits.csv"), streams)
-    result = {"selection_counts": counts, "idqn_degraded_D1": summary_of(events, "idqn_degraded_D1"),
+    result = {"selection_counts": counts, "primary_idqn_definition": "D2 (dD_bar_demand_window_s > 0)",
+              "idqn_degraded_D2": summary_of(events, "idqn_degraded_D2"),
               "qmix_guarantee_acts": summary_of(events, "qmix_guarantee_acts"),
               "threshold_opposite_green_s": LONG_OPPOSITE_GREEN_S, "cells_not_readable": missing}
     with open(os.path.join(a.out, "summary.json"), "w") as f:

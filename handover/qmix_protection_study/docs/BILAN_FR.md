@@ -72,8 +72,8 @@
 **Préparé, non exécuté :**
 - validation de robustesse (`plans/PLAN_ROBUSTESSE.md`) ; script d'analyse écrit le 2026-10-30 et corrigé le 2026-11-03 (analyse incomplète marquée INCOMPLET, résultats corrompus jamais comptés comme terminés, coût de la garantie seule distinct de l'effet combiné), testé sur données synthétiques uniquement ;
 - campagne de réentraînement (`plans/PLAN_CAMPAGNE_FUTURE.md`) ; elle demande d'ajouter un `run_kind` de campagne dans `QMIX_PROTECTED` ;
-- comparateurs équitables par profil de robustesse (`plans/PLAN_COMPARATEURS.md`, 2026-11-07) : plan fixe réoptimisé par la procédure OFT d'origine (g ≥ 5 et g ≥ 7), actionné à coupure de vert (vert minimal 7 s), plans par période pour R3 ; code et tests, rodage cloud sur graines de conception, non lancé ;
-- confirmation pré-enregistrée sur 50 trafics neufs (`plans/PLAN_CONFIRMATION.md`) : brouillon non gelé ; analyse écrite et testée ; exécuteur à écrire après les comparateurs ;
+- comparateurs équitables par profil de robustesse (`plans/PLAN_COMPARATEURS.md`, 2026-11-07) : plan fixe réoptimisé par la procédure OFT d'origine (g ≥ 5 et g ≥ 7), actionné à coupure de vert (vert minimal 7 s), plans par période pour R3 ; code et tests, rodage cloud sur graines de conception, non lancé ; décisions du 2026-11-07 : recherche pour R1–R3 seulement, grille grossière au pas de 10 s (écart déclaré), R0 réutilise C19/C25 (demande de même loi, vérifiée), R4 comparateurs gelés ;
+- confirmation pré-enregistrée sur 50 trafics neufs (`plans/PLAN_CONFIRMATION.md`) : brouillon non gelé ; marge max(0,05 × J_val ; 0,10 s) ; référence A004 = statistics-1.2, à vérifier sous Windows (le code figé ici est statistics-1.1) ; IDQN exclu, justification écrite ; analyse écrite et testée ; exécuteur à écrire après les comparateurs ;
 - compilation PDF : faite lors de la revue de passation (TeX Live sous Linux, 2026-10-30) ; `manuscript/main.pdf`, 12 pages, sans référence indéfinie. À refaire chez vous avec `ETAPES.cmd latex` si vous modifiez le texte.
 
 **Manquant pour soutenir les conclusions :**

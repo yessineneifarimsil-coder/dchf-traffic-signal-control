@@ -10,7 +10,7 @@ rem Comparators (plans/PLAN_COMPARATEURS.md; root CMP): comparators-plan | compa
 rem        comparators-prepare <fingerprint> | comparators-run <stage> | comparators-progress |
 rem        comparators-finalise <stage> | comparators-verify-manifests
 rem Read-only analyses: mp-check-static | mp-check-robustness | j-cycle | cp-ablation | cp-robustness |
-rem        guarantee-diagnostic
+rem        guarantee-diagnostic | check-r0-demand | check-statistics <statistics.py of A004>
 rem Robustness root: set ROB before calling (default below). The analysis script is fixed with the plan:
 rem its SHA-256 is part of the plan fingerprint, so it must not change between robustness-plan and the end.
 rem Exit codes: a sequential step returns the code of its script (robustness-progress: 0 every cell finished,
@@ -90,6 +90,8 @@ if "%1"=="j-cycle" python tools\article_analyses\j_cycle_curve.py --roots %QMIX_
 if "%1"=="cp-ablation" python tools\article_analyses\clopper_pearson.py --ablation analysis\ablation\cells.csv --out analysis\cp_ablation & goto :eof
 if "%1"=="cp-robustness" python tools\article_analyses\clopper_pearson.py --robustness analysis\robustness\cells.csv --out analysis\cp_robustness & goto :eof
 if "%1"=="guarantee-diagnostic" python tools\article_analyses\guarantee_diagnostic.py --root %ROB% --analysis analysis\robustness --out analysis\guarantee_diagnostic & goto :eof
+if "%1"=="check-r0-demand" python tools\comparators\check_r0_demand.py --out logs\check_r0_demand.json & goto :eof
+if "%1"=="check-statistics" python tools\confirmation\check_statistics.py --a004 %2 --out logs\check_statistics.json & goto :eof
 if "%1"=="dois" python docs\literature\verify_dois.py & goto :eof
 if "%1"=="archive" python tools\make_archive.py & goto :eof
 echo Unknown step "%1". See the header of this file and README.md.

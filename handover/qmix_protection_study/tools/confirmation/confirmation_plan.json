@@ -1,5 +1,5 @@
 {
- "status": "PRE-REGISTRATION DRAFT, not frozen, not launched. To be frozen (fingerprint) after the comparators of A are selected and BEFORE any confirmation run; every field below is fixed in advance and must not change after the freeze.",
+ "status": "PRE-REGISTRATION DRAFT, not frozen, not launched. Decisions of 2026-11-07 integrated (margin, statistics reference, comparator scope, IDQN exclusion). To be frozen after the comparators of A are selected and BEFORE any confirmation run; the fingerprint below covers every field.",
  "question": "On traffics never used for any choice, do the frozen QMIX and VDN policies with the guarantee alone serve every vehicle, and how does their J compare with comparators re-optimised for each robustness profile?",
  "profiles": [
   "R0_reference",
@@ -112,17 +112,54 @@
   ]
  },
  "comparators": {
-  "primary": "oft_g5",
-  "secondary": [
-   "oft_min7",
-   "actuated_min7",
-   "canonical_mp",
-   "old_fixed_C19_8_5_D9",
-   "min7_fixed_C25_12_7_D0",
-   "tod_g5 (R3 only)",
-   "tod_min7 (R3 only)"
-  ],
-  "source": "A selections (selections/<profile>__g5.json, __min7.json, __actuated.json, R3__tod-*.json), their SHA-256 entering the fingerprint; canonical MP and the two historical plans as frozen"
+  "primary_by_profile": {
+   "R0_reference": "fixed:old_C19_8_5_D9 (OFT g>=5 of the qualification search, reused: R0 demand identical in law, tools/comparators/check_r0_demand.py)",
+   "R1_sparse_secondary_heavy_main": "oft_g5 (A1, reduced coarse grid, declared deviation D1)",
+   "R2_single_secondary_trickle": "oft_g5 (A1, reduced coarse grid, declared deviation D1)",
+   "R3_time_varying": "oft_g5 (A1, reduced coarse grid, declared deviation D1)",
+   "R4_isolated_tail": "fixed:old_C19_8_5_D9 (frozen, NOT re-optimised for R4: declared)"
+  },
+  "primary_controller_label": {
+   "R0_reference": "fixed:old_C19_8_5_D9",
+   "R1_sparse_secondary_heavy_main": "oft_g5",
+   "R2_single_secondary_trickle": "oft_g5",
+   "R3_time_varying": "oft_g5",
+   "R4_isolated_tail": "fixed:old_C19_8_5_D9"
+  },
+  "secondary_by_profile": {
+   "R0_reference": [
+    "fixed:min7_C25_12_7_D0 (OFT g>=7 of the qualification search, reused)",
+    "canonical_mp"
+   ],
+   "R1_sparse_secondary_heavy_main": [
+    "oft_min7",
+    "actuated_min7",
+    "canonical_mp",
+    "fixed:old_C19_8_5_D9",
+    "fixed:min7_C25_12_7_D0"
+   ],
+   "R2_single_secondary_trickle": [
+    "oft_min7",
+    "actuated_min7",
+    "canonical_mp",
+    "fixed:old_C19_8_5_D9",
+    "fixed:min7_C25_12_7_D0"
+   ],
+   "R3_time_varying": [
+    "oft_min7",
+    "actuated_min7",
+    "canonical_mp",
+    "fixed:old_C19_8_5_D9",
+    "fixed:min7_C25_12_7_D0",
+    "tod_g5",
+    "tod_min7"
+   ],
+   "R4_isolated_tail": [
+    "fixed:min7_C25_12_7_D0 (frozen)",
+    "canonical_mp"
+   ]
+  },
+  "source": "A selections (selections/<profile>__g5.json, __min7.json, __actuated.json, R3__tod-*.json) for R1-R3, their SHA-256 entering the fingerprint at the freeze; C19, C25 and canonical MP as frozen"
  },
  "endpoints": {
   "primary": "J_primary (mean waitingTime + departDelay over the N scheduled vehicles of the manifest), per (model, traffic)",
@@ -134,7 +171,7 @@
   ]
  },
  "statistics": {
-  "procedure": "adaptive_qmix.protocol.statistics.paired_crossed_bootstrap (frozen code, official=False): training seeds 101-110 (models) x 10 traffic seeds; deterministic comparator broadcast per traffic: D_ij = J_learned(i,j) - J_comparator(j)",
+  "procedure": "paired crossed two-factor bootstrap of A004 (statistics-1.2), function paired_crossed_bootstrap, official=False: models (training seeds 101-110) x 10 traffic seeds; deterministic comparator broadcast per traffic: D_ij = J_learned(i,j) - J_comparator(j)",
   "replicates": 10000,
   "rng_namespace": "frozen BOOTSTRAP_RNG_NAMESPACE",
   "interval": "percentile",
@@ -143,8 +180,17 @@
   "decision_confidence_rule": "Bonferroni over the 10 primary comparisons (two-sided 0.05/10)",
   "descriptive_confidence": 0.95,
   "equivalence_margin": {
-   "rule": "delta_profile = 0.10 x mean validation J of the selected primary comparator (oft_g5) of that profile, read from its sealed selection record; fixed before any confirmation run",
-   "relative": 0.1
+   "rule": "delta_profile = max(0.05 x J_val, 0.10 s), J_val = mean validation J of the profile's primary comparator from its sealed selection record (R1-R3); for C19 (R0, R4) J_val = 2.765071428571429 s, its validation J on benchmark_validation 2101-2105 read in the amended freeze (PROTOCOLE_MIN7 section 2.1)",
+   "relative": 0.05,
+   "floor_s": 0.1,
+   "c19_validation_J_s": 2.765071428571429
+  },
+  "reference": {
+   "name": "A004 = statistics-1.2",
+   "sha256": "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a",
+   "rule": "the analysis loads THIS file (confirmation_analysis.py --statistics <path>) and refuses any other hash; tools/confirmation/check_statistics.py compares it with the frozen statistics-1.1 (8c14f32) before the freeze",
+   "frozen_statistics_1_1_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
+   "status_2026_11_07": "statistics-1.2 not present in any repository or branch available to the review; check pending on Windows"
   }
  },
  "decision_rules": {
@@ -172,13 +218,38 @@
  ],
  "costs": {
   "learned_evaluations": 2000,
-  "comparator_evaluations": 320,
-  "total": 2320,
-  "wall_h_4_workers": "about 2.3 h at 14-15 s per evaluation (learned evaluations measured at 13-14 s in the ablation on Windows); up to about 2.6 h if 10 % of runs go to the 7,200 s cut-off",
+  "comparator_evaluations": 260,
+  "total": 2260,
+  "comparators_per_profile": {
+   "R0_reference": 3,
+   "R1_sparse_secondary_heavy_main": 6,
+   "R2_single_secondary_trickle": 6,
+   "R3_time_varying": 8,
+   "R4_isolated_tail": 3
+  },
+  "wall_h_4_workers": "about 2.3 h at 14.5 s per evaluation; about 2.5 h if 10 % of runs go to the 7,200 s cut-off",
   "disk_gb": "about 10 (full logs and per-second counters, about 4 MB per evaluation)"
  },
  "not_done_before_freeze": [
   "no confirmation traffic is generated before the freeze",
   "no run, no look at any confirmation output"
- ]
+ ],
+ "comparator_profiles_declared": {
+  "R0": "reuse of the qualification OFT plans (identical demand law)",
+  "R4": "frozen comparators only, not re-optimised"
+ },
+ "idqn_exclusion": {
+  "decision": "IDQN is not part of the confirmation (decided before any confirmation traffic exists)",
+  "reasons": [
+   "question: the confirmation tests the cooperative value-factorisation methods (QMIX, VDN) with the guarantee alone; IDQN (independent learners, no coordination) is the non-cooperative reference of the development, ablation and robustness studies, where it is reported in full",
+   "known instability before confirmation: in the ablation IDQN is the only method whose minimum-green effect is irregular (improves some models, degrades others; corrects 4 failures, creates 1) and it has 4/50 failures without protection (Clopper-Pearson 95 % [2.2 %, 19.2 %]); in the robustness study (reported) the guarantee alone raises D_bar in 35 IDQN pairs and the 107/8203 diagnosis shows long opposite greens after interventions: IDQN with the guarantee is not a stable candidate whose result a confirmation could corroborate",
+   "multiplicity: adding IDQN would raise the primary family from 10 to 15 comparisons (Bonferroni 99.67 %) and widen every decision interval for a configuration that is not a candidate"
+  ],
+  "consequences": [
+   "no confirmation claim of any kind about IDQN",
+   "its development, ablation and robustness results are kept and reported in full",
+   "declared limitation: the methods confirmed were chosen after the development and robustness results; the confirmation tests them on new traffics, it does not compare all methods"
+  ]
+ },
+ "fingerprint": "66fcb6786349161e8367a6952d9ff0f2145c17081da9902cc57b5cb0411f72d8"
 }

@@ -1,0 +1,9 @@
+{
+ "a004_path": "<cloud-scratch>/frozen/src/adaptive_qmix/protocol/statistics.py",
+ "a004_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
+ "reference_sha256": "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a",
+ "a004_hash_ok": false,
+ "frozen_path": "<cloud-scratch>/frozen/src/adaptive_qmix/protocol/statistics.py",
+ "frozen_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
+ "verdict": "A004_FILE_NOT_VERIFIED"
+}

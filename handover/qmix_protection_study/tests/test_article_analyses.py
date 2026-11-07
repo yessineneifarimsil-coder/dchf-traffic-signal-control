@@ -124,10 +124,10 @@ class GuaranteeDiagnostic(unittest.TestCase):
         self.write("pairs.csv", [
             {"scenario": "R2_single_secondary_trickle", "seed": "8203", "model": "idqn_seed107_t300000",
              "method": "idqn", "arm": "guarantee", "status_none": "CLEARED", "status_arm": "CLEARED",
-             "dJ_whole_episode_s": "0.8", "dD_bar_demand_window_s": "-0.1"},
+             "dJ_whole_episode_s": "-0.2", "dD_bar_demand_window_s": "0.3"},
             {"scenario": "R2_single_secondary_trickle", "seed": "8204", "model": "idqn_seed107_t300000",
              "method": "idqn", "arm": "guarantee", "status_none": "CLEARED", "status_arm": "CLEARED",
-             "dJ_whole_episode_s": "-0.2", "dD_bar_demand_window_s": "0.3"}])
+             "dJ_whole_episode_s": "0.8", "dD_bar_demand_window_s": "-0.1"}])
         self.write("cells.csv", [
             {"scenario": "R2_single_secondary_trickle", "seed": "8203", "model": "qmix_seed101_t350000",
              "method": "qmix", "arm": "both", "interventions_guarantee_demand": "0",
@@ -182,7 +182,9 @@ class GuaranteeDiagnostic(unittest.TestCase):
         self.assertEqual(GD.main(["--root", self.root, "--analysis", self.analysis, "--out", out]), 1)
         with open(os.path.join(out, "summary.json")) as f:
             summary = json.load(f)
-        self.assertEqual(summary["idqn_degraded_D1"]["opposite_green_gt_60s"], 1)
+        self.assertEqual(summary["primary_idqn_definition"], "D2 (dD_bar_demand_window_s > 0)")
+        self.assertEqual(summary["idqn_degraded_D2"]["opposite_green_gt_60s"], 1)    # the 8203 pair is D2, not D1
+        self.assertEqual(summary["idqn_degraded_D2"]["runs"], 1)
         self.assertEqual(len(summary["cells_not_readable"]), 1)         # the QMIX cell has no outputs here
 
 

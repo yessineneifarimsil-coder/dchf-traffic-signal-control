@@ -1,19 +1,21 @@
 """Pre-registered analysis of the confirmation study (plan B). Written before any confirmation run.
 
     python tools/confirmation/confirmation_analysis.py --cells <confirmation cells.csv> ^
-        --margins <margins.json> --plan tools/confirmation/confirmation_plan.json --out analysis/confirmation
+        --margins <margins.json> --statistics <statistics.py of A004> --out analysis/confirmation
 
 Input cells.csv: one row per evaluation with scenario, seed, controller (learned:<arm> or the comparator name of
 the plan), model ('' for comparators), method, status, J_primary_s, open_wait_at_end_s. margins.json: the
-validation J of each profile's selected primary comparator (from the sealed A selections), written at the freeze.
-The decision rules, their order, the margin rule, the intervals and the bootstrap are those of
-confirmation_plan.json; the bootstrap is the frozen adaptive_qmix.protocol.statistics.paired_crossed_bootstrap
-(official=False), imported, never copied.
+validation J of each profile's primary comparator, written at the freeze. The decision rules, their order, the
+margin rule delta = max(0.05 x J_val, 0.10 s), the intervals and the bootstrap are those of confirmation_plan.json,
+whose fingerprint is checked. The bootstrap is paired_crossed_bootstrap of the A004 module (statistics-1.2),
+loaded from --statistics and refused unless its SHA-256 equals the plan's reference; it is never copied.
 """
 from __future__ import absolute_import, division, print_function
 
 import argparse
 import csv
+import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -26,6 +28,38 @@ sys.path.insert(0, os.path.join(HERE, "..", "article_analyses"))
 
 METHODS = ("qmix", "vdn")
 PRIMARY_ARM = "guarantee"
+
+
+class PlanError(RuntimeError):
+    pass
+
+
+def plan_fingerprint(plan):
+    return hashlib.sha256(json.dumps(dict((k, v) for k, v in plan.items() if k != "fingerprint"),
+                                     sort_keys=True).encode()).hexdigest()
+
+
+def check_plan(plan):
+    if plan.get("fingerprint") != plan_fingerprint(plan):
+        raise PlanError("confirmation_plan.json differs from its fingerprint")
+    return True
+
+
+def load_statistics(path, plan):
+    with open(path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    if digest != plan["statistics"]["reference"]["sha256"]:
+        raise PlanError("statistics module {} has SHA-256 {}, the plan requires {} ({})".format(
+            path, digest, plan["statistics"]["reference"]["sha256"], plan["statistics"]["reference"]["name"]))
+    spec = importlib.util.spec_from_file_location("a004_statistics", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def margin(plan, j_val):
+    rule = plan["statistics"]["equivalence_margin"]
+    return max(rule["relative"] * float(j_val), rule["floor_s"])
 
 
 def finite(x):
@@ -96,8 +130,7 @@ def check_design(plan, profile, rows, comparator_rows, method):
     return problems
 
 
-def compare(plan, cells, profile, method, arm, comparator, confidence, delta, decide):
-    from adaptive_qmix.protocol import statistics as ST
+def compare(plan, cells, profile, method, arm, comparator, confidence, delta, decide, ST):
     rows, panel, failures, open_waits = learned_panel(cells, profile, method, arm)
     crow, cvalues, cfail = comparator_values(cells, profile, comparator)
     problems = check_design(plan, profile, rows, crow, method)
@@ -133,8 +166,7 @@ def compare(plan, cells, profile, method, arm, comparator, confidence, delta, de
     return out
 
 
-def guarantee_minus_none(plan, cells, profile, method):
-    from adaptive_qmix.protocol import statistics as ST
+def guarantee_minus_none(plan, cells, profile, method, ST):
     gr, g, gf, _o = learned_panel(cells, profile, method, "guarantee")
     nr, n, nf, _o = learned_panel(cells, profile, method, "none")
     seeds = plan["traffic_seeds"][profile]
@@ -172,23 +204,24 @@ def service(cells, plan):
     return out
 
 
-def analyse(plan, cells, margins):
+def analyse(plan, cells, margins, ST):
+    check_plan(plan)
     st = plan["statistics"]
     primary, secondary = [], []
     for profile in plan["profiles"]:
-        delta = st["equivalence_margin"]["relative"] * float(margins[profile])
+        delta = margin(plan, margins[profile])
+        main = plan["comparators"]["primary_controller_label"][profile]
         for method in METHODS:
-            primary.append(compare(plan, cells, profile, method, PRIMARY_ARM, plan["comparators"]["primary"],
-                                   st["decision_confidence"], delta, decide=True))
+            primary.append(compare(plan, cells, profile, method, PRIMARY_ARM, main,
+                                   st["decision_confidence"], delta, True, ST))
             for comparator in sorted(set(c["controller"] for c in cells if c["scenario"] == profile
-                                         and not c["controller"].startswith("learned:")
-                                         and c["controller"] != plan["comparators"]["primary"])):
+                                         and not c["controller"].startswith("learned:") and c["controller"] != main)):
                 for arm in ("guarantee", "none"):
                     secondary.append(compare(plan, cells, profile, method, arm, comparator,
-                                             st["descriptive_confidence"], delta, decide=False))
-            secondary.append(compare(plan, cells, profile, method, "none", plan["comparators"]["primary"],
-                                     st["descriptive_confidence"], delta, decide=False))
-            secondary.append(guarantee_minus_none(plan, cells, profile, method))
+                                             st["descriptive_confidence"], delta, False, ST))
+            secondary.append(compare(plan, cells, profile, method, "none", main,
+                                     st["descriptive_confidence"], delta, False, ST))
+            secondary.append(guarantee_minus_none(plan, cells, profile, method, ST))
     return {"primary": primary, "secondary_descriptive": secondary, "service": service(cells, plan)}
 
 
@@ -196,6 +229,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--cells", required=True)
     ap.add_argument("--margins", required=True)
+    ap.add_argument("--statistics", required=True, help="statistics.py of A004 (statistics-1.2), hash-checked")
     ap.add_argument("--plan", default=os.path.join(HERE, "confirmation_plan.json"))
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
@@ -205,7 +239,11 @@ def main(argv=None):
         cells = list(csv.DictReader(f))
     with open(a.margins) as f:
         margins = json.load(f)
-    result = analyse(plan, cells, margins)
+    try:
+        result = analyse(plan, cells, margins, load_statistics(a.statistics, plan))
+    except PlanError as error:
+        print("STOP:", error)
+        return 1
     if not os.path.isdir(a.out):
         os.makedirs(a.out)
     with open(os.path.join(a.out, "confirmation_results.json"), "w") as f:

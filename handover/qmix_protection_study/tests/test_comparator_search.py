@@ -1,6 +1,6 @@
 """End-to-end test of tools/comparators/comparator_search.py with a fake evaluator (no SUMO, stdlib only).
 
-Two profiles (R0, R3), a reduced coarse grid and a reduced fine union (patched), every stage chained:
+Two of the searched profiles (R1, R3), a subset of the (step-10) coarse grid and a reduced fine union (patched), every stage chained:
 coarse -> fine (g5, min7) -> validation -> selection; actuated design -> validation -> selection; R3 plans by
 period -> time-of-day design -> validation -> selection; then the robustness-eval order. The fake evaluator
 writes the files of the compact (or full) mode with the identity stamp; its J is a known function of the plan,
@@ -35,7 +35,7 @@ try:
 except ImportError:
     HAVE_FROZEN = False
 
-PROFILES = ["R0_reference", "R3_time_varying"]
+PROFILES = ["R1_sparse_secondary_heavy_main", "R3_time_varying"]
 TARGET = {0: 20, 1: 40, 2: 20}          # fake: best cycle per R3 period
 
 
@@ -106,13 +106,13 @@ class Pipeline(unittest.TestCase):
                 for seed in SD.seeds(profile, role):
                     with open(os.path.join(self.root, "manifests", "{}_{}.csv".format(profile, seed)), "w") as f:
                         f.write("vehicle_id,depart\n" + "".join("v{},{}\n".format(k, k * 120) for k in range(30)))
-        keys = sorted(G.groups(G.coarse_labels(5)))
-        chosen = [k for k in keys if k[0] in (16, 20, 25, 30, 40, 60) and k[3] in (0, 5) and (k[1] % 3 == 0 or k[0] == 16)]
+        keys = sorted(G.groups(G.coarse_labels(5, CS.COARSE_OFFSET_STEP_S)))
+        chosen = [k for k in keys if k[0] in (16, 20, 25, 30, 40, 60) and k[3] in (0, 10) and (k[1] % 3 == 0 or k[0] == 16)]
         self.coarse_keys = chosen
         self.saved = (CS.coarse_specs, G.fine_union, sys.modules.get("evaluate_comparator"))
         CS.coarse_specs = lambda: [CS.fixed_spec(k) for k in chosen]
         real_union = G.fine_union
-        G.fine_union = lambda winners, g: real_union(winners, g)[:12]
+        G.fine_union = lambda winners, g, step: real_union(winners, g, step)[:12]
         self.fake = Fake(CS.sha_obj)
         sys.modules["evaluate_comparator"] = types.SimpleNamespace(evaluate=self.fake.evaluate)
         plan = CS.build_plan(self.root)
@@ -171,7 +171,7 @@ class Pipeline(unittest.TestCase):
                 self.assertTrue(all(SD.role_of(profile, s) == "comparator_validation" for s in sel["selected"]["seeds"]))
         self.stage("actuated-design")
         self.stage("actuated-validation")
-        act = self.selection("R0_reference__actuated")["selected"]["spec"]["params"]
+        act = self.selection("R1_sparse_secondary_heavy_main__actuated")["selected"]["spec"]["params"]
         self.assertEqual((act["gap_s"], act["max_green_V_s"]), (2, 15))       # fake J favours both
         for version, _g in CS.VERSIONS:
             tod = self.order("tod-design-" + version)
@@ -201,7 +201,7 @@ class Pipeline(unittest.TestCase):
         self.stage("coarse", finalise=False)
         self.assertEqual(len(self.fake.calls), calls)
         self.q(self.CS.finalise, self.root, "coarse")
-        winners = self.order("fine-g5")["inputs"]["report"]["R0_reference/g5"]["winners"]
+        winners = self.order("fine-g5")["inputs"]["report"]["R1_sparse_secondary_heavy_main/g5"]["winners"]
         self.assertTrue(all(w[0] != 16 for w in winners))
 
     def test_a_corrupted_result_blocks_finalise_and_is_never_rerun(self):
@@ -228,6 +228,22 @@ class Pipeline(unittest.TestCase):
             json.dump(payload, f)
         with self.assertRaises(self.CS.SearchError):
             self.CS.read_order(self.root, "fine-g5")
+
+    def test_scope_and_declared_deviation_of_2026_11_07(self):
+        patched, self.CS.coarse_specs = self.CS.coarse_specs, self.saved[0]          # the real coarse grid
+        try:
+            plan = self.CS.build_plan(os.path.join(self.base, "other"))
+        finally:
+            self.CS.coarse_specs = patched
+        self.assertEqual(plan["profiles"], ["R1_sparse_secondary_heavy_main", "R2_single_secondary_trickle",
+                                            "R3_time_varying"])
+        self.assertEqual(plan["coarse_offset_step_s"], 10)
+        self.assertEqual(sorted(plan["declarations"]), ["D1_reduced_coarse_grid", "D2_search_profiles",
+                                                        "D3_R0_reused", "D4_R4_frozen"])
+        self.assertEqual(plan["reused_or_frozen_comparators"]["R0_reference"], {"g5": [19, 8, 5, 9], "min7": [25, 12, 7, 0]})
+        self.assertEqual(plan["runs_by_stage_exact"]["coarse"], 1117 * 5 * 3)
+        self.assertEqual(plan["runs_known_before_fine"], 17855)
+        self.assertEqual(plan["runs_by_stage_exact"]["robustness-eval"], 55)
 
     def test_code_changed_after_the_plan_is_refused(self):
         with open(os.path.join(self.root, "plan.json")) as f:

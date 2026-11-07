@@ -27,7 +27,7 @@ test_missing_cells_stop_the_analysis_unless_declared (test_robustness_analysis.A
 ERROR: test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/work/tests/test_ablation_metrics.py", line 52, in test_equals_protected_service_counters
+  File "<cloud-scratch>/work/tests/test_ablation_metrics.py", line 52, in test_equals_protected_service_counters
     from adaptive_qmix_protected.protection import ServiceCounters
 ModuleNotFoundError: No module named 'adaptive_qmix_protected'
 
@@ -35,9 +35,9 @@ ModuleNotFoundError: No module named 'adaptive_qmix_protected'
 ERROR: test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/work/tests/test_robustness.py", line 91, in test_equivalence_at_2800_and_denominator_otherwise
+  File "<cloud-scratch>/work/tests/test_robustness.py", line 91, in test_equivalence_at_2800_and_denominator_otherwise
     n_adapter.install()
-  File "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/work/tests/../tools/robustness/n_adapter.py", line 60, in install
+  File "<cloud-scratch>/work/tests/../tools/robustness/n_adapter.py", line 60, in install
     mod = importlib.import_module(name)
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/usr/lib/python3.11/importlib/__init__.py", line 126, in import_module
