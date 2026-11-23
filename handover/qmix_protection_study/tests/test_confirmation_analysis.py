@@ -1,4 +1,4 @@
-"""Tests of the pre-registered confirmation analysis (plan B) and of the A004 check, on synthetic panels.
+"""Tests of the pre-registered confirmation analysis (plan B) and of the (withdrawn) A004 file check, on synthetic panels.
 
 statistics-1.2 (A004) is not available in the review environment: the tests stand the frozen statistics-1.1 file
 in for it by setting the plan's reference hash to that file's hash, which exercises the hash gate and the
@@ -74,11 +74,19 @@ class Plan(unittest.TestCase):
         self.assertEqual(PLAN["statistics"]["decision_confidence"], 0.995)
         self.assertEqual(PLAN["statistics"]["descriptive_confidence"], 0.95)
         self.assertEqual(PLAN["statistics"]["replicates"], 10000)
-        self.assertEqual(PLAN["statistics"]["reference"]["sha256"], CS.REFERENCE_SHA256)
+        self.assertEqual(PLAN["statistics"]["reference"]["protocol_hash"], CS.REFERENCE_SHA256)   # protocol hash, not a file
+        self.assertNotIn("sha256", PLAN["statistics"]["reference"])
         self.assertEqual(set(PLAN["comparators"]["primary_controller_label"]), set(PLAN["profiles"]))
         self.assertEqual(sorted(PLAN["learned_policies"]), ["qmix", "vdn"])
         self.assertEqual(len(PLAN["idqn_exclusion"]["reasons"]), 3)
-        self.assertEqual(PLAN["costs"]["total"], 2260)
+        lc = PLAN["learned_contrasts"]                                            # rectificatif 2026-11-23
+        self.assertEqual((lc["profiles"], lc["methods"], lc["reference"], lc["arm"]),
+                         (["R0_reference"], ["qmix", "vdn"], "idqn", "guarantee"))
+        self.assertEqual((lc["decision_confidence"], lc["evaluations_added"]), (0.975, 100))
+        self.assertAlmostEqual(lc["sensitivity_confidence"], 1 - 0.05 / 12)
+        self.assertIn("2,370", PLAN["costs"])
+        self.assertIn("b_runner.py plan", PLAN["costs"])                       # counted by code (amendment B)
+        self.assertEqual(sorted(PLAN["amendment_B"]["deviations"]), ["B1", "B2", "B3"])
 
 
 @unittest.skipUnless(HAVE_FROZEN, "frozen statistics module not available")
@@ -88,7 +96,8 @@ class Analysis(unittest.TestCase):
         self.plan = copy.deepcopy(PLAN)
         self.plan["profiles"] = ["R0_reference", "R1_sparse_secondary_heavy_main"]
         self.plan["statistics"]["replicates"] = 2000
-        self.plan["statistics"]["reference"]["sha256"] = sha(STATS)       # stand-in for A004 in this environment
+        self.plan["statistics"]["reference"]["module_file_sha256"] = sha(STATS)   # as freeze.json records it
+        self.plan["comparators"]["primary_controller_label"]["R1_sparse_secondary_heavy_main"] = "oft_g5"  # as B1 resolves
         self.plan["fingerprint"] = CA.plan_fingerprint(self.plan)
         self.ST = CA.load_statistics(STATS, self.plan)
         rnd = random.Random(7)
@@ -150,11 +159,43 @@ class Analysis(unittest.TestCase):
         r = self.primary(CA.analyse(self.plan, cells, self.margins, self.ST), "R0_reference", "qmix")
         self.assertTrue(r["category"].startswith("INCOMPLETE"))
 
+    def test_joint_learning_contrast_without_idqn_tags_is_incomplete_not_a_crash(self):
+        result = CA.analyse(self.plan, self.cells, self.margins, self.ST)
+        self.assertEqual([d["method"] for d in result["joint_learning"]], ["qmix", "vdn"])
+        self.assertTrue(all(d["category"].startswith("INCOMPLETE") for d in result["joint_learning"]))
+
+    def test_service_counts_by_unit_and_no_pooled_interval(self):
+        rows = [{"scenario": "R0_reference", "seed": str(s), "model": "qmix_seed{}_t1".format(m), "status": "CLEARED",
+                 "open_wait_at_end_s": "", "vehicles_waiting_ge_300s": "0"} for m in range(101, 111) for s in range(8051, 8061)]
+        rows[0] = dict(rows[0], status="CLEARANCE_FAILURE", open_wait_at_end_s="400")
+        rows[1] = dict(rows[1], status="CLEARANCE_FAILURE", open_wait_at_end_s="400")     # same model, 2 traffics
+        u = CA.unit_counts(rows, CA.open_wait)
+        self.assertEqual((u["evaluations"], u["events"]), (100, 2))
+        self.assertEqual((u["models"]["units"], u["models"]["units_with_event"]), (10, 1))
+        self.assertEqual((u["traffics"]["units"], u["traffics"]["units_with_event"]), (10, 2))
+        self.assertNotIn("cp95", u)                                                # nothing on pooled evaluations
+        zero = CA.unit_counts(rows[2:], CA.open_wait)
+        self.assertEqual(zero["events"], 0)
+        self.assertAlmostEqual(zero["models"]["one_sided_upper95_if_zero"], 1 - 0.05 ** 0.1)   # 25.9 %, not 0
+        self.assertGreater(zero["models"]["cp95"][1], 0.25)
+        self.assertIn("zero risk", CA.UNIT_ASSUMPTIONS)
+
+    def test_an_unresolved_primary_is_refused(self):
+        plan = copy.deepcopy(self.plan)
+        plan["comparators"]["primary_controller_label"]["R1_sparse_secondary_heavy_main"] = "auto (B1)"
+        plan["fingerprint"] = CA.plan_fingerprint(plan)
+        with self.assertRaises(CA.PlanError):
+            CA.analyse(plan, self.cells, self.margins, self.ST)
+
     def test_only_the_reference_statistics_module_is_accepted(self):
         plan = copy.deepcopy(self.plan)
-        plan["statistics"]["reference"]["sha256"] = CS.REFERENCE_SHA256
+        plan["statistics"]["reference"]["module_file_sha256"] = CS.REFERENCE_SHA256
         with self.assertRaises(CA.PlanError):
-            CA.load_statistics(STATS, plan)                  # statistics-1.1 is not statistics-1.2
+            CA.load_statistics(STATS, plan)                  # another file hash is refused
+        plan["statistics"]["reference"]["module_file_sha256"] = "recorded in freeze.json"
+        with self.assertRaises(CA.PlanError):
+            CA.load_statistics(STATS, plan)                  # no digest, no load
+        self.assertTrue(CA.load_statistics(STATS, plan, sha(STATS)))
 
 
 @unittest.skipUnless(HAVE_FROZEN, "frozen statistics module not available")

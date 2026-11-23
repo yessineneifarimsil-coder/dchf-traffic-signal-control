@@ -10,13 +10,21 @@ rem Comparators (plans/PLAN_COMPARATEURS.md; root CMP): comparators-plan | compa
 rem        comparators-prepare <fingerprint> | comparators-run <stage> | comparators-progress |
 rem        comparators-finalise <stage> | comparators-verify-manifests
 rem Read-only analyses: mp-check-static | mp-check-robustness | j-cycle | cp-ablation | cp-robustness |
-rem        guarantee-diagnostic | check-r0-demand | check-statistics <statistics.py of A004>
+rem        guarantee-diagnostic | check-r0-demand | check-statistics <file> (withdrawn from the B freeze, see
+rem        plans\PROTOCOL_AMENDMENT_B.md section 2)
+rem Disk (read-only audit, verified archive of campaign A design runs): disk-audit | archive-a [zip path] |
+rem        archive-a-dryrun. Deleting campaign A data is DISABLED in this delivery (rectificatif 2026-11-23).
+rem Campaign A-ext (actuated, 5 s minimum green; root AEXT): aext-plan | aext-prepare <fingerprint> |
+rem        aext-run <stage> | aext-progress | aext-finalise <stage>     (stages: aext-design, aext-validation)
+rem Campaign B (confirmation; root BCONF; RUNBOOK_B.md): b-plan | b-measure (parallel run-in, design seeds) |
+rem        b-freeze [A003 folder] (needs logs\verify_etapes_B.txt and logs\tests_B.txt, see RUNBOOK_B.md) |
+rem        b-prepare <fingerprint> | b-run | b-progress | b-analyse
 rem Exit codes: every step ends with an explicit "exit /b <code>" so that CALL and "cmd /c ETAPES.cmd <step>"
 rem both return the code of its script (2026-11-07 correction: "command & goto :eof" returned 0 under cmd /c on
 rem Windows when the command failed). robustness-progress / comparators-progress: 0 every run finished, 3 some
-rem not finished, 5 at least one corrupted result; robustness-analyse: 0 complete and verified, 3 technical
+rem not finished, 5 at least one corrupted result (same for aext-progress and b-progress); robustness-analyse: 0 complete and verified, 3 technical
 rem criteria failed, 4 incomplete, 1 stopped. latex returns 1 as soon as pdflatex or bibtex fails.
-rem ablation-run, robustness-run and comparators-run only LAUNCH 4 workers in separate windows: their exit code
+rem ablation-run, robustness-run, comparators-run, aext-run and b-run only LAUNCH 4 workers in separate windows: their exit code
 rem covers the launch, never the workers' success. Check completion with the matching *-progress step.
 rem ROB (robustness root) defaults to the real root of 2026-11-04; the steps that read it stop with code 2
 rem when the folder does not exist. Override with: set ROB=<folder> before calling.
@@ -26,6 +34,8 @@ set ABL=%QMIX_RESULTS%\protection_ablation_2026-10-29
 set MIN7=%QMIX_RESULTS%\fixed_timing_min7_2026-10-28
 if "%ROB%"=="" set ROB=%QMIX_RESULTS%\robustness_validation_2026-11-04
 if "%CMP%"=="" set CMP=%QMIX_RESULTS%\comparators_robustness_profiles
+if "%AEXT%"=="" set AEXT=%QMIX_RESULTS%\comparators_actuated_g5
+if "%BCONF%"=="" set BCONF=%QMIX_RESULTS%\confirmation_B
 if "%PDFLATEX%"=="" set PDFLATEX=pdflatex
 if "%BIBTEX%"=="" set BIBTEX=bibtex
 call conda activate traffic_rl || (echo conda env traffic_rl not found & exit /b 2)
@@ -62,6 +72,21 @@ if "%~1"=="cp-robustness" goto s_cp_robustness
 if "%~1"=="guarantee-diagnostic" goto s_guarantee_diagnostic
 if "%~1"=="check-r0-demand" goto s_check_r0_demand
 if "%~1"=="check-statistics" goto s_check_statistics
+if "%~1"=="disk-audit" goto s_disk_audit
+if "%~1"=="archive-a" goto s_archive_a
+if "%~1"=="archive-a-dryrun" goto s_archive_a_dryrun
+if "%~1"=="aext-plan" goto s_aext_plan
+if "%~1"=="aext-prepare" goto s_aext_prepare
+if "%~1"=="aext-run" goto s_aext_run
+if "%~1"=="aext-progress" goto s_aext_progress
+if "%~1"=="aext-finalise" goto s_aext_finalise
+if "%~1"=="b-plan" goto s_b_plan
+if "%~1"=="b-measure" goto s_b_measure
+if "%~1"=="b-freeze" goto s_b_freeze
+if "%~1"=="b-prepare" goto s_b_prepare
+if "%~1"=="b-run" goto s_b_run
+if "%~1"=="b-progress" goto s_b_progress
+if "%~1"=="b-analyse" goto s_b_analyse
 if "%~1"=="dois" goto s_dois
 if "%~1"=="archive" goto s_archive
 echo Unknown step "%~1". See the header of this file and README.md.
@@ -238,6 +263,106 @@ exit /b %errorlevel%
 
 :s_check_statistics
 python tools\confirmation\check_statistics.py --a004 %2 --out logs\check_statistics.json
+exit /b %errorlevel%
+
+:s_disk_audit
+python tools\disk\audit_storage.py --qmix-results %QMIX_RESULTS% --a-root %CMP% --aext-root %AEXT% --b-root %BCONF% --out logs\storage_audit.json
+exit /b %errorlevel%
+
+:s_archive_a
+if not "%~2"=="" goto s_archive_a_to
+python tools\disk\archive_campaign_A.py archive --a-root %CMP%
+exit /b %errorlevel%
+
+:s_archive_a_to
+python tools\disk\archive_campaign_A.py archive --a-root %CMP% --zip "%~2"
+exit /b %errorlevel%
+
+:s_archive_a_dryrun
+python tools\disk\archive_campaign_A.py --dry-run --a-root %CMP%
+exit /b %errorlevel%
+
+:s_aext_plan
+python tools\comparators_ext\aext_search.py plan --root %AEXT% --a-root %CMP%
+exit /b %errorlevel%
+
+:s_aext_prepare
+python tools\comparators_ext\aext_search.py prepare --root %AEXT% --a-root %CMP% --approved-plan %2
+exit /b %errorlevel%
+
+:s_aext_run
+set "LAUNCH_RC=0"
+start "aext0" cmd /c python -u tools\comparators_ext\aext_search.py run --root %AEXT% --stage %2 --shard 0/4 ^> logs\aext_%2_shard0.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+start "aext1" cmd /c python -u tools\comparators_ext\aext_search.py run --root %AEXT% --stage %2 --shard 1/4 ^> logs\aext_%2_shard1.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+start "aext2" cmd /c python -u tools\comparators_ext\aext_search.py run --root %AEXT% --stage %2 --shard 2/4 ^> logs\aext_%2_shard2.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+start "aext3" cmd /c python -u tools\comparators_ext\aext_search.py run --root %AEXT% --stage %2 --shard 3/4 ^> logs\aext_%2_shard3.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+echo 4 workers launched in separate windows. This exit code covers the launch only, not the workers' results.
+echo Check completion with: ETAPES.cmd aext-progress, and logs\aext_%2_shard0.log to logs\aext_%2_shard3.log
+exit /b %LAUNCH_RC%
+
+:s_aext_progress
+python tools\comparators_ext\aext_search.py progress --root %AEXT%
+exit /b %errorlevel%
+
+:s_aext_finalise
+python tools\comparators_ext\aext_search.py finalise --root %AEXT% --stage %2
+exit /b %errorlevel%
+
+:s_b_plan
+if not exist "%ROB%\" goto rob_missing
+python tools\confirmation\b_runner.py plan --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB%
+exit /b %errorlevel%
+
+:s_b_measure
+if not exist "%ROB%\" goto rob_missing
+python tools\confirmation\b_runner.py measure --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB%
+exit /b %errorlevel%
+
+:s_b_freeze
+if not exist "%ROB%\" goto rob_missing
+if not "%~2"=="" goto s_b_freeze_a003
+python tools\confirmation\b_runner.py freeze --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB%
+exit /b %errorlevel%
+
+:s_b_freeze_a003
+python tools\confirmation\b_runner.py freeze --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB% --a003-root "%~2"
+exit /b %errorlevel%
+
+:s_b_prepare
+if not exist "%ROB%\" goto rob_missing
+python tools\confirmation\b_runner.py prepare --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB% --approved-plan %2
+exit /b %errorlevel%
+
+:s_b_run
+python tools\confirmation\b_runner.py preflight --root %BCONF%
+if errorlevel 1 goto b_run_refused
+set "LAUNCH_RC=0"
+start "b0" cmd /c python -u tools\confirmation\b_runner.py run --root %BCONF% --shard 0/4 ^> logs\b_shard0.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+start "b1" cmd /c python -u tools\confirmation\b_runner.py run --root %BCONF% --shard 1/4 ^> logs\b_shard1.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+start "b2" cmd /c python -u tools\confirmation\b_runner.py run --root %BCONF% --shard 2/4 ^> logs\b_shard2.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+start "b3" cmd /c python -u tools\confirmation\b_runner.py run --root %BCONF% --shard 3/4 ^> logs\b_shard3.log 2^>^&1
+if errorlevel 1 set "LAUNCH_RC=1"
+echo 4 workers launched in separate windows. This exit code covers the launch only, not the workers' results.
+echo Check completion with: ETAPES.cmd b-progress, and logs\b_shard0.log to logs\b_shard3.log
+exit /b %LAUNCH_RC%
+
+:b_run_refused
+echo STOP: b-run refused before launching any worker (see the message above). Nothing was started.
+exit /b 1
+
+:s_b_progress
+python tools\confirmation\b_runner.py progress --root %BCONF%
+exit /b %errorlevel%
+
+:s_b_analyse
+python tools\confirmation\b_runner.py analyse --root %BCONF% --out analysis\confirmation
 exit /b %errorlevel%
 
 :s_dois

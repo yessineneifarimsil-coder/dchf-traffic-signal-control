@@ -17,7 +17,7 @@ set "T=%TEMP%\etapes_check_%RANDOM%_%RANDOM%"
 set "S=%T%\study"
 set "ETAPES_CALLS=%T%\calls.txt"
 set /a PASS=0, FAIL=0
-for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses tools\confirmation bin) do mkdir "%S%\%%D" 2>nul
+for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses tools\confirmation tools\disk tools\comparators_ext bin) do mkdir "%S%\%%D" 2>nul
 mkdir "%T%\bin" 2>nul
 rem The steps that read ROB stop with code 2 when the folder does not exist: give them an existing one.
 set "ROB=%T%\rob"
@@ -27,7 +27,7 @@ copy /y "%~dp0test_stub.py" "%S%\tests\test_stub.py" >nul
 copy /y "%~dp0tex_stub.py" "%T%\tex_stub.py" >nul
 set "PDFLATEX=python "%T%\tex_stub.py" pdflatex"
 set "BIBTEX=python "%T%\tex_stub.py" bibtex"
-for %%F in (tools\comparators\check_r0_demand.py tools\confirmation\check_statistics.py tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
+for %%F in (tools\comparators\check_r0_demand.py tools\confirmation\check_statistics.py tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py tools\disk\audit_storage.py tools\disk\archive_campaign_A.py tools\comparators_ext\aext_search.py tools\confirmation\b_runner.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
 >"%T%\bin\conda.cmd" echo @exit /b %%FAKE_CONDA_RC%%
 set "FAKE_CONDA_RC=0"
 set "PATH=%T%\bin;%PATH%"
@@ -65,6 +65,21 @@ for %%R in (0 5) do (
   call :check check-statistics %%R "check_statistics.py --a004 A004.py" A004.py
   call :check dois %%R verify_dois.py
   call :check archive %%R make_archive.py
+  call :check disk-audit %%R "audit_storage.py --qmix-results"
+  call :check archive-a %%R "archive_campaign_A.py archive --a-root"
+  call :check archive-a %%R "--zip Z.zip" Z.zip
+  call :check archive-a-dryrun %%R "archive_campaign_A.py --dry-run"
+  call :check aext-plan %%R "aext_search.py plan"
+  call :check aext-prepare %%R "aext_search.py prepare" FPRINT
+  call :check aext-progress %%R "aext_search.py progress"
+  call :check aext-finalise %%R "aext_search.py finalise --root" aext-design
+  call :check b-plan %%R "b_runner.py plan"
+  call :check b-measure %%R "b_runner.py measure"
+  call :check b-freeze %%R "b_runner.py freeze"
+  call :check b-freeze %%R "--a003-root A003DIR" A003DIR
+  call :check b-prepare %%R "b_runner.py prepare" FPRINT
+  call :check b-progress %%R "b_runner.py progress"
+  call :check b-analyse %%R "b_runner.py analyse"
 )
 echo.
 echo == LaTeX build: a failure of pdflatex or bibtex stops the chain and returns 1 ==
@@ -79,6 +94,11 @@ call :rob_missing robustness-run robustness_runner.py
 call :rob_missing guarantee-diagnostic guarantee_diagnostic.py
 call :rob_missing mp-check-robustness mp_check.py
 call :rob_missing comparators-verify-manifests comparator_search.py
+call :rob_missing b-plan b_runner.py
+call :rob_missing b-measure b_runner.py
+call :rob_missing b-freeze b_runner.py
+call :rob_missing b-prepare b_runner.py
+call :b_run_refused
 findstr /c:"set ROB=%%QMIX_RESULTS%%\robustness_validation_2026-11-04" "%S%\ETAPES.cmd" >nul 2>&1
 if errorlevel 1 (call :ko "ROB default is not robustness_validation_2026-11-04") else (call :ok "ROB default is robustness_validation_2026-11-04")
 if "%ETAPES_CHECK_UNDER_WINE%"=="1" (echo   SKIP  conda environment missing: not evaluable under Wine) else (
@@ -91,6 +111,10 @@ echo == Parallel launch (4 workers each): the launcher cannot see the workers' e
 call :parallel robustness-run "robustness_runner.py run" robustness_shard
 call :parallel ablation-run "ablation_runner.py run" ablation_shard
 call :parallel comparators-run "comparator_search.py run" comparators_coarse_shard coarse
+call :parallel aext-run "aext_search.py run" aext_aext-design_shard aext-design
+set "FAKE_PREFLIGHT_RC=0"
+call :parallel b-run "b_runner.py run" b_shard
+set "FAKE_PREFLIGHT_RC="
 echo.
 echo Result: %PASS% checks passed, %FAIL% failed.
 if %FAIL% gtr 0 (exit /b 1)
@@ -136,6 +160,23 @@ set "CALLED=0"
 if exist "%ETAPES_CALLS%" findstr /c:"%~2" "%ETAPES_CALLS%" >nul 2>&1
 if exist "%ETAPES_CALLS%" if not errorlevel 1 set "CALLED=1"
 if "!CALLED!"=="0" (call :ok "%~1 with a missing ROB folder: %~2 not called") else (call :ko "%~1 with a missing ROB folder: %~2 was called")
+exit /b 0
+
+:b_run_refused
+rem b-run: when the preflight (freeze, code, disk) refuses, no worker starts and the step returns 1
+set "FAKE_RC=0"
+set "FAKE_PREFLIGHT_RC=1"
+del "%ETAPES_CALLS%" 2>nul
+pushd "%S%"
+cmd /c ETAPES.cmd b-run >"%T%\b_refused.txt" 2>&1
+set "GOT=!ERRORLEVEL!"
+popd
+set "FAKE_PREFLIGHT_RC="
+if "!GOT!"=="1" (call :ok "b-run refused by the preflight: returns 1") else (call :ko "b-run refused by the preflight: returns !GOT! [want 1]")
+set "CALLED=0"
+if exist "%ETAPES_CALLS%" findstr /c:"b_runner.py run" "%ETAPES_CALLS%" >nul 2>&1
+if exist "%ETAPES_CALLS%" if not errorlevel 1 set "CALLED=1"
+if "!CALLED!"=="0" (call :ok "b-run refused by the preflight: no worker started") else (call :ko "b-run refused by the preflight: a worker was started")
 exit /b 0
 
 :expect_code

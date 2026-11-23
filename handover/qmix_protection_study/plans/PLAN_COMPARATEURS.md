@@ -176,3 +176,37 @@ Journaux : `logs/revue_2026-11-07/` et `logs/revue_2026-11-07b/`.
 |---|---|---|
 | `tests/test_comparators.py` | grilles aux pas de 5 et de 10 s ; règle fine inchangée ; graines ; actionné ; plans par période ; demande R0 identique et écart signalé | 13 |
 | `tests/test_comparator_search.py` | chaîne complète avec faux évaluateur sur R1 et R3 ; périmètre, déclarations et comptes exacts | 6 |
+
+## 10. A-ext — Actionné à vert minimal de 5 s (R1, R2, R3), ajouté le 2026-11-19
+
+**Statut : déclaré avant tout résultat.** La grille et les règles ci-dessous sont dans le `plan.json` de A-ext, sous son empreinte. Elles ont été écrites avant toute exécution A-ext.
+
+**Pourquoi.**
+- L'actionné de A (section 4) impose un vert minimal de 7 s, que QMIX et VDN n'ont pas : leurs verts peuvent finir après 2 s.
+- Ses réglages retenus sont au bord de la grille : gap 2 s et vert maximal secondaire 15 s, dans R1, R2 et R3.
+- C'est une **extension des références classiques** : un candidat de plus, sélectionné par la même règle figée. Un vert minimal de 5 s **ne reproduit pas** l'autorité de commande des méthodes apprises, dont les verts peuvent finir après 2 s.
+
+**Ce qui ne change pas dans A.** Le contrôleur à 7 s et les 8 fichiers de code de A gardent leur SHA-256 (testé). La variante à 5 s est un nouveau module, `tools/comparators_ext/controllers_g5.py`, appelé par `tools/comparators_ext/evaluate_ext.py`.
+
+**Racine :** `D:\QMIX_Results\comparators_actuated_g5`, avec son propre `plan.json` et sa propre empreinte. Les états et la reprise sont ceux de `comparator_search.py`. La racine de A n'est que lue.
+
+**Grille (27 réglages).**
+- gap 1, 2 ou 3 s ;
+- vert maximal principal 30, 45 ou 60 s ;
+- vert maximal secondaire 10, 15 ou 25 s ;
+- zone 40 m, vert minimal 5 s, jaune 3 s.
+
+**Graines et sélection.**
+- Conception sur 8c11–8c15, profils R1–R3 : 405 exécutions.
+- Les 5 meilleurs réglages par profil (J moyen, puis ordre de la grille) passent en validation sur 8c21–8c25 : 75 exécutions.
+- Sélection par la règle figée de A : J moyen, puis temps perdu moyen, puis ordre de la grille.
+- Résultat : `selections/<profil>__actuated_g5.json`.
+
+**Chiffrage :** 480 exécutions, environ 1 h sur 4 processus. La borne supérieure couvre toutes les étapes.
+
+**Corrections par rapport au code de A,** dans le nouveau code seulement :
+- les dossiers en double d'un ordre sont retirés avant le partage entre processus ;
+- le rapport est reconstruit à chaque version ;
+- l'estimation de la borne supérieure inclut toutes les étapes.
+
+**Commandes :** `ETAPES.cmd aext-plan`, `aext-prepare <empreinte>`, `aext-run <étape>`, `aext-progress`, `aext-finalise <étape>`. Voir `RUNBOOK_B.md`.

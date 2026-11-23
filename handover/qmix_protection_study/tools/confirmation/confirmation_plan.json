@@ -1,5 +1,5 @@
 {
- "status": "PRE-REGISTRATION DRAFT, not frozen, not launched. Decisions of 2026-11-07 integrated (margin, statistics reference, comparator scope, IDQN exclusion). To be frozen after the comparators of A are selected and BEFORE any confirmation run; the fingerprint below covers every field.",
+ "status": "PRE-REGISTRATION, amended by PROTOCOL_AMENDMENT_B.md (2026-11-19) and its rectificatif (2026-11-23: IDQN on the reference scenario for the joint-learning contrasts, service statistics by unit, freeze gated on a real run-in under Python 3.7 / SUMO 1.25 and on the Windows command check). NOT FROZEN, NOT LAUNCHED. Frozen once by `b_runner.py freeze` BEFORE any confirmation traffic exists; the fingerprint below covers every field.",
  "question": "On traffics never used for any choice, do the frozen QMIX and VDN policies with the guarantee alone serve every vehicle, and how does their J compare with comparators re-optimised for each robustness profile?",
  "profiles": [
   "R0_reference",
@@ -102,8 +102,8 @@
   ]
  },
  "learned_policy_rules": [
-  "the 10 checkpoints per method selected earlier on learner_validation (selection records), SHA-256 verified before copy; no retraining, no new selection",
-  "IDQN is not part of the confirmation"
+  "QMIX, VDN: the 10 checkpoints per method selected earlier on learner_validation (tags below), SHA-256 verified against the robustness plan before copy; no retraining, no new selection",
+  "IDQN: the 10 historical IDQN checkpoints of the robustness plan (method idqn, training seeds 101-110), read from <robustness root>\\plan.json; their tags and SHA-256 enter the B plan fingerprint at the freeze; no retraining, no new selection"
  ],
  "arms": {
   "primary": "guarantee",
@@ -114,52 +114,28 @@
  "comparators": {
   "primary_by_profile": {
    "R0_reference": "fixed:old_C19_8_5_D9 (OFT g>=5 of the qualification search, reused: R0 demand identical in law, tools/comparators/check_r0_demand.py)",
-   "R1_sparse_secondary_heavy_main": "oft_g5 (A1, reduced coarse grid, declared deviation D1)",
-   "R2_single_secondary_trickle": "oft_g5 (A1, reduced coarse grid, declared deviation D1)",
-   "R3_time_varying": "oft_g5 (A1, reduced coarse grid, declared deviation D1)",
+   "R1_sparse_secondary_heavy_main": "auto (B1); expected from the A selections alone: oft_g5 C25 14/5 D1, J_val 1.9399",
+   "R2_single_secondary_trickle": "auto (B1); expected from the A selections alone: actuated_min7 gap2 H60 V15, J_val 1.3669",
+   "R3_time_varying": "auto (B1); expected from the A selections alone: tod_g5, J_val 2.7219",
    "R4_isolated_tail": "fixed:old_C19_8_5_D9 (frozen, NOT re-optimised for R4: declared)"
   },
   "primary_controller_label": {
    "R0_reference": "fixed:old_C19_8_5_D9",
-   "R1_sparse_secondary_heavy_main": "oft_g5",
-   "R2_single_secondary_trickle": "oft_g5",
-   "R3_time_varying": "oft_g5",
+   "R1_sparse_secondary_heavy_main": "auto (B1)",
+   "R2_single_secondary_trickle": "auto (B1)",
+   "R3_time_varying": "auto (B1)",
    "R4_isolated_tail": "fixed:old_C19_8_5_D9"
   },
   "secondary_by_profile": {
-   "R0_reference": [
-    "fixed:min7_C25_12_7_D0 (OFT g>=7 of the qualification search, reused)",
-    "canonical_mp"
-   ],
-   "R1_sparse_secondary_heavy_main": [
-    "oft_min7",
-    "actuated_min7",
-    "canonical_mp",
-    "fixed:old_C19_8_5_D9",
-    "fixed:min7_C25_12_7_D0"
-   ],
-   "R2_single_secondary_trickle": [
-    "oft_min7",
-    "actuated_min7",
-    "canonical_mp",
-    "fixed:old_C19_8_5_D9",
-    "fixed:min7_C25_12_7_D0"
-   ],
-   "R3_time_varying": [
-    "oft_min7",
-    "actuated_min7",
-    "canonical_mp",
-    "fixed:old_C19_8_5_D9",
-    "fixed:min7_C25_12_7_D0",
-    "tod_g5",
-    "tod_min7"
-   ],
-   "R4_isolated_tail": [
-    "fixed:min7_C25_12_7_D0 (frozen)",
-    "canonical_mp"
-   ]
+   "R0_reference": "every other evaluated comparator of the profile (sealed selections of A and A-ext not chosen as primary, C19, C25 12/7 D0, canonical MP)",
+   "R1_sparse_secondary_heavy_main": "every other evaluated comparator of the profile (sealed selections of A and A-ext not chosen as primary, C19, C25 12/7 D0, canonical MP)",
+   "R2_single_secondary_trickle": "every other evaluated comparator of the profile (sealed selections of A and A-ext not chosen as primary, C19, C25 12/7 D0, canonical MP)",
+   "R3_time_varying": "every other evaluated comparator of the profile (sealed selections of A and A-ext not chosen as primary, C19, C25 12/7 D0, canonical MP)",
+   "R4_isolated_tail": "every other evaluated comparator of the profile (sealed selections of A and A-ext not chosen as primary, C19, C25 12/7 D0, canonical MP)"
   },
-  "source": "A selections (selections/<profile>__g5.json, __min7.json, __actuated.json, R3__tod-*.json) for R1-R3, their SHA-256 entering the fingerprint at the freeze; C19, C25 and canonical MP as frozen"
+  "source": "sealed selections of A (selections/<profile>__g5, __min7, __actuated, R3 __tod-g5, __tod-min7) and A-ext (__actuated_g5); their SHA-256 are in freeze.json; C19, C25 and canonical MP as frozen. Identical specs are evaluated once and serve every label.",
+  "primary_rule": "B1: R1-R3: the sealed selection (campaigns A and A-ext) with the lowest mean validation J, computed by b_runner.choose_primary from the selection files before the freeze (ties: order oft_g5, oft_min7, actuated_min7, actuated_g5, tod_g5, tod_min7); R0, R4: fixed:old_C19_8_5_D9. The labels chosen are written into the B plan and margins.json and frozen in freeze.json.",
+  "actuated_g5": "B2: the actuated gap-out controller with a 5 s minimum green selected in A-ext (selections/<profile>__actuated_g5.json, R1-R3) is evaluated in B: primary if its validation J is the lowest, secondary otherwise. It is an EXTENSION of the classical references (shorter minimum green, wider grid); it does not reproduce the control authority of the learners, whose greens can end after 2 s"
  },
  "endpoints": {
   "primary": "J_primary (mean waitingTime + departDelay over the N scheduled vehicles of the manifest), per (model, traffic)",
@@ -180,22 +156,31 @@
   "decision_confidence_rule": "Bonferroni over the 10 primary comparisons (two-sided 0.05/10)",
   "descriptive_confidence": 0.95,
   "equivalence_margin": {
-   "rule": "delta_profile = max(0.05 x J_val, 0.10 s), J_val = mean validation J of the profile's primary comparator from its sealed selection record (R1-R3); for C19 (R0, R4) J_val = 2.765071428571429 s, its validation J on benchmark_validation 2101-2105 read in the amended freeze (PROTOCOLE_MIN7 section 2.1)",
+   "rule": "delta_profile = max(0.05 x J_val, 0.10 s), J_val = mean validation J of the profile's primary comparator (B1) from its sealed selection record (R1-R3); for C19 (R0, R4) J_val = 2.765071428571429 s (benchmark_validation 2101-2105, amended freeze, PROTOCOLE_MIN7 2.1); written in margins.json at the freeze",
    "relative": 0.05,
    "floor_s": 0.1,
    "c19_validation_J_s": 2.765071428571429
   },
   "reference": {
    "name": "A004 = statistics-1.2",
-   "sha256": "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a",
-   "rule": "the analysis loads THIS file (confirmation_analysis.py --statistics <path>) and refuses any other hash; tools/confirmation/check_statistics.py compares it with the frozen statistics-1.1 (8c14f32) before the freeze",
-   "frozen_statistics_1_1_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
-   "status_2026_11_07": "statistics-1.2 not present in any repository or branch available to the review; check pending on Windows"
+   "protocol_hash": "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a",
+   "protocol_hash_meaning": "amendment003.protocol_hashes()['statistics_1_2'] (hash of a canonical JSON, reproduced from the A003 folder per HANDOFF 2026-11-15); it is NOT the SHA-256 of a file",
+   "module": "function paired_crossed_bootstrap of the frozen adaptive_qmix/protocol/statistics.py, official=False; the SHA-256 of that file is recorded in freeze.json and checked by every later step",
+   "module_file_sha256": "recorded in freeze.json",
+   "superseded_2026_11_07_rule": "the earlier rule (refuse any statistics file whose SHA-256 differs from 8b6413a9...) rested on reading the protocol hash as a file hash; withdrawn (PROTOCOL_AMENDMENT_B.md section 4)",
+   "frozen_statistics_1_1_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a"
+  },
+  "service_units": {
+   "rule": "no interval on pooled evaluations: models and traffics are reused, the evaluations are not independent Bernoulli trials",
+   "reported": "for every (profile, method or comparator, arm) and for every method and arm over all profiles: evaluations, events, models with >= 1 event / 10, traffics with >= 1 event / number of traffics",
+   "intervals": "exact Clopper-Pearson 95 % at the model level (assumption: the 10 training seeds are independent draws of the training procedure; conditional on the traffics) and at the traffic level (assumption: the traffics are independent draws of the profile generators; conditional on the models); one-sided 95 % upper bound when 0 events (0/10 -> 25.9 %)",
+   "not_used": "no bootstrap interval of a rate: after zero events it gives [0, 0], which does not establish a zero risk",
+   "status": "descriptive; neither interval is a reliability guarantee"
   }
  },
  "decision_rules": {
   "order": [
-   "SERVICE FAILURE: at least one learned guarantee evaluation of the (profile, method) fails with an open counter wait -> the J comparison is not interpreted as a success; counts and Clopper-Pearson intervals reported",
+   "SERVICE FAILURE: at least one learned guarantee evaluation of the (profile, method) fails with an open counter wait -> the J comparison is not interpreted as a success; counts reported at the evaluation, model and traffic levels",
    "NOT ESTIMABLE: any other learned failure, or a comparator failure on a traffic (J undefined; never imputed); a descriptive sensitivity without the failing model or traffic is reported, never used for the decision",
    "SUPERIOR BEYOND MARGIN: U < -delta",
    "SUPERIOR: U < 0",
@@ -207,49 +192,73 @@
   "interval": "[L, U] = 99.5 % crossed-bootstrap interval of mean D (learned minus comparator; negative = learned better)",
   "claims_allowed": [
    "per profile and method only; no pooling across profiles for a decision",
-   "service claim per method: 'no indefinite denial of service on these 50 traffics' only if 0 open-wait failures in the 500 guarantee evaluations of that method, with the Clopper-Pearson upper bound stated",
-   "secondary comparisons and the none arm are descriptive (95 %), no decision"
+   "service statement per method: 'no open-wait failure observed in the N guarantee evaluations' only if 0 such failures on the full design, ALWAYS with the counts at the evaluation, model and traffic levels and the unit-level intervals; never stated as a zero risk or as a reliability guarantee (statistics.service_units)",
+   "secondary comparisons and the none arm are descriptive (95 %), no decision",
+   "joint-learning contrasts (learned_contrasts): decisions within F2 only"
   ]
  },
  "secondary_analyses": [
   "guarantee - none on the same model and traffic (learned comparator, crossed bootstrap, 95 %)",
   "each learned arm versus each secondary comparator (95 %, descriptive)",
-  "Clopper-Pearson intervals for every service event"
+  "service events: every count reported; unit-level intervals (statistics.service_units), never on pooled evaluations"
  ],
- "costs": {
-  "learned_evaluations": 2000,
-  "comparator_evaluations": 260,
-  "total": 2260,
-  "comparators_per_profile": {
-   "R0_reference": 3,
-   "R1_sparse_secondary_heavy_main": 6,
-   "R2_single_secondary_trickle": 6,
-   "R3_time_varying": 8,
-   "R4_isolated_tail": 3
-  },
-  "wall_h_4_workers": "about 2.3 h at 14.5 s per evaluation; about 2.5 h if 10 % of runs go to the 7,200 s cut-off",
-  "disk_gb": "about 10 (full logs and per-second counters, about 4 MB per evaluation)"
- },
+ "costs": "counted exactly by `b_runner.py plan`: 2,100 learned (2,000 QMIX/VDN + 100 IDQN on R0) + 270 comparator runs = 2,370 (PROTOCOL_AMENDMENT_B.md section 3); duration from the parallel measure of `b-measure`, never guaranteed",
  "not_done_before_freeze": [
   "no confirmation traffic is generated before the freeze",
-  "no run, no look at any confirmation output"
+  "no run, no look at any confirmation output",
+  "the freeze is refused unless: the parallel run-in `b-measure` passed (real runs on design seeds, gzip logs re-read) under Python 3.7 and SUMO 1.25; the Windows check of ETAPES.cmd reports 0 failures; the unit tests report OK; the code is the code tested (hashes in freeze.json)"
  ],
  "comparator_profiles_declared": {
   "R0": "reuse of the qualification OFT plans (identical demand law)",
   "R4": "frozen comparators only, not re-optimised"
  },
  "idqn_exclusion": {
-  "decision": "IDQN is not part of the confirmation (decided before any confirmation traffic exists)",
+  "decision": "IDQN is NOT in the primary family (learned versus classical comparators). It IS evaluated on the reference scenario, with the guarantee only, for the pre-specified joint-learning contrasts (learned_contrasts; rectificatif of 2026-11-23)",
   "reasons": [
    "question: the confirmation tests the cooperative value-factorisation methods (QMIX, VDN) with the guarantee alone; IDQN (independent learners, no coordination) is the non-cooperative reference of the development, ablation and robustness studies, where it is reported in full",
    "known instability before confirmation: in the ablation IDQN is the only method whose minimum-green effect is irregular (improves some models, degrades others; corrects 4 failures, creates 1) and it has 4/50 failures without protection (Clopper-Pearson 95 % [2.2 %, 19.2 %]); in the robustness study (reported) the guarantee alone raises D_bar in 35 IDQN pairs and the 107/8203 diagnosis shows long opposite greens after interventions: IDQN with the guarantee is not a stable candidate whose result a confirmation could corroborate",
    "multiplicity: adding IDQN would raise the primary family from 10 to 15 comparisons (Bonferroni 99.67 %) and widen every decision interval for a configuration that is not a candidate"
   ],
   "consequences": [
-   "no confirmation claim of any kind about IDQN",
+   "no decision about IDQN versus a classical comparator; its guarantee evaluations on R0 serve only as the independent-learner reference of QMIX - IDQN and VDN - IDQN, and their service events are reported in full",
    "its development, ablation and robustness results are kept and reported in full",
-   "declared limitation: the methods confirmed were chosen after the development and robustness results; the confirmation tests them on new traffics, it does not compare all methods"
-  ]
+   "declared limitation: the methods confirmed were chosen after the development and robustness results; the confirmation tests them on new traffics"
+  ],
+  "amendment": "B3 revised by the rectificatif of 2026-11-23 (PROTOCOL_AMENDMENT_B.md section 1, B3)"
  },
- "fingerprint": "66fcb6786349161e8367a6952d9ff0f2145c17081da9902cc57b5cb0411f72d8"
+ "fingerprint": "8070f6f62a2bc274283cac1387cd594e630a5fafa31bc5d0c2f93eab213a99fa",
+ "amendment_B": {
+  "document": "PROTOCOL_AMENDMENT_B.md",
+  "date": "2026-11-19",
+  "deviations": [
+   "B1",
+   "B2",
+   "B3"
+  ],
+  "unchanged": "QMIX and VDN frozen (20 policies of the robustness plan); arms guarantee (primary) and none (secondary); 50 traffics 8c51-8c60; every sealed comparator on the same 50; crossed paired bootstrap official=False, 10,000 replicates, 99.5 % decisions, 95 % description; decision rules and their order; service and secondary criteria",
+  "rectificatif": "2026-11-23: IDQN on R0 (100 evaluations) and the F2 contrasts; no deletion of campaign A data in this delivery; service statistics by unit; gzip readers tested; freeze gated on the run-in and the Windows check; parallel throughput measured; actuated g5 worded as an extension of the references"
+ },
+ "learned_contrasts": {
+  "question": "benefit of joint learning (value factorisation) over independent learners, studied by the manuscript",
+  "profiles": [
+   "R0_reference"
+  ],
+  "traffics": "the 10 confirmation traffics of R0 (8051-8060), the same as QMIX and VDN",
+  "methods": [
+   "qmix",
+   "vdn"
+  ],
+  "reference": "idqn",
+  "arm": "guarantee",
+  "evaluations_added": 100,
+  "effect": "mean over the 10 training-seed pairs x 10 traffics of D_kj = J_method(k, j) - J_IDQN(k, j), k = training seed number (101-110), j = traffic; negative = the joint learner makes vehicles wait less",
+  "procedure": "paired_crossed_bootstrap with comparator_kind 'learned' (statistics-1.1 convention: pairing by training-seed NUMBER and by traffic; the same seed number does not make two methods' models causally paired, it is the frozen resampling convention), official=False, 10,000 replicates, percentile interval",
+  "family": "joint-learning family F2 = {QMIX - IDQN, VDN - IDQN} on R0, kept separate from the primary family F1 (10 learned-versus-classical comparisons)",
+  "multiplicity": "familywise error 0.05 controlled within each family: F1 at 99.5 % (Bonferroni over 10), F2 at 97.5 % (Bonferroni over 2). The two families answer different questions; no statement combines them. Not a single family of 15 or 12 comparisons; as a pre-specified sensitivity, the F2 intervals are also reported at 1 - 0.05/12 (Bonferroni over all 12 decision comparisons), descriptive only",
+  "decision_confidence": 0.975,
+  "sensitivity_confidence": 0.9958333333333333,
+  "margin": "delta of R0 (same rule: max(0.05 x 2.765071428571429, 0.10 s) = 0.138 s)",
+  "decision_rules": "the same rules and order as F1; SERVICE FAILURE if either method of the pair has an open-wait failure under the guarantee; NOT ESTIMABLE if either has any failure",
+  "claims": "per contrast only; a superiority of QMIX or VDN over IDQN on R0 is a statement about the reference scenario, with these 10 models per method, not a general claim"
+ }
 }
