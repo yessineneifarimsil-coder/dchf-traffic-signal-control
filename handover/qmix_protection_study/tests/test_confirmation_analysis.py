@@ -1,4 +1,5 @@
-"""Tests of the pre-registered confirmation analysis (plan B) and of the (withdrawn) A004 file check, on synthetic panels.
+"""Tests of the pre-registered confirmation analysis (plan B; procedure b-crossed-bootstrap-1) and of the withdrawn,
+historical A004 file check, on synthetic panels.
 
 statistics-1.2 (A004) is not available in the review environment: the tests stand the frozen statistics-1.1 file
 in for it by setting the plan's reference hash to that file's hash, which exercises the hash gate and the
@@ -76,7 +77,14 @@ class Plan(unittest.TestCase):
         self.assertAlmostEqual(CA.check_family(PLAN), 0.9958333333333333)
         self.assertEqual(PLAN["statistics"]["descriptive_confidence"], 0.95)
         self.assertEqual(PLAN["statistics"]["replicates"], 10000)
-        self.assertEqual(PLAN["statistics"]["reference"]["protocol_hash"], CS.REFERENCE_SHA256)   # protocol hash, not a file
+        ref = PLAN["statistics"]["reference"]
+        self.assertEqual(ref["retained_procedure"], "b-crossed-bootstrap-1")
+        self.assertIn("statistics-1.1", ref["name"])
+        self.assertNotIn("1.2", ref["name"])
+        self.assertTrue(PLAN["statistics"]["procedure"].startswith("b-crossed-bootstrap-1"))
+        hist = ref["historical_statistics_1_2"]                                 # kept only as historical, not claimed
+        self.assertEqual(hist["protocol_hash"], CS.REFERENCE_SHA256)
+        self.assertIn("NOT CLAIMED", hist["status"])
         self.assertNotIn("sha256", PLAN["statistics"]["reference"])
         self.assertEqual(set(PLAN["comparators"]["primary_controller_label"]), set(PLAN["profiles"]))
         self.assertEqual(sorted(PLAN["learned_policies"]), ["qmix", "vdn"])
@@ -232,6 +240,65 @@ class Analysis(unittest.TestCase):
         cells[k] = dict(cells[k], status="CLEARANCE_FAILURE", J_primary_s="", open_wait_at_end_s="400")
         r = [d for d in CA.analyse(plan, cells, self.margins, self.ST)["joint_learning"] if d["method"] == "qmix"][0]
         self.assertNotIn(r["category"], ("SERVICE FAILURE", "NOT ESTIMABLE"))
+
+    def idqn_rows(self, plan):
+        return [self.row("R0_reference", seed, "learned:guarantee", tag, "idqn", 3.0)
+                for tag in plan["learned_policies"]["idqn"] for seed in plan["traffic_seeds"]["R0_reference"]]
+
+    def idqn_plan(self):
+        plan = copy.deepcopy(self.plan)
+        plan["learned_policies"]["idqn"] = ["idqn_seed{}_tX".format(s) for s in range(101, 111)]
+        plan["fingerprint"] = CA.plan_fingerprint(plan)
+        return plan
+
+    def idqn_service(self, plan, rows):
+        return [s for s in CA.service(rows, plan) if s["method"] == "idqn" and s["arm"] == "guarantee"][0]
+
+    def test_idqn_service_statement_on_its_R0_scope_only(self):
+        plan = self.idqn_plan()
+        rows = self.idqn_rows(plan)
+        self.assertEqual(len(rows), 100)
+        s = self.idqn_service(plan, rows)
+        self.assertEqual((s["coverage"]["expected"], s["coverage"]["present"]), (100, 100))
+        self.assertTrue(s["service_claim_allowed"])                      # 100 complete cells, no failure
+        self.assertEqual(s["service_claim_scope"], ["R0_reference"])     # never generalised to R1-R4
+        self.assertNotIn("cp95_two_sided", s["failure"]["models"])       # no pooled interval
+
+    def test_idqn_missing_cell_forbids_the_statement(self):
+        plan = self.idqn_plan()
+        s = self.idqn_service(plan, self.idqn_rows(plan)[1:])
+        self.assertEqual(len(s["coverage"]["missing"]), 1)
+        self.assertFalse(s["service_claim_allowed"])
+
+    def test_a_duplicate_never_replaces_a_missing_cell(self):
+        plan = self.idqn_plan()
+        rows = self.idqn_rows(plan)
+        rows[0] = dict(rows[1])                                          # 100 rows, one identity twice
+        s = self.idqn_service(plan, rows)
+        self.assertEqual(s["n"], 100)
+        self.assertEqual((len(s["coverage"]["missing"]), len(s["coverage"]["duplicates"])), (1, 1))
+        self.assertFalse(s["coverage"]["complete"])
+        self.assertFalse(s["service_claim_allowed"])
+
+    def test_an_idqn_cell_outside_R0_is_unexpected(self):
+        plan = self.idqn_plan()
+        rows = self.idqn_rows(plan) + [self.row("R1_sparse_secondary_heavy_main", 8151, "learned:guarantee",
+                                                "idqn_seed101_tX", "idqn", 3.0)]
+        s = self.idqn_service(plan, rows)
+        self.assertEqual(len(s["coverage"]["unexpected"]), 1)
+        self.assertFalse(s["service_claim_allowed"])
+
+    def test_qmix_vdn_coverage_rule_unchanged(self):
+        plan = copy.deepcopy(PLAN)
+        tags = plan["learned_policies"]["qmix"]
+        rows = [self.row(p, seed, "learned:guarantee", t, "qmix", 3.0) for t in tags
+                for p in plan["traffic_seeds"] for seed in plan["traffic_seeds"][p]]
+        self.assertEqual(len(rows), 500)
+        s = [x for x in CA.service(rows, plan) if x["method"] == "qmix"][0]
+        self.assertEqual(s["coverage"]["expected"], 500)
+        self.assertTrue(s["service_claim_allowed"])
+        s = [x for x in CA.service(rows[:-1], plan) if x["method"] == "qmix"][0]
+        self.assertFalse(s["service_claim_allowed"])
 
     def test_an_unresolved_primary_is_refused(self):
         plan = copy.deepcopy(self.plan)

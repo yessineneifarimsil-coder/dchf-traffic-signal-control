@@ -166,9 +166,9 @@
   ]
  },
  "statistics": {
-  "procedure": "paired crossed two-factor bootstrap of A004 (statistics-1.2), function paired_crossed_bootstrap, official=False: models (training seeds 101-110) x 10 traffic seeds; deterministic comparator broadcast per traffic: D_ij = J_learned(i,j) - J_comparator(j)",
+  "procedure": "b-crossed-bootstrap-1: paired crossed two-factor bootstrap implemented by paired_crossed_bootstrap of the frozen statistics module (PROTOCOL_VERSION statistics-1.1, file ed133bb2... in the review copy), official=False: models (training seeds 101-110) x 10 traffic seeds; deterministic comparator broadcast per traffic: D_ij = J_learned(i,j) - J_comparator(j); learned comparator paired by training seed and traffic; synthetic reference results reproduced on Windows before the freeze",
   "replicates": 10000,
-  "rng_namespace": "frozen BOOTSTRAP_RNG_NAMESPACE",
+  "rng_namespace": "frozen BOOTSTRAP_RNG_NAMESPACE of statistics-1.1",
   "interval": "percentile",
   "primary_family": "the 12 confirmatory contrasts of statistics.confirmatory_family",
   "decision_confidence": 0.9958333333333333,
@@ -183,14 +183,11 @@
    "idqn_contrasts": "the two joint-versus-IDQN contrasts use the declared nominal R0 margin (0.138 s) as a common threshold of practical interest; it is not recomputed from confirmation results"
   },
   "reference": {
-   "name": "A004 = statistics-1.2",
-   "protocol_hash": "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a",
-   "protocol_hash_meaning": "amendment003.protocol_hashes()['statistics_1_2'] (hash of a canonical JSON, reproduced from the A003 folder per HANDOFF 2026-11-15); it is NOT the SHA-256 of a file",
+   "name": "b-crossed-bootstrap-1 (implementation statistics-1.1)",
+   "retained_procedure": "b-crossed-bootstrap-1",
    "module": "function paired_crossed_bootstrap of the frozen adaptive_qmix/protocol/statistics.py, official=False; the SHA-256 of that file is recorded in freeze.json and checked by every later step",
    "module_file_sha256": "recorded in freeze.json",
-   "superseded_2026_11_07_rule": "the earlier rule (refuse any statistics file whose SHA-256 differs from 8b6413a9...) rested on reading the protocol hash as a file hash; withdrawn (PROTOCOL_AMENDMENT_B.md section 4)",
    "frozen_statistics_1_1_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a",
-   "status": "UNRESOLVED until the freeze: the protocol hash 8b6413a9... is amendment003.protocol_hashes()['statistics_1_2'] (reported, not seen here). B calls paired_crossed_bootstrap of the frozen statistics module (statistics-1.1 file ed133bb2... in the review copy). The freeze requires stats_resolution.json: either the versioned procedure b-crossed-bootstrap-1 (that implementation, its synthetic reference results reproduced on the Windows stack), or the label statistics-1.2 only with the A003 evidence and an independent review note",
    "b_procedure": {
     "id": "b-crossed-bootstrap-1",
     "implementation": "adaptive_qmix.protocol.statistics.paired_crossed_bootstrap (PROTOCOL_VERSION statistics-1.1)",
@@ -202,6 +199,14 @@
      "non-finite values are refused: missing cells are never resampled or imputed"
     ],
     "reference_results": "tools/confirmation/stats_reference_results.json (synthetic panels), reproduced by `b_runner.py`/`stats_reference.py results`"
+   },
+   "status": "RETAINED for B: b-crossed-bootstrap-1. The freeze requires stats_resolution.json with this procedure, made with the very statistics file B uses, after the synthetic reference results (tools/confirmation/stats_reference_results.json) are reproduced under Python 3.7 on the Windows stack. statistics-1.2 is NOT claimed: no equivalence has been shown",
+   "historical_statistics_1_2": {
+    "status": "HISTORICAL, NOT VERIFIED, NOT CLAIMED",
+    "protocol_hash": "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a",
+    "meaning_reported": "amendment003.protocol_hashes()['statistics_1_2'] (hash of a canonical JSON, reproduced from the A003 folder per HANDOFF 2026-11-15); it is NOT the SHA-256 of a file",
+    "note": "reported by the handoff of 2026-11-15 as amendment003.protocol_hashes()['statistics_1_2'] for A004; A003 was not seen in the review; the read-only inspection tools (b-stats-inspect, b-stats-extract) are diagnostics only and cannot change the procedure of B",
+    "superseded_2026_11_07_rule": "the earlier rule (refuse any statistics file whose SHA-256 differs from 8b6413a9...) rested on reading the protocol hash as a file hash; withdrawn (PROTOCOL_AMENDMENT_B.md section 4)"
    }
   },
   "service_units": {
@@ -277,7 +282,7 @@
   "amendment": "B3 revised by the rectificatif of 2026-11-23 (PROTOCOL_AMENDMENT_B.md section 1, B3)",
   "r0_note": "not a penalty of the guarantee on R0: in the robustness interventions file, R0 has no degraded IDQN pair and the only guarantee interventions listed for R0 are 2 QMIX interventions, both after the demand; that file covers only the selected runs (degraded IDQN pairs, QMIX runs where the guarantee acts), so the absence of intervention for VDN and the other IDQN runs on R0 is REPORTED, not verified here; a higher mean J of one arm over a different set of cleared runs is not a paired penalty"
  },
- "fingerprint": "49cc71c75bfc06ea4aef366b29294744a5c077ac252f17a9195f2bf3deceea9f",
+ "fingerprint": "693bab0a083e6415287b08148a888ba80197b426d19e7a5739a94f4c4f45e8e7",
  "amendment_B": {
   "document": "PROTOCOL_AMENDMENT_B.md",
   "date": "2026-11-19",

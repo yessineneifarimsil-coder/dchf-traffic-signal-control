@@ -8,7 +8,7 @@
 - `tools/confirmation/confirmation_analysis.py` : les règles de décision ;
 - `tools/confirmation/stats_reference.py` : la résolution de la référence statistique.
 
-Empreinte de `confirmation_plan.json` : `49cc71c75bfc06ea4aef366b29294744a5c077ac252f17a9195f2bf3deceea9f`. L'empreinte du plan B (tâches, sélections, marges, checkpoints, code) est calculée par `b-plan` et scellée par `b-freeze` dans `freeze.json`.
+Empreinte de `confirmation_plan.json` : `693bab0a083e6415287b08148a888ba80197b426d19e7a5739a94f4c4f45e8e7`. L'empreinte du plan B (tâches, sélections, marges, checkpoints, code) est calculée par `b-plan` et scellée par `b-freeze` dans `freeze.json`.
 
 ## 1. Questions
 
@@ -24,7 +24,7 @@ Empreinte de `confirmation_plan.json` : `49cc71c75bfc06ea4aef366b29294744a5c077a
    - `verify_etapes_cmd.cmd`, sans échec ;
    - l'audit disque.
 3. `b-plan`, puis `b-measure` : le rodage réel en parallèle, avec 16 cellules sur graines de conception.
-4. La référence statistique : `b-stats-results`, puis `b-stats-resolve`, ou `b-stats-resolve-12` avec les éléments A003 et une revue.
+4. La procédure statistique `b-crossed-bootstrap-1` : `b-stats-results` (reproduction des résultats de référence), puis `b-stats-resolve`.
 5. `b-freeze`, une seule fois. Il refuse s'il manque une condition (amendement §9).
 6. Ensuite seulement : `b-prepare <empreinte>` (manifestes de confirmation), `b-run`, `b-progress`, `b-analyse`.
 
@@ -86,10 +86,9 @@ L'actionné g5 est une extension des références classiques. Il ne reproduit pa
 
 **Procédure statistique.**
 - **Vérifié :** B appelle `paired_crossed_bootstrap` du module figé (statistics-1.1, fichier `ed133bb2…`).
-- **Rapporté :** `8b6413a9…` est l'empreinte de protocole de statistics-1.2.
-- Le gel exige une résolution :
-  - soit la procédure versionnée `b-crossed-bootstrap-1`, avec ses résultats de référence reproduits sous Windows ;
-  - soit le label statistics-1.2, avec l'extraction A003 et une revue indépendante (amendement §8).
+- **Procédure retenue :** `b-crossed-bootstrap-1`, c'est-à-dire cette implémentation statistics-1.1, avec la reproduction obligatoire de ses résultats de référence sous Windows.
+- **Historique, non vérifié :** `8b6413a9…` est rapporté comme l'empreinte de protocole de statistics-1.2. Ce label n'est pas revendiqué, faute de preuve d'équivalence.
+- Le gel exige la résolution `b-crossed-bootstrap-1` (amendement §8) et refuse toute autre procédure.
 
 ## 8. Règles de décision
 
@@ -136,7 +135,7 @@ Pour chaque profil et chaque méthode (IDQN en R0 seulement) :
 
 Le décompte est calculé par le code, sans être forcé.
 
-**Coût.** La durée et le volume viennent du rodage en parallèle. Avant mesure, l'ordre de grandeur est de 2,5 h sur 4 processus et 8,4 Go (seuil de départ : 12,7 Go). **Une nuit n'est pas garantie.**
+**Coût.** La durée et le volume viennent du rodage en parallèle. Le **besoin disque définitif** est le volume mesuré par le rodage pour les exécutions restantes, plus une marge de 4 Go. Avant mesure, l'ordre de grandeur est de 2,5 h sur 4 processus et 8,4 Go (seuil de départ : 12,7 Go), et ces chiffres ne valent pas mesure. **Une nuit n'est pas garantie.**
 
 ## 12. Contrats techniques
 

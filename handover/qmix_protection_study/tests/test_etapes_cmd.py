@@ -44,7 +44,8 @@ class EtapesCmd(unittest.TestCase):
 
     def test_every_step_has_a_block_ending_with_an_explicit_exit(self):
         dispatch, labels = self.blocks()
-        self.assertEqual(len(dispatch), 57)
+        self.assertEqual(len(dispatch), 56)
+        self.assertNotIn("b-stats-resolve-12", dispatch)                    # b-crossed-bootstrap-1 only
         self.assertNotIn("archive-a-delete", dispatch)                       # rectificatif 2026-11-23: no deletion
         for step, label in dispatch.items():
             self.assertIn(label, labels, step)
@@ -101,7 +102,7 @@ class EtapesCmd(unittest.TestCase):
 
     def test_statistics_steps_never_write_bytecode_and_freeze_imports_nothing(self):
         dispatch, labels = self.blocks()
-        for step in ("b-stats-results", "b-stats-inspect", "b-stats-extract", "b-stats-resolve", "b-stats-resolve-12"):
+        for step in ("b-stats-results", "b-stats-inspect", "b-stats-extract", "b-stats-resolve"):
             self.assertTrue(labels[dispatch[step]][0].startswith("python -B "), step)
         self.assertFalse(any("a003" in l.lower() for l in labels[dispatch["b-freeze"]]))
         self.assertNotIn("s_b_freeze_a003", labels)

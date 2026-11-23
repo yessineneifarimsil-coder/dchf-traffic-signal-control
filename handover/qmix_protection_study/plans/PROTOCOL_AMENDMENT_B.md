@@ -160,9 +160,9 @@ Les 7 s ne sont pas imposées aux politiques sous garantie seule.
 - échec scientifique conservé sans relance ;
 - même échec dans un bras avec garantie, classé violation technique.
 
-## 8. Procédure statistique : ce qui est vérifié, et sa résolution avant le gel
+## 8. Procédure statistique retenue : b-crossed-bootstrap-1
 
-**Rapporté.** `8b6413a9…437a` est `amendment003.protocol_hashes()['statistics_1_2']`, une empreinte de protocole et non le SHA-256 d'un fichier. A003 n'a pas été vu ici.
+**Procédure retenue pour B : `b-crossed-bootstrap-1`.** C'est le bootstrap croisé apparié implémenté par `paired_crossed_bootstrap` du module statistique figé, en version `statistics-1.1`. Ses résultats de référence doivent être reproduits sous Windows. **statistics-1.2 n'est pas revendiqué**, faute de preuve d'équivalence.
 
 **Vérifié dans le code que B appelle** (`adaptive_qmix/protocol/statistics.py`, `PROTOCOL_VERSION = "statistics-1.1"`, fichier `ed133bb2…` de la copie figée) :
 - chaque réplicat tire **indépendamment, avec remise**, les indices des graines d'entraînement et ceux des trafics, et réévalue toute la matrice échantillonnée ;
@@ -171,21 +171,30 @@ Les 7 s ne sont pas imposées aux politiques sous garantie seule.
 - intervalle par percentiles (`numpy.percentile`, interpolation linéaire par défaut) ;
 - une valeur non finie est refusée : aucune donnée manquante n'est rééchantillonnée ni imputée.
 
+**Inchangé :**
+- cet algorithme ;
+- les 10 000 réplicats ;
+- la famille de 12 contrastes et son niveau exact 1 − 0,05/12 ;
+- les intervalles descriptifs à 95 % ;
+- les marges ;
+- les règles de décision.
+
 **Résultats de référence** (`tools/confirmation/stats_reference_results.json`) : des panneaux synthétiques, à comparateur déterministe et appris, aux niveaux 95 % et 1 − 0,05/12, avec 10 000 et 2 000 réplicats.
 - Ils ont été calculés ici avec ce fichier (Python 3.11, numpy 2.4.6) et sont reproduits à l'identique : 74 nombres, tolérance 10⁻¹².
 - Ils doivent être **reproduits sous Windows** (`b-stats-results`), où la version de numpy diffère.
 - Une modification du tirage est détectée (testé).
 
-**Résolution obligatoire avant le gel** (`b-stats-resolve`, ou `b-stats-resolve-12`) :
-- **`b-crossed-bootstrap-1`** : la procédure versionnée de B, c'est-à-dire l'implémentation ci-dessus, avec ses résultats de référence reproduits sous Python 3.7 sur la machine du rodage. Elle n'est **pas** étiquetée statistics-1.2.
-- **statistics-1.2** : seulement avec les éléments suivants :
-  - une inspection d'A003 en lecture seule (`b-stats-inspect` : aucun import, liste des fichiers, présence éventuelle d'un `__pycache__`, code exécuté à l'import, comparaison des manifestes) ;
-  - une extraction gardée (`b-stats-extract` : `python -B`, dossier de travail temporaire, instantané du dossier avant et après, qui ne doit pas changer), dont la valeur égale `8b6413a9…` et qui retrouve l'objet de spécification correspondant ;
-  - une note de revue indépendante, puisque l'opérateur ne peut pas être relecteur.
+**Résolution obligatoire avant le gel** (`b-stats-resolve`). Elle n'accepte que `b-crossed-bootstrap-1`, avec des résultats de référence reproduits par le fichier statistique exact de B, sous Python 3.7. Le gel refuse :
+- une résolution absente ;
+- une résolution d'une autre procédure, y compris « statistics-1.2 » ;
+- une résolution faite avec un autre module ;
+- un rapport modifié après la résolution.
 
-  Un nom de fonction ou une empreinte identiques ne suffisent pas.
+Ces refus sont testés.
 
-**Garde-fous.** Le gel refuse une référence non résolue, faite avec un autre module, ou dont le rapport a changé (testé). L'ancien contrôle « facultatif » d'A003 au gel, qui importait le module, est supprimé.
+**Historique, non vérifié.**
+- La passation du 2026-11-15 rapporte que `8b6413a9…437a` est `amendment003.protocol_hashes()['statistics_1_2']`, une empreinte de protocole associée à A004, et non le SHA-256 d'un fichier. A003 n'a pas été vu ici.
+- `b-stats-inspect` et `b-stats-extract` restent disponibles comme **diagnostics en lecture seule** de cette référence historique (aucun import pour l'inspection ; `python -B` et un instantané avant et après pour l'extraction). Ils ne changent pas la procédure de B.
 
 **Le `__pycache__` d'A003.** Il est rapporté qu'un `import amendment003` a été lancé sans `-B` dans `C:\Users\LENOVO\QMIX_A003_P3\a003`. L'existence d'un `__pycache__` et son effet sur les contrôles d'intégrité **ne sont pas établis ici**. `b-stats-inspect` les constate sans rien supprimer, et ne présente pas une date comme la date de création.
 
@@ -205,7 +214,7 @@ Il mesure la durée murale, le débit et le volume par type de contrôleur, et l
 2. code identique au code rodé : un changement de code scientifique après le rodage invalide celui-ci ;
 3. contrôle Windows d'`ETAPES.cmd` affichant « 0 failed » ;
 4. tests unitaires affichant « OK » ;
-5. référence statistique résolue ;
+5. procédure statistique `b-crossed-bootstrap-1` résolue, avec ses résultats de référence reproduits ;
 6. sélections attendues scellées ;
 7. espace disque suffisant sur le volume cible.
 

@@ -96,9 +96,9 @@ reg query "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" /v PauseUpdatesExp
 | # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
 | 2.1 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran … tests` puis `OK` ou `OK (skipped=n)` | 0 | `logs\tests_B.txt` (lu par le gel) | `FAILED` : ne rien lancer. Envoyer le fichier |
-| 2.2 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_B.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_B.txt` | `Result: 361 checks passed, 0 failed.` | 0 | `logs\verify_etapes_B.txt` (lu par le gel) | Le moindre `FAIL` (`findstr FAIL logs\verify_etapes_B.txt`) : ne pas utiliser `ETAPES.cmd`, envoyer le rapport |
+| 2.2 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_B.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_B.txt` | `Result: … checks passed, 0 failed.` (total **attendu : 355**, non observé) | 0 | `logs\verify_etapes_B.txt` (lu par le gel) | Le moindre `FAIL` (`findstr FAIL logs\verify_etapes_B.txt`) : ne pas utiliser `ETAPES.cmd`, envoyer le rapport |
 
-Le harness vérifie chaque étape deux fois, par `CALL` et par `cmd /c`, en réussite comme en échec. Le nombre 361 est **calculé**, pas observé : 52 appels × 2 codes × 3 contrôles, plus 11 (LaTeX), plus 23 refus, plus 15 lancements parallèles. Avec « 0 failed » et un autre total, le noter et envoyer le rapport.
+Le harness vérifie chaque étape deux fois, par `CALL` et par `cmd /c`, en réussite comme en échec. **Le total de 355 est attendu, pas observé** : 51 appels × 2 codes × 3 contrôles, plus 11 (LaTeX), plus 23 refus, plus 15 lancements parallèles. Ce qui compte, c'est **0 failed**. Les contrôles essentiels (2.1 et 2.2) doivent passer sans échec avant tout le reste. Un autre total avec « 0 failed » est à noter et à signaler, sans le corriger.
 
 ## Étape 3. Disque (lecture seule)
 
@@ -107,7 +107,7 @@ Le harness vérifie chaque étape deux fois, par `CALL` et par `cmd /c`, en réu
 | 3.1 | `ETAPES.cmd disk-audit` | JSON contenant : l'espace libre de C: et D: ; la taille des dossiers de `D:\QMIX_Results` ; le total de `D:\IEV_Results` ; les besoins de B (2470 exécutions) et d'A-ext ; `B_target`, `A_ext_target` ; `B_can_start_on_free_space`, `A_ext_can_start_on_free_space` | 0 | `logs\storage_audit.json` | `false` : mettre `BCONF` ou `AEXT` sur un autre volume existant (étape 0), puis refaire 3.1. Les anciens chiffres d'espace libre (6,8 Go le 2026-11-15) sont périmés |
 | 3.2 | (facultatif) `ETAPES.cmd archive-a [À RENSEIGNER : E:\QMIX_archives\campaignA_design_runs.zip]` | JSON finissant par `"ok": true` ; manifeste et vérification fichier par fichier | 0 | le zip, `.manifest.json`, `.verification.json` | Une archive **copiée ne libère pas** l'espace des originaux : cette livraison ne supprime rien |
 
-Les étapes `b-freeze` et `b-run` refusent si l'espace libre du volume cible est inférieur au besoin restant mesuré plus 4 Go.
+**Besoin disque définitif.** C'est le volume mesuré par le rodage (5.2 et 5.3 : `bytes_per_run` × exécutions restantes, affiché par `start_threshold_gb`), plus une marge de 4 Go. L'audit 3.1 n'en donne qu'une estimation avant mesure. `b-freeze` et `b-run` refusent si le volume cible n'a pas ce besoin.
 
 ## Étape 4. Campagne A-ext : actionné à vert minimal de 5 s
 
@@ -132,20 +132,23 @@ C'est une extension des références classiques, pas une autorité identique à 
 | 5.2 | `ETAPES.cmd b-measure` | 16 exécutions réelles sur graines de **conception**, 4 processus. Dernière ligne : `RUN-IN OK: 16 runs on design seeds, 4 workers, … runs/h`. Le JSON donne `by_type` (durée moyenne et maximale, volume par type de contrôleur), `parallel_efficiency`, `finalize_gzip_s_per_run`, `recheck_s_per_run`, `environment` (Python 3.7.16, SUMO 1.25) | 0 | `<BCONF>\measure.json`, `<BCONF>\measure_runs\` | `STOP: run-in failed …` : **ne pas geler** ; envoyer `<BCONF>\measure_failed_<date>.json`. C'est le premier passage réel de la chaîne complète |
 | 5.3 | `ETAPES.cmd b-plan` | Même empreinte qu'en 5.1 ; `"source": "measure.json (parallel run-in, 4 workers)"`, `wall_h_4_workers`, `wall_h_4_workers_pessimistic`, `start_threshold_gb` | 0 | — | Empreinte différente : signaler. Une durée pessimiste trop longue n'est pas une raison de changer le plan |
 
-## Étape 6. Référence statistique (avant le gel)
+## Étape 6. Procédure statistique : b-crossed-bootstrap-1 (avant le gel)
+
+La procédure retenue pour B est **`b-crossed-bootstrap-1`** : le bootstrap croisé apparié de l'implémentation statistics-1.1, avec la reproduction obligatoire de ses résultats de référence sur cette machine. statistics-1.2 n'est pas revendiqué.
 
 | # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 6.1 | `ETAPES.cmd b-stats-results` | `REPRODUCED: 74 numbers checked, 0 differences (numpy …, python 3.7.16)` | 0 | `logs\stats_reference_check.json` | `DIFFERENT` (code 1) : ne pas résoudre et envoyer le fichier. La version de numpy diffère de celle de la copie de revue (2.4.6) ; il ne faut pas « corriger » la référence |
-| 6.2 | (si statistics-1.2 est visé, ou pour le signalement) `ETAPES.cmd b-stats-inspect C:\Users\LENOVO\QMIX_A003_P3\a003` | `files: … \| __pycache__: PRESENT/absent […] \| top-level code …: [] \| manifests: …` | 0 | `logs\a003_inspection.json` | Aucun import, rien n'est écrit dans A003. Un `__pycache__` présent est **signalé**, pas supprimé. Sa date n'est pas sa date de création |
-| 6.3 | (statistics-1.2 seulement) `ETAPES.cmd b-stats-extract C:\Users\LENOVO\QMIX_A003_P3\a003` | `statistics_1_2 = 8b6413a9… \| equal to declared: True \| specification objects matching: ≥ 1 \| folder changed: []` | 0 | `logs\a003_extract.json` | Code 1 : extraction non valide. Ne pas revendiquer statistics-1.2 |
-| 6.4 | **Soit** `ETAPES.cmd b-stats-resolve`, **soit** `ETAPES.cmd b-stats-resolve-12 [À RENSEIGNER : note de revue]` | `RESOLVED: b-crossed-bootstrap-1: … not labelled statistics-1.2`, ou `RESOLVED: statistics-1.2 (…)` | 0 | `<BCONF>\stats_resolution.json` | `STOP` : lire le message. La note de revue doit être écrite par une autre personne que l'opérateur |
+| 6.1 | `ETAPES.cmd b-stats-results` | `REPRODUCED: 74 numbers checked, 0 differences (numpy …, python 3.7.16)` | 0 | `logs\stats_reference_check.json` | `DIFFERENT` (code 1) : ne pas résoudre, envoyer le fichier. La version de numpy diffère de celle de la copie de revue (2.4.6). Ne jamais « corriger » la référence |
+| 6.2 | `ETAPES.cmd b-stats-resolve` | `RESOLVED: b-crossed-bootstrap-1: … not labelled statistics-1.2` | 0 | `<BCONF>\stats_resolution.json` | `STOP` : lire le message. 6.1 doit avoir réussi |
+| 6.3 | (diagnostic facultatif, pour signaler l'état d'A003) `ETAPES.cmd b-stats-inspect C:\Users\LENOVO\QMIX_A003_P3\a003` | `files: … \| __pycache__: PRESENT/absent […] \| top-level code …: [] \| manifests: …` | 0 | `logs\a003_inspection.json` | Aucun import, rien n'est écrit dans A003. Un `__pycache__` présent est **signalé**, pas supprimé ; sa date n'est pas sa date de création. Ce diagnostic ne change pas la procédure de B |
+
+`b-stats-extract` reste disponible pour un diagnostic historique (`python -B`, instantané avant et après). Il n'intervient pas dans le gel.
 
 ## Étape 7. Gel
 
 | # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 7.1 | `ETAPES.cmd b-freeze` | `plan_fingerprint`, `margins_sha256`, `"jobs": 2470`, `statistical procedure: …`, puis `FROZEN. Next: b-prepare <empreinte>` | 0 | `<BCONF>\margins.json`, `<BCONF>\freeze.json` | Refus voulus : `no run-in` ; `run-in environment … is not Python 3.7 / SUMO 1.25` ; `code changed since the run-in` (rodage à refaire dans une **nouvelle** racine B) ; `etapes_check report …` (refaire 2.2) ; `unit_tests report …` (refaire 2.1) ; `statistical reference not resolved` (étape 6) ; `not enough disk space` (étape 3) ; `already frozen` |
+| 7.1 | `ETAPES.cmd b-freeze` | `plan_fingerprint`, `margins_sha256`, `"jobs": 2470`, `statistical procedure: …`, puis `FROZEN. Next: b-prepare <empreinte>` | 0 | `<BCONF>\margins.json`, `<BCONF>\freeze.json` | Refus voulus : `no run-in` ; `run-in environment … is not Python 3.7 / SUMO 1.25` ; `code changed since the run-in` (rodage à refaire dans une **nouvelle** racine B) ; `etapes_check report …` (refaire 2.2) ; `unit_tests report …` (refaire 2.1) ; `statistical reference not resolved` ou `procedure … refused` (étape 6) ; `not enough disk space` (étape 3) ; `already frozen` |
 
 **Après 7.1, ne plus rien modifier** dans ce dossier ni dans la racine B.
 

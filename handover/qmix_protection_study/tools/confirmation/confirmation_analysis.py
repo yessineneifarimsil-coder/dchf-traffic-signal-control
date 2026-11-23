@@ -1,13 +1,14 @@
 """Pre-registered analysis of the confirmation study (plan B). Written before any confirmation run.
 
     python tools/confirmation/confirmation_analysis.py --cells <confirmation cells.csv> ^
-        --margins <margins.json> --statistics <statistics.py of A004> --out analysis/confirmation
+        --margins <margins.json> --statistics <frozen statistics.py> --statistics-sha256 <sha> --out analysis/confirmation
 
 Input cells.csv: one row per evaluation with scenario, seed, controller (learned:<arm> or the comparator name of
 the plan), model ('' for comparators), method, status, J_primary_s, open_wait_at_end_s. margins.json: the
 validation J of each profile's primary comparator, written at the freeze. The decision rules, their order, the
 margin rule delta = max(0.05 x J_val, 0.10 s), the intervals and the bootstrap are those of confirmation_plan.json,
-whose fingerprint is checked. The bootstrap is paired_crossed_bootstrap of the A004 module (statistics-1.2),
+whose fingerprint is checked. The bootstrap is b-crossed-bootstrap-1: paired_crossed_bootstrap of the frozen module
+(implementation statistics-1.1; statistics-1.2 is not claimed),
 loaded from --statistics and refused unless its file SHA-256 equals --statistics-sha256 (recorded in B's
 freeze.json); it is never copied. b_runner.py analyse calls this module with the frozen values.
 """
@@ -236,19 +237,45 @@ def open_wait(r):
     return r["status"] != "CLEARED" and r.get("open_wait_at_end_s") not in (None, "", "None")
 
 
+def method_profiles(plan, method):
+    """Profiles on which the plan evaluates a learned method: IDQN on arms.idqn_profiles only (R0); QMIX and VDN on
+    every profile with confirmation traffics (the 5 profiles: 500 cells per arm, unchanged rule)."""
+    if method == "idqn":
+        return list(plan.get("arms", {}).get("idqn_profiles") or [])
+    return list(plan["traffic_seeds"])
+
+
+def coverage(rows, plan, method):
+    """Expected identities (training seed, profile, traffic) of one method and arm in the plan's scope, compared
+    with the rows present: a duplicate never compensates for a missing cell."""
+    expected = set((model_seed(t), p, int(s)) for t in plan["learned_policies"].get(method) or []
+                   for p in method_profiles(plan, method) for s in plan["traffic_seeds"][p])
+    got = [(model_seed(r["model"]), r["scenario"], int(r["seed"])) for r in rows]
+    seen, duplicates = set(), []
+    for g in got:
+        if g in seen:
+            duplicates.append(g)
+        seen.add(g)
+    out = {"scope_profiles": method_profiles(plan, method), "expected": len(expected), "present": len(seen & expected),
+           "missing": sorted(expected - seen), "unexpected": sorted(seen - expected), "duplicates": sorted(duplicates)}
+    out["complete"] = bool(expected) and not out["missing"] and not out["unexpected"] and not duplicates
+    return out
+
+
 def service(cells, plan):
-    """Service events of the learned arms, all profiles together: counts at the evaluation / model / traffic levels."""
+    """Service events of the learned arms over each method's planned scope: counts at the evaluation / model /
+    traffic levels, no interval on pooled cells. The descriptive service statement is allowed only on a complete
+    coverage of that scope (IDQN: R0 only), never generalised to profiles where the method was not evaluated."""
     out = []
     for method in sorted(set(c.get("method") for c in cells if c["controller"].startswith("learned:"))):
         for arm in ("guarantee", "none"):
             rows = [c for c in cells if c.get("method") == method and c["controller"] == "learned:" + arm]
             if not rows:
                 continue
-            # the whole design: every policy of the method on all the traffics of the plan (50)
-            full = len(rows) == len(plan["learned_policies"].get(method) or []) * sum(
-                len(v) for v in plan["traffic_seeds"].values())
-            # all profiles together: COUNTS ONLY (intervals are given per profile, never on pooled cells)
+            cov = coverage(rows, plan, method)
+            # counts only (intervals are given per profile, never on pooled cells)
             entry = {"method": method, "arm": arm, "profiles": sorted(set(r["scenario"] for r in rows)),
+                     "coverage": cov,
                      "failure": unit_counts(rows, lambda r: r["status"] != "CLEARED", intervals=False),
                      "open_wait_failure": unit_counts(rows, open_wait, intervals=False),
                      "wait_ge_300s": unit_counts(rows, lambda r: int(r.get("vehicles_waiting_ge_300s") or 0) > 0,
@@ -257,8 +284,10 @@ def service(cells, plan):
             entry["n"] = entry["failure"]["evaluations"]
             entry["failures"] = entry["failure"]["events"]
             entry["open_wait_failures"] = entry["open_wait_failure"]["events"]
-            # Observational statement only: "no open-wait failure observed on the whole design" (never "zero risk").
-            entry["service_claim_allowed"] = arm == "guarantee" and entry["open_wait_failures"] == 0 and full
+            # Observational statement only, on the planned scope: "no open-wait failure observed on these
+            # evaluations" (never "zero risk", never beyond cov["scope_profiles"]).
+            entry["service_claim_allowed"] = arm == "guarantee" and entry["open_wait_failures"] == 0 and cov["complete"]
+            entry["service_claim_scope"] = cov["scope_profiles"]
             out.append(entry)
     return out
 

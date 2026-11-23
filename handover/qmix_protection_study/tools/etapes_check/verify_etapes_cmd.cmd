@@ -80,7 +80,6 @@ for %%R in (0 5) do (
   call :check b-stats-inspect %%R "inspect-a003 --a003 A003DIR" A003DIR
   call :check b-stats-extract %%R "extract-a003 --a003 A003DIR" A003DIR
   call :check b-stats-resolve %%R "--procedure b-crossed-bootstrap-1"
-  call :check b-stats-resolve-12 %%R "--review-note NOTE" NOTE
   call :check b-processes %%R "b_watch.py processes"
   call :check b-backup-logs %%R "b_watch.py backup-logs"
   call :check b-watch %%R "b_watch.py watch"

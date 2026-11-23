@@ -413,15 +413,15 @@ def check_freeze_prerequisites(root, etapes_report, tests_report):
 
 
 def check_stats_resolution(root, plan):
-    """The statistical reference must be RESOLVED (tools/confirmation/stats_reference.py resolve) before the freeze:
-    reproduced synthetic results with the very statistics file B uses, on the Python of the run-in."""
+    """The statistical procedure b-crossed-bootstrap-1 must be RESOLVED (tools/confirmation/stats_reference.py
+    resolve) before the freeze: reproduced synthetic results with the very statistics file B uses, under Python 3.7."""
     path = os.path.join(root, "stats_resolution.json")
     if not os.path.isfile(path):
         raise BError("statistical reference not resolved: run ETAPES.cmd b-stats-results then b-stats-resolve "
                      "(no freeze with an unverified reference)")
     r = read_json(path)
-    if r.get("procedure") not in ("b-crossed-bootstrap-1", "statistics-1.2"):
-        raise BError("unknown statistical procedure {!r}".format(r.get("procedure")))
+    if r.get("procedure") != "b-crossed-bootstrap-1":
+        raise BError("statistical procedure {!r} refused: B uses b-crossed-bootstrap-1".format(r.get("procedure")))
     res = r["results"]
     if not os.path.isfile(res["path"]) or sha256_file(res["path"]) != res["sha256"]:
         raise BError("the reference-results report changed after the resolution")
@@ -429,10 +429,6 @@ def check_stats_resolution(root, plan):
         raise BError("the resolution was made with another statistics module than the one B uses")
     if not str(res["python"]).startswith(REQUIRED_ENV["python"]):
         raise BError("the reference results were reproduced under Python {}, not {}x".format(res["python"], REQUIRED_ENV["python"]))
-    if r["procedure"] == "statistics-1.2":
-        for k in ("extract", "review_note"):
-            if not os.path.isfile(r[k]["path"]) or sha256_file(r[k]["path"]) != r[k]["sha256"]:
-                raise BError("{} of the statistics-1.2 resolution is missing or changed".format(k))
     return dict(r, file_sha256=sha256_file(path))
 
 
@@ -1340,10 +1336,13 @@ def write_report(path, plan, result, service, missing, plotted, secondary, plott
     for s in result["service"]:
         if s["arm"] == "guarantee":
             ow = s["open_wait_failure"]
-            L.append("- {} avec règle anti-attente, tous scénarios (effectifs seulement) : {} échec(s) avec attente ouverte sur {} évaluations ; modèles touchés {}/{}. {}".format(
-                s["method"].upper(), s["open_wait_failures"], s["n"], ow["models"]["units_with_event"], ow["models"]["units"],
-                "Énoncé autorisé : « aucun échec avec attente ouverte observé sur ces évaluations » (pas un risque nul)."
-                if s["service_claim_allowed"] and mode == "confirmatory" else "Pas d'énoncé de desserte sur l'ensemble du plan."))
+            cov = s["coverage"]
+            scope = ", ".join(PLAIN[p] for p in s["service_claim_scope"])
+            L.append("- {} avec règle anti-attente, périmètre prévu : {} (effectifs seulement) : {} échec(s) avec attente ouverte sur {} évaluations ; couverture {}/{} cellules attendues ; modèles touchés {}/{}. {}".format(
+                s["method"].upper(), scope, s["open_wait_failures"], s["n"], cov["present"], cov["expected"],
+                ow["models"]["units_with_event"], ow["models"]["units"],
+                "Énoncé autorisé, sur ce périmètre seulement : « aucun échec avec attente ouverte observé sur ces évaluations » (pas un risque nul)."
+                if s["service_claim_allowed"] and mode == "confirmatory" else "Pas d'énoncé de desserte (couverture incomplète, échec, ou analyse non confirmatoire)."))
     L += ["", "## Critères secondaires (description seulement)", "",
           "D̄ est calculé sur toutes les exécutions techniquement valides, y compris les échecs d'évacuation.", "",
           "| Groupe | Exécutions | Évacuées | D̄ moyen (s) | Temps perdu moyen (s) | Attente maximale (s) |", "|---|---|---|---|---|---|"]

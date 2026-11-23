@@ -450,13 +450,19 @@ class Freeze(Base):
         with self.assertRaises(BR.BError):
             self.freeze()
 
-    def test_statistics_1_2_label_needs_extraction_and_review(self):
+    def test_a_statistics_1_2_resolution_is_refused(self):
         os.makedirs(self.root)
         path = os.path.join(self.reports, "stats_reference_check.json")
         SR.results(None, path)
         with self.assertRaises(SR.StatsRefError):
             SR.resolve(self.root, "statistics-1.2", path)
         self.assertFalse(os.path.exists(os.path.join(self.root, "stats_resolution.json")))
+        # a resolution written by hand with another procedure is refused by the freeze
+        self.run_in()
+        r = self.resolve_stats()
+        BR.write_json(os.path.join(self.root, "stats_resolution.json"), dict(r, procedure="statistics-1.2"))
+        with self.assertRaises(BR.BError):
+            self.freeze()
 
     def test_a_new_selection_after_the_freeze_is_refused(self):
         _fr, plan = self.freeze()

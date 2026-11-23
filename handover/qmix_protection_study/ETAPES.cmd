@@ -17,8 +17,9 @@ rem        archive-a-dryrun. Deleting campaign A data is DISABLED in this delive
 rem Campaign A-ext (actuated, 5 s minimum green; root AEXT): aext-plan | aext-prepare <fingerprint> |
 rem        aext-run <stage> | aext-progress | aext-finalise <stage>     (stages: aext-design, aext-validation)
 rem Campaign B (confirmation; root BCONF; RUNBOOK_B.md): b-plan | b-measure (parallel run-in, design seeds) |
-rem        b-stats-results | b-stats-inspect <A003 folder> | b-stats-extract <A003 folder> | b-stats-resolve |
-rem        b-stats-resolve-12 <review note> | b-freeze (needs logs\verify_etapes_B.txt, logs\tests_B.txt and the
+rem        b-stats-results | b-stats-resolve (procedure b-crossed-bootstrap-1, statistics-1.1 implementation) |
+rem        b-stats-inspect / b-stats-extract <A003 folder> (read-only diagnostics of the historical statistics-1.2
+rem        reference, not claimed) | b-freeze (needs logs\verify_etapes_B.txt, logs\tests_B.txt and the
 rem        statistical resolution, see RUNBOOK_B.md) | b-prepare <fingerprint> | b-run | b-progress | b-analyse
 rem Operations: b-processes (0 none running, 3 workers running) | b-backup-logs | b-watch (second terminal)
 rem Exit codes: every step ends with an explicit "exit /b <code>" so that CALL and "cmd /c ETAPES.cmd <step>"
@@ -88,7 +89,6 @@ if "%~1"=="b-stats-results" goto s_b_stats_results
 if "%~1"=="b-stats-inspect" goto s_b_stats_inspect
 if "%~1"=="b-stats-extract" goto s_b_stats_extract
 if "%~1"=="b-stats-resolve" goto s_b_stats_resolve
-if "%~1"=="b-stats-resolve-12" goto s_b_stats_resolve_12
 if "%~1"=="b-freeze" goto s_b_freeze
 if "%~1"=="b-prepare" goto s_b_prepare
 if "%~1"=="b-run" goto s_b_run
@@ -346,10 +346,6 @@ exit /b %errorlevel%
 
 :s_b_stats_resolve
 python -B tools\confirmation\stats_reference.py resolve --root %BCONF% --procedure b-crossed-bootstrap-1 --results logs\stats_reference_check.json
-exit /b %errorlevel%
-
-:s_b_stats_resolve_12
-python -B tools\confirmation\stats_reference.py resolve --root %BCONF% --procedure statistics-1.2 --results logs\stats_reference_check.json --extract logs\a003_extract.json --review-note "%~2"
 exit /b %errorlevel%
 
 :s_b_freeze

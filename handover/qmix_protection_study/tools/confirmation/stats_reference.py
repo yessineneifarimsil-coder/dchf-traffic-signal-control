@@ -4,8 +4,11 @@
     python -B tools/confirmation/stats_reference.py inspect-a003 --a003 <A003 folder> --out <json>
     python -B tools/confirmation/stats_reference.py extract-a003 --a003 <A003 folder> --inspection <json> --out <json>
     python -B tools/confirmation/stats_reference.py resolve --root <B root> --procedure b-crossed-bootstrap-1 --results <json>
-    python -B tools/confirmation/stats_reference.py resolve --root <B root> --procedure statistics-1.2 --results <json>
-                                                   --extract <json> --review-note <file>
+
+The procedure retained for B is b-crossed-bootstrap-1: the paired crossed bootstrap of the frozen statistics module
+(implementation statistics-1.1), with its synthetic reference results reproduced on the Windows stack. The label
+statistics-1.2 is NOT claimed (no equivalence shown); the A003 inspection and extraction below are read-only
+diagnostics of that historical reference and cannot change the procedure of B.
 
 results       runs paired_crossed_bootstrap of the given statistics module (default: the frozen one B uses) on fixed
               synthetic panels (deterministic and learned comparators, 95 % and 1 - 0.05/12, 10,000 and 2,000
@@ -18,18 +21,15 @@ inspect-a003  NO IMPORT. Lists the folder (relative path, size, modification tim
               created), parses amendment003.py with ast and lists its top-level statements that are not imports,
               definitions or literal assignments (they would run on import), and compares any SHA-256 manifest found
               in the folder with the files present. Never deletes or writes anything in the folder.
-extract-a003  imports amendment003 only after inspect-a003 found no top-level call (or with --accept-top-level-code
+extract-a003  (diagnostic of the historical reference) imports amendment003 only after inspect-a003 found no top-level call (or with --accept-top-level-code
               after reading the inspection), in a child process `python -B` with PYTHONDONTWRITEBYTECODE=1, whose
               working folder is a scratch folder; snapshots the A003 folder before and after (a change is reported and
               makes the extraction invalid); records protocol_hashes()['statistics_1_2'] and the module-level objects
               whose canonical JSON (several canonicalisations tried) reproduces that hash.
-resolve       writes <B root>\\stats_resolution.json, required by `b_runner.py freeze`:
-              * b-crossed-bootstrap-1: B's own versioned procedure = paired_crossed_bootstrap of the frozen module
-                (statistics-1.1 implementation), with its synthetic reference results reproduced on this machine;
-                it is NOT labelled statistics-1.2;
-              * statistics-1.2: only with an extraction whose statistics_1_2 equals 8b6413a9... AND a matching
-                specification object, the reproduced results, and a written independent review note (the operator
-                cannot be the reviewer): the equivalence rests on that review, not on a name or a hash.
+resolve       writes <B root>\\stats_resolution.json, required by `b_runner.py freeze`, for the only accepted
+              procedure b-crossed-bootstrap-1 (paired_crossed_bootstrap of the frozen module, implementation
+              statistics-1.1), once its synthetic reference results are reproduced on this machine. Any other
+              procedure, including "statistics-1.2", is refused.
 """
 from __future__ import absolute_import, division, print_function
 
@@ -52,7 +52,7 @@ PROTECTED = os.environ.get("QMIX_PROTECTED_ROOT", r"C:\Users\LENOVO\QMIX_PROTECT
 REFERENCE_RESULTS = os.path.join(HERE, "stats_reference_results.json")
 DECLARED_HASH = "8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a"
 FAMILY_LEVEL = 1.0 - 0.05 / 12
-PROCEDURES = ("b-crossed-bootstrap-1", "statistics-1.2")
+PROCEDURES = ("b-crossed-bootstrap-1",)          # the only procedure retained for B
 TOLERANCE = 1e-12
 
 
@@ -332,9 +332,10 @@ def extract_a003(folder, inspection, out, accept_top_level=False):
 # Resolution (read by b_runner.freeze).
 # ---------------------------------------------------------------------------
 
-def resolve(root, procedure, results_path, extract=None, review_note=None):
+def resolve(root, procedure, results_path):
     if procedure not in PROCEDURES:
-        raise StatsRefError("procedure must be one of {}".format(PROCEDURES))
+        raise StatsRefError("procedure {!r} refused: the procedure retained for B is b-crossed-bootstrap-1 "
+                            "(statistics-1.2 is not claimed)".format(procedure))
     res = read_json(results_path)
     if res.get("status") != "REPRODUCED":
         raise StatsRefError("the synthetic reference results are not reproduced ({}): no resolution".format(res.get("status")))
@@ -342,20 +343,8 @@ def resolve(root, procedure, results_path, extract=None, review_note=None):
                                                    "statistics_module_sha256": res["statistics_module_sha256"],
                                                    "python": res["python"], "numpy": res["numpy"]},
                "resolved_at": time.strftime("%Y-%m-%d %H:%M:%S")}
-    if procedure == "b-crossed-bootstrap-1":
-        payload["label"] = ("b-crossed-bootstrap-1: paired_crossed_bootstrap of the frozen statistics module "
-                            "({}), not labelled statistics-1.2".format(res.get("protocol_version")))
-    else:
-        if not extract or not review_note:
-            raise StatsRefError("statistics-1.2 needs --extract and --review-note")
-        ex = read_json(extract)
-        if not ex.get("valid") or not ex.get("matches"):
-            raise StatsRefError("the A003 extraction is not valid or found no specification object for the hash")
-        if not os.path.isfile(review_note) or os.path.getsize(review_note) < 200:
-            raise StatsRefError("the review note is missing or too short to document the equivalence")
-        payload["label"] = "statistics-1.2 (equivalence documented by an independent review note)"
-        payload["extract"] = {"path": os.path.abspath(extract), "sha256": sha256_file(extract)}
-        payload["review_note"] = {"path": os.path.abspath(review_note), "sha256": sha256_file(review_note)}
+    payload["label"] = ("b-crossed-bootstrap-1: paired_crossed_bootstrap of the frozen statistics module "
+                        "(implementation {}), not labelled statistics-1.2".format(res.get("protocol_version")))
     write_json(os.path.join(root, "stats_resolution.json"), payload)
     return payload
 
@@ -370,8 +359,6 @@ def main(argv=None):
     ap.add_argument("--root")
     ap.add_argument("--procedure")
     ap.add_argument("--results")
-    ap.add_argument("--extract")
-    ap.add_argument("--review-note")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     try:
@@ -401,7 +388,7 @@ def main(argv=None):
                   .format(ex.get("statistics_1_2"), ex.get("equal_to_declared"), len(ex.get("matches", [])),
                           ex["folder_changed"]))
             return 0 if ex["valid"] else 1
-        r = resolve(a.root, a.procedure, a.results, a.extract, a.review_note)
+        r = resolve(a.root, a.procedure, a.results)
         print("RESOLVED:", r["label"])
         return 0
     except (StatsRefError, OSError, ValueError, KeyError) as error:

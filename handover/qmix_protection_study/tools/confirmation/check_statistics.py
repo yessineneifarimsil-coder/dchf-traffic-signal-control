@@ -1,4 +1,8 @@
-"""Check the A004 statistics module (statistics-1.2) and compare its crossed bootstrap with the frozen one.
+"""HISTORICAL (withdrawn 2026-11-19): its premise - 8b6413a9... as the SHA-256 of a statistics.py file - was wrong
+(it is a protocol hash, reported, not verified). It is not a step of the freeze of B, whose procedure is
+b-crossed-bootstrap-1 (tools/confirmation/stats_reference.py). Kept unchanged below for traceability.
+
+Check the A004 statistics module (statistics-1.2) and compare its crossed bootstrap with the frozen one.
 
     python tools/confirmation/check_statistics.py --a004 <path to the statistics.py of A004> --out logs\\check_statistics.json
 
