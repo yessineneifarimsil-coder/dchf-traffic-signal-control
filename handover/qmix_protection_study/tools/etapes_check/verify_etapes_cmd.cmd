@@ -17,7 +17,7 @@ set "T=%TEMP%\etapes_check_%RANDOM%_%RANDOM%"
 set "S=%T%\study"
 set "ETAPES_CALLS=%T%\calls.txt"
 set /a PASS=0, FAIL=0
-for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses tools\confirmation tools\disk tools\comparators_ext bin) do mkdir "%S%\%%D" 2>nul
+for %%D in (logs tests diagnosis figures manuscript docs\literature tools\robustness tools\comparators tools\article_analyses tools\confirmation tools\disk tools\comparators_ext tools\monitor bin) do mkdir "%S%\%%D" 2>nul
 mkdir "%T%\bin" 2>nul
 rem The steps that read ROB stop with code 2 when the folder does not exist: give them an existing one.
 set "ROB=%T%\rob"
@@ -27,7 +27,7 @@ copy /y "%~dp0test_stub.py" "%S%\tests\test_stub.py" >nul
 copy /y "%~dp0tex_stub.py" "%T%\tex_stub.py" >nul
 set "PDFLATEX=python "%T%\tex_stub.py" pdflatex"
 set "BIBTEX=python "%T%\tex_stub.py" bibtex"
-for %%F in (tools\comparators\check_r0_demand.py tools\confirmation\check_statistics.py tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py tools\disk\audit_storage.py tools\disk\archive_campaign_A.py tools\comparators_ext\aext_search.py tools\confirmation\b_runner.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
+for %%F in (tools\comparators\check_r0_demand.py tools\confirmation\check_statistics.py tools\comparators\comparator_search.py tools\comparators\mp_check.py tools\article_analyses\j_cycle_curve.py tools\article_analyses\clopper_pearson.py tools\article_analyses\guarantee_diagnostic.py tools\robustness\cell_state.py diagnosis\diagnose_clearance_failure.py tools\ablation_runner.py tools\ablation_analysis.py figures\make_figures.py manuscript\check_latex.py tools\robustness\robustness_runner.py tools\robustness\robustness_analysis.py tools\robustness\smoke.py docs\literature\verify_dois.py tools\make_archive.py tools\disk\audit_storage.py tools\disk\archive_campaign_A.py tools\comparators_ext\aext_search.py tools\confirmation\b_runner.py tools\confirmation\stats_reference.py tools\monitor\b_watch.py) do copy /y "%~dp0stub.py" "%S%\%%F" >nul
 >"%T%\bin\conda.cmd" echo @exit /b %%FAKE_CONDA_RC%%
 set "FAKE_CONDA_RC=0"
 set "PATH=%T%\bin;%PATH%"
@@ -76,7 +76,14 @@ for %%R in (0 5) do (
   call :check b-plan %%R "b_runner.py plan"
   call :check b-measure %%R "b_runner.py measure"
   call :check b-freeze %%R "b_runner.py freeze"
-  call :check b-freeze %%R "--a003-root A003DIR" A003DIR
+  call :check b-stats-results %%R "stats_reference.py results"
+  call :check b-stats-inspect %%R "inspect-a003 --a003 A003DIR" A003DIR
+  call :check b-stats-extract %%R "extract-a003 --a003 A003DIR" A003DIR
+  call :check b-stats-resolve %%R "--procedure b-crossed-bootstrap-1"
+  call :check b-stats-resolve-12 %%R "--review-note NOTE" NOTE
+  call :check b-processes %%R "b_watch.py processes"
+  call :check b-backup-logs %%R "b_watch.py backup-logs"
+  call :check b-watch %%R "b_watch.py watch"
   call :check b-prepare %%R "b_runner.py prepare" FPRINT
   call :check b-progress %%R "b_runner.py progress"
   call :check b-analyse %%R "b_runner.py analyse"

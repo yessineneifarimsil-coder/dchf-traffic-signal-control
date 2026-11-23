@@ -44,7 +44,7 @@ class EtapesCmd(unittest.TestCase):
 
     def test_every_step_has_a_block_ending_with_an_explicit_exit(self):
         dispatch, labels = self.blocks()
-        self.assertEqual(len(dispatch), 49)
+        self.assertEqual(len(dispatch), 57)
         self.assertNotIn("archive-a-delete", dispatch)                       # rectificatif 2026-11-23: no deletion
         for step, label in dispatch.items():
             self.assertIn(label, labels, step)
@@ -83,7 +83,7 @@ class EtapesCmd(unittest.TestCase):
 
     def test_optional_argument_branches_end_with_their_own_exit(self):
         _dispatch, labels = self.blocks()
-        for label in ("s_archive_a_to", "s_b_freeze_a003"):
+        for label in ("s_archive_a_to",):
             self.assertTrue(labels[label][0].startswith("python"), label)
             self.assertEqual(labels[label][-1], "exit /b %errorlevel%", label)
         self.assertEqual(labels["b_run_refused"][-1], "exit /b 1")
@@ -98,6 +98,13 @@ class EtapesCmd(unittest.TestCase):
     def test_no_deletion_command_in_this_delivery(self):
         code = [l for l in self.lines if not l.lower().startswith("rem ")]
         self.assertFalse([l for l in code if "--delete" in l or l.lower().startswith(("del ", "rmdir", "rd "))])
+
+    def test_statistics_steps_never_write_bytecode_and_freeze_imports_nothing(self):
+        dispatch, labels = self.blocks()
+        for step in ("b-stats-results", "b-stats-inspect", "b-stats-extract", "b-stats-resolve", "b-stats-resolve-12"):
+            self.assertTrue(labels[dispatch[step]][0].startswith("python -B "), step)
+        self.assertFalse(any("a003" in l.lower() for l in labels[dispatch["b-freeze"]]))
+        self.assertNotIn("s_b_freeze_a003", labels)
 
     def test_new_roots_have_defaults(self):
         self.assertIn(r'if "%AEXT%"=="" set AEXT=%QMIX_RESULTS%\comparators_actuated_g5', self.lines)

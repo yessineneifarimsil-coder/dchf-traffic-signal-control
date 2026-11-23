@@ -1,0 +1,4 @@
+$ WINEPREFIX=... wine cmd /c "echo hi"
+free(): invalid pointer
+/bin/bash: line 15:  1273 Aborted                 WINEPREFIX=$S/wineprefix WINEDEBUG=-all timeout 60 wine cmd /c "echo hi" 2>&1
+exit=134

@@ -31,6 +31,7 @@ from __future__ import absolute_import, print_function
 import argparse
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -156,9 +157,32 @@ def shard_jobs(jobs, shard):
     return [j for pos, j in enumerate(unique_jobs(jobs)) if pos % n == i]
 
 
-def run(root, stage, shard, evaluator=None):
-    load_plan(root)
+SAFETY_BYTES = 4 * 1024 ** 3
+
+
+def free_bytes(path):
+    path = os.path.abspath(path)
+    while not os.path.exists(path):
+        path = os.path.dirname(path)
+    return shutil.disk_usage(path).free
+
+
+def check_disk(root, remaining, bytes_per_run, free=None):
+    """Refuse to start unless the target volume has the remaining runs' measured volume plus 4 GB."""
+    need = int(remaining * bytes_per_run) + SAFETY_BYTES
+    have = free_bytes(root) if free is None else free
+    if have < need:
+        raise AextError("not enough disk space on the volume of {}: {:.2f} GB free, {} runs x {:.0f} kB + 4 GB = "
+                        "{:.2f} GB needed (nothing is deleted by this delivery)".format(root, have / 1e9, remaining,
+                                                                                        bytes_per_run / 1e3, need / 1e9))
+    return need
+
+
+def run(root, stage, shard, evaluator=None, free=None):
+    plan = load_plan(root)
     order = CS.read_order(root, stage)
+    remaining = [j for j in shard_jobs(order["jobs"], shard) if CS.classify(root, j)[0] not in CS.FINISHED]
+    check_disk(root, len(remaining), plan["measure"]["bytes_per_run_compact"], free)
     if evaluator is None:
         import evaluate_ext
         evaluator = evaluate_ext.evaluate
@@ -188,7 +212,7 @@ def run(root, stage, shard, evaluator=None):
             print("INTERRUPTED: {} ({!r})".format(j["directory"], error))
         state, why = CS.classify(root, j)
         log.write(json.dumps({"stage": stage, "dir": j["directory"], "state": state, "problems": why,
-                              "wall_s": time.time() - t0}) + "\n")
+                              "wall_s": time.time() - t0, "t_end": time.time()}) + "\n")
         log.flush()
         if state == "corrupted":
             corrupted.append(j["directory"])

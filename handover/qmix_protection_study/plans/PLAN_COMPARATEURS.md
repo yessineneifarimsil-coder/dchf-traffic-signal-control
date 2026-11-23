@@ -210,3 +210,7 @@ Journaux : `logs/revue_2026-11-07/` et `logs/revue_2026-11-07b/`.
 - l'estimation de la borne supérieure inclut toutes les étapes.
 
 **Commandes :** `ETAPES.cmd aext-plan`, `aext-prepare <empreinte>`, `aext-run <étape>`, `aext-progress`, `aext-finalise <étape>`. Voir `RUNBOOK_B.md`.
+
+**Disque (2026-11-23).** Chaque `aext-run` refuse de démarrer si le volume de la racine A-ext a moins que le volume restant mesuré (taille compacte par exécution × exécutions restantes) plus 4 Go. Rien n'est supprimé.
+
+**État.** Les commandes sont prêtes et testées sur des doublures. **A-ext n'a pas été exécutée.**

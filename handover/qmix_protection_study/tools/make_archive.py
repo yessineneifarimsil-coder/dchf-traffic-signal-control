@@ -39,8 +39,8 @@ def main():
     for d, dirs, names in os.walk(ROOT):
         dirs[:] = sorted(x for x in dirs if x not in EXCLUDE_DIRS)
         for n in sorted(names):
-            if n.endswith(".pyc"):
-                continue
+            if n.endswith(".pyc") or (d == ROOT and n == "MANIFEST_SHA256.txt"):
+                continue                      # the archive writes its own MANIFEST_SHA256.txt (no duplicate member)
             p = os.path.join(d, n)
             files.append((os.path.relpath(p, ROOT).replace("\\", "/"), p))
     lines = []

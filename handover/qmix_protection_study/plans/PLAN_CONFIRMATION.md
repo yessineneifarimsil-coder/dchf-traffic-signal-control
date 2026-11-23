@@ -1,190 +1,150 @@
 # Plan de confirmation pré-enregistré (B)
 
-**Statut : pré-enregistrement amendé (amendement B du 2026-11-19, rectifié le 2026-11-23 ; `plans/PROTOCOL_AMENDMENT_B.md`). Non gelé, non lancé.** Aucune graine de confirmation n'a été générée. Le gel n'est possible qu'avec le code terminé et testé (section 2).
-
-**Historique :**
-- **2026-11-07.** Ont été intégrés la marge d'équivalence, la référence statistique, le périmètre des comparateurs et la justification de l'exclusion d'IDQN.
-- **2026-11-19 (amendement B).** Quatre changements :
-  - B1 : le comparateur principal est la sélection scellée de plus faible J de validation ;
-  - B2 : l'actionné à vert minimal de 5 s (A-ext) est inclus ;
-  - B3 : IDQN reste hors de la famille principale ;
-  - la référence statistics-1.2 est corrigée : c'est une empreinte de protocole, pas le hash d'un fichier.
-- **2026-11-23 (rectificatif).** Six changements :
-  - IDQN (10 checkpoints historiques, garantie seule) est ajouté au scénario de référence, soit 100 évaluations, pour les contrastes QMIX − IDQN et VDN − IDQN (famille F2, section 7) ;
-  - les statistiques de service sont rapportées par unité (modèle, trafic), sans intervalle sur les évaluations regroupées ;
-  - les lecteurs sont testés sur les sorties gzip, et chaque cellule est relue à l'analyse ;
-  - le gel exige un rodage réel en parallèle sous Python 3.7 / SUMO 1.25, le contrôle Windows des commandes et les tests ;
-  - aucune donnée de A n'est supprimée ;
-  - l'actionné g5 est présenté comme une extension des références.
+**Statut : pré-enregistrement amendé (2026-11-19), puis complété le 2026-11-23 (`plans/PROTOCOL_AMENDMENT_B.md`, qui fait foi en cas de contradiction). Non gelé, non lancé.** Aucune graine de confirmation n'a été générée et aucun manifeste de confirmation n'existe.
 
 **Fichiers :**
-- `tools/confirmation/confirmation_plan.json` : paramètres, avec une **empreinte** (`fingerprint`) qui couvre tous les champs ;
-- `tools/confirmation/b_runner.py` : exécuteur de B (plan, mesure, gel, préparation, exécution, avancement, analyse) ;
-- `tools/confirmation/confirmation_analysis.py` : règles de décision, appelées par `b_runner.py analyse`.
+- `tools/confirmation/confirmation_plan.json` : les paramètres, couverts par une empreinte (`fingerprint`) ;
+- `tools/confirmation/b_runner.py` : plan, rodage, gel, préparation, exécution, avancement, analyse ;
+- `tools/confirmation/confirmation_analysis.py` : les règles de décision ;
+- `tools/confirmation/stats_reference.py` : la résolution de la référence statistique.
 
-Empreinte de `confirmation_plan.json` rectifié : `8070f6f62a2bc274283cac1387cd594e630a5fafa31bc5d0c2f93eab213a99fa`. L'empreinte du plan B (tâches, sélections, marges, code) est calculée par `b-plan` et fixée par `b-freeze` dans `freeze.json`.
+Empreinte de `confirmation_plan.json` : `49cc71c75bfc06ea4aef366b29294744a5c077ac252f17a9195f2bf3deceea9f`. L'empreinte du plan B (tâches, sélections, marges, checkpoints, code) est calculée par `b-plan` et scellée par `b-freeze` dans `freeze.json`.
 
-## 1. Question
+## 1. Questions
 
-Les politiques QMIX et VDN figées, avec la seule garantie, servent-elles tous les véhicules sur des trafics jamais utilisés ? Que vaut leur J face au meilleur comparateur classique disponible pour chaque profil (famille F1) ? Et, au scénario de référence, l'apprentissage conjoint fait-il mieux que les apprenants indépendants IDQN (famille F2) ?
+1. Les politiques QMIX et VDN figées, avec la garantie seule, servent-elles tous les véhicules sur des trafics jamais utilisés ?
+2. Que vaut leur J face au meilleur comparateur classique disponible pour chaque profil ?
+3. Au scénario de référence, les méthodes complètes QMIX et VDN, sous garantie, font-elles mieux qu'IDQN sous garantie ? Cette question ne permet pas, à elle seule, une conclusion causale sur la coordination ou le mélangeur.
 
-## 2. Gel : ordre imposé
+## 2. Ordre imposé avant le gel
 
-1. A terminé et A-ext finalisé : toutes les sélections scellées. Le plan refuse de se construire s'il en manque une.
-2. `b-plan`, puis `b-measure`, le rodage réel : 12 exécutions sur graines de conception, jamais de confirmation, sur 4 processus en parallèle. Chacune est finalisée en gzip et relue depuis le gzip. Le rodage enregistre le débit et les versions de Python et de SUMO.
-3. `ETAPES.cmd tests` et `tools\etapes_check\verify_etapes_cmd.cmd` sous Windows, leurs sorties étant enregistrées dans `logs\`.
-4. `b-freeze`, une seule fois. **Il refuse si :**
-   - le rodage n'a pas réussi ;
-   - il n'a pas tourné sous Python 3.7 et SUMO 1.25 ;
-   - le code a changé depuis le rodage ;
-   - le contrôle Windows n'affiche pas « 0 failed » ;
-   - les tests n'affichent pas « OK ».
-
-   Il écrit `margins.json` et `freeze.json`, qui contient :
-   - l'empreinte du plan B ;
-   - le SHA-256 de `margins.json` ;
-   - les SHA-256 du code, `ETAPES.cmd` compris ;
-   - le module statistique (chemin et SHA-256) ;
-   - les SHA-256 des sélections et des 30 checkpoints (dans l'empreinte) ;
-   - les rapports et l'environnement du rodage ;
-   - en option, le contrôle de statistics-1.2 par le dossier A003.
-5. `b-prepare <empreinte>` génère les 50 trafics de confirmation et copie les checkpoints vérifiés. `b-run` lance les exécutions. Toutes les étapes refusent si le code, le plan, les marges ou le module statistique diffèrent du gel.
-6. `b-analyse` relit chaque cellule depuis le gzip et applique l'analyse une fois.
+1. A terminé, A-ext finalisée : toutes les sélections scellées et vérifiées.
+2. Sous Windows, dans un nouveau dossier d'installation vérifié par son manifeste :
+   - `ETAPES.cmd tests` ;
+   - `verify_etapes_cmd.cmd`, sans échec ;
+   - l'audit disque.
+3. `b-plan`, puis `b-measure` : le rodage réel en parallèle, avec 16 cellules sur graines de conception.
+4. La référence statistique : `b-stats-results`, puis `b-stats-resolve`, ou `b-stats-resolve-12` avec les éléments A003 et une revue.
+5. `b-freeze`, une seule fois. Il refuse s'il manque une condition (amendement §9).
+6. Ensuite seulement : `b-prepare <empreinte>` (manifestes de confirmation), `b-run`, `b-progress`, `b-analyse`.
 
 ## 3. Trafics, politiques et bras
 
-**Trafics.** 10 graines neuves par profil (8c51–8c60), soit 50 trafics. Elles sont réservées dans `tools/comparators/seeds.py` et refusées par tout le code de recherche.
+**Trafics.** 8051–8060, 8151–8160, 8251–8260, 8351–8360 et 8451–8460, générés seulement par `b-prepare` après le gel. Ne sont jamais utilisés : 3001–3010, 3101–3120, 2201–2205, 8c01–8c05 et 8c11–8c25.
 
-Ne sont jamais utilisés :
-- 3001–3010 et 3101–3120 ;
-- 8c01–8c05 ;
-- 8c11–8c25.
+**Politiques.** Les 30 du plan de robustesse : 10 QMIX, 10 VDN et 10 IDQN, graines d'entraînement 101 à 110. Identités et SHA-256 sont contrôlés. Aucune nouvelle sélection, aucun entraînement.
 
-**Politiques.** Les 10 checkpoints sélectionnés de QMIX et les 10 de VDN : ceux du plan de robustesse (`<racine robustesse>\plan.json`, copies dans `checkpoints\`), comparés aux étiquettes de `confirmation_plan.json` et vérifiés par SHA-256. Pas de réentraînement, pas de nouvelle sélection.
+**Bras.**
+- QMIX et VDN, sur les 5 profils : garantie (décisions) et sans protection (descriptif).
+- IDQN, en R0 seulement : garantie (décisions des deux contrastes) et sans protection (**descriptif uniquement**).
 
-**IDQN (rectificatif).** Les 10 checkpoints IDQN historiques du plan de robustesse (graines d'entraînement 101–110), évalués avec la garantie seule, au scénario de référence R0, sur ses 10 trafics 8051–8060 : 100 évaluations. Leurs étiquettes et SHA-256 sont lus dans le plan de robustesse et figés au gel.
+## 4. IDQN : pourquoi il est seulement au scénario de référence
 
-**Bras.** Principal : `guarantee`. Secondaire : `none`, pour QMIX et VDN seulement.
+IDQN n'est pas comparé aux contrôleurs classiques. Ce choix a été fait avant tout trafic de confirmation, pour trois raisons :
+1. La question porte sur les méthodes coopératives à factorisation de valeur. IDQN est la référence non coopérative ; ses résultats de développement, d'ablation et de robustesse sont rapportés en entier.
+2. Une instabilité connue avant la confirmation :
+   - **Ablation, vérifiée le 2026-11-07.** C'est la seule méthode dont l'effet du vert minimal est irrégulier. Elle compte 4 échecs sur 50 sans protection.
+   - **Robustesse, vérifiée ici.** Les 35 paires où la garantie seule a augmenté D̄ (définition D2) sont **toutes en R1 (17) et en R2 (18), aucune en R0**.
+3. Le comparer aux classiques élargirait la famille de décision pour une configuration qui n'est pas candidate.
 
-## 4. Pourquoi IDQN est hors de la famille principale
+Il est évalué en R0 pour la question 3. **Le plan ne dit pas que la garantie pénalise IDQN en R0** : les seules interventions listées en R0 sont 2 interventions QMIX, après la demande (vérifié). L'absence d'intervention pendant la demande pour VDN et IDQN en R0 est rapportée, non vérifiée ; B la mesure.
 
-IDQN n'est pas comparé aux contrôleurs classiques (famille F1). Ce choix a été fait avant que le moindre trafic de confirmation existe, pour trois raisons. Depuis le rectificatif, IDQN est en revanche évalué au scénario de référence, comme référence des contrastes de la famille F2 (section 7).
+## 5. Comparateurs par profil
 
-1. **La question.** La confirmation porte sur les méthodes coopératives à factorisation de valeur (QMIX, VDN) avec la seule garantie. IDQN, fait d'apprenants indépendants sans coordination, sert de référence non coopérative dans le développement, l'ablation et la robustesse. Ses résultats y sont rapportés en entier.
-2. **Une instabilité connue avant la confirmation.**
-   - **Ablation, lu.** IDQN est la seule méthode dont l'effet du vert minimal est irrégulier : il améliore certains modèles, en dégrade d'autres, corrige 4 échecs et en crée 1. IDQN compte 4 échecs sur 50 sans protection (Clopper-Pearson à 95 % : [2,2 % ; 19,2 %]).
-   - **Robustesse, rapporté.** La garantie seule augmente D̄ dans 35 paires IDQN, selon la définition D2. Le diagnostic 107/8203 montre de longs verts opposés après les interventions.
-   - **Conséquence.** IDQN avec garantie n'est pas un candidat stable qu'une confirmation pourrait corroborer.
-3. **La multiplicité.** Ajouter IDQN à la famille principale la porterait de 10 à 15 comparaisons face aux classiques. Tous les intervalles de décision s'élargiraient, pour une configuration qui n'est pas candidate. Les contrastes F2 forment une famille distincte, avec son propre contrôle d'erreur (section 7). Ils n'ajoutent pas 5 comparaisons à F1.
-
-**Conséquences déclarées :**
-- La confirmation ne permet aucune conclusion sur IDQN face aux contrôleurs classiques. Elle ne permet que les contrastes F2, au scénario de référence.
-- Ses résultats de développement, d'ablation et de robustesse sont conservés et rapportés en entier.
-- **Limite.** Les méthodes confirmées ont été retenues après les résultats de développement et de robustesse. La confirmation les teste sur des trafics neufs ; elle ne compare pas toutes les méthodes.
-
-## 5. Comparateurs par profil (amendement B1, B2)
-
-**Principal (décisions).**
-- R1–R3 : la sélection scellée de A ou A-ext dont le J de validation est le plus faible, choisie par `b_runner.choose_primary` avant le gel.
-- R0 et R4 : C19 8/5 D9. Pour R4, C19 est gelé et n'a pas été réoptimisé (déclaré).
-
-**Secondaires (descriptifs).** Tous les autres comparateurs évalués du profil.
-
-| Profil | Principal attendu sans A-ext (J_val, δ) | Évalués |
+| Profil | Principal (décisions) | Évalués |
 |---|---|---|
-| R0 | C19 8/5 D9 (2,765 ; 0,138 s) | C19 ; C25 12/7 D0 ; Max Pressure |
-| R1 | plan fixe optimisé g5, C25 14/5 D1 (1,940 ; 0,100 s) | OFT g5 ; OFT min7 ; actionné min7 ; actionné g5 ; C19 ; C25 ; Max Pressure |
-| R2 | actionné min7, gap 2, H 60, V 15 (1,367 ; 0,100 s) | les mêmes |
-| R3 | plans par période g5 (2,722 ; 0,136 s) | les mêmes, plus les plans par période g5 et min7 (OFT g5 = OFT min7 = C25 12/7 D0, évalué une fois) |
-| R4 | C19 8/5 D9 (2,765 ; 0,138 s) | C19 ; C25 ; Max Pressure |
+| R0 | C19, verts 8/5, décalage 9 (J_val 2,765 ; δ 0,138 s) | C19 ; C25 12/7 D0 ; Max Pressure |
+| R1 | plus faible J de validation parmi les sélections scellées (attendu sans A-ext : plan fixe optimisé g5, 1,940 ; δ 0,100 s) | OFT g5 ; OFT min7 ; actionné min7 ; actionné g5 ; C19 ; C25 ; Max Pressure |
+| R2 | idem (attendu sans A-ext : actionné min7, 1,367 ; δ 0,100 s) | les mêmes |
+| R3 | idem (attendu sans A-ext : plans par période g5, 2,722 ; δ 0,136 s) | les mêmes, plus les plans par période g5 et min7 |
+| R4 | C19 : ancrage nominal, **non réoptimisé sur R4** (δ 0,138 s) | C19 ; C25 ; Max Pressure |
 
-L'actionné g5 devient le principal d'un profil s'il fait mieux en validation que la valeur indiquée.
+L'actionné g5 est une extension des références classiques. Il ne reproduit pas l'autorité de commande des apprenants, dont les verts peuvent finir après 2 s.
 
 ## 6. Critères
 
 | Rôle | Critère |
 |---|---|
-| Principal | J par (modèle, trafic), avec N = total du manifeste |
-| Service | Échec d'évacuation ; échec avec un compteur ouvert ; au moins un véhicule en attente ≥ 300 s |
-| Secondaires | D̄ sur la fenêtre de demande ; perte de temps ; attente maximale |
+| Principal | J, le temps d'attente moyen par véhicule, par (modèle, trafic), avec N = total du manifeste. Jamais imputé |
+| Service | échec d'évacuation ; échec avec attente ouverte ; au moins un véhicule en attente ≥ 300 s |
+| Secondaires | D̄ (toutes les paires valides, échecs compris) ; temps perdu ; attente maximale |
 
 ## 7. Statistique
 
-**Procédure :** bootstrap croisé apparié (`paired_crossed_bootstrap`, `official=False`) du module statistique figé, 10 000 réplicats, intervalle par percentiles. Le plan croise 10 modèles et 10 trafics, et le comparateur est diffusé par trafic : D_ij = J_appris(i,j) − J_comparateur(j).
+**Une seule famille de 12 contrastes confirmatoires :**
+- 10 contrastes : QMIX et VDN, avec garantie, contre le principal de chacun des 5 profils ;
+- 2 contrastes en R0 : QMIX et VDN, avec garantie, contre IDQN avec garantie.
 
-**Référence statistics-1.2 (corrigée par l'amendement B).** `8b6413a9ccffa2bbbcf0d3cfdde6c7460b4785193aa419f7d4725885dc38437a` est `amendment003.protocol_hashes()['statistics_1_2']`, l'empreinte d'un JSON canonique. **Ce n'est pas le hash d'un fichier.**
+**Niveaux et estimation.**
+- Bonferroni, pour un risque familial de 5 % : intervalles bilatéraux à **1 − 0,05/12 = 99,5833… %**.
+- Intervalles à 95 % pour la description.
+- 10 000 réplicats du bootstrap croisé apparié.
 
-Conséquences :
-- La règle du 2026-11-07 qui refusait tout fichier d'un autre SHA-256 est retirée, ainsi que l'étape `check-statistics`.
-- Le fichier statistique utilisé (par défaut `adaptive_qmix/protocol/statistics.py` figé, sinon `--statistics` au gel) est enregistré, chemin et SHA-256, dans `freeze.json`. Il est imposé ensuite.
-- `--a003-root` au gel enregistre la valeur statistics-1.2 lue dans A003, en lecture seule. Que statistics-1.2 spécifie exactement ce bootstrap reste à confirmer avant le gel (`RETOURS.md`).
+**Hypothèses et limites du bootstrap** : graines d'entraînement et trafics rééchantillonnés indépendamment, considérés comme échangeables ; approximation, pas une garantie exacte en petit échantillon ; aucune cellule manquante.
 
-**Niveaux :**
-- **F1, décisions : intervalle à 99,5 %** (Bonferroni sur les 10 comparaisons principales, 5 profils × 2 méthodes) ;
-- **Description : 95 %**.
+**Marges.** δ = max(0,05 × J_val ; 0,10 s). Les contrastes avec IDQN reprennent la marge nominale de R0 (0,138 s), seuil d'intérêt pratique commun, non recalculé à partir des résultats.
 
-**Famille F2 : apprentissage conjoint face à IDQN (rectificatif).**
-- **Contrastes :** QMIX − IDQN et VDN − IDQN, au scénario de référence, sous garantie.
-- **Effet :** la moyenne des D_kj = J_M(k, j) − J_IDQN(k, j) sur les 10 graines d'entraînement k et les 10 trafics j.
-- **Procédure :** `paired_crossed_bootstrap` avec comparateur appris. Les modèles sont appariés par numéro de graine, selon la convention du protocole ; ce numéro ne crée aucun lien causal.
-- **Décisions à 97,5 %** (Bonferroni sur 2). Le risque d'erreur est contrôlé à 0,05 dans chaque famille ; aucune conclusion ne combine F1 et F2.
-- **Sensibilité descriptive :** les intervalles sont aussi donnés à 1 − 0,05/12.
-- **Marge :** δ de R0, soit 0,138 s. Les règles de décision sont les mêmes.
-
-**Statistiques de service (rectificatif).**
-- Tous les effectifs sont rapportés, à trois niveaux : évaluations, modèles touchés sur 10, trafics touchés.
-- Aucun intervalle n'est calculé sur les évaluations regroupées, qui ne sont pas indépendantes : mêmes modèles, mêmes trafics.
-- Les intervalles de Clopper-Pearson à 95 % sont donnés au niveau modèle (graines d'entraînement supposées indépendantes, conditionnellement aux trafics) et au niveau trafic (trafics supposés indépendants, conditionnellement aux modèles).
-- Avec 0 événement, la borne unilatérale est donnée (0 sur 10 : 25,9 %).
-- Aucun bootstrap de taux : un [0 ; 0] après zéro échec n'établit pas un risque nul.
-
-**Marge d'équivalence**, par profil : **δ = max(0,05 × J_val ; 0,10 s)**.
-
-- **J_val** est le J moyen de validation du comparateur principal :
-  - R1–R3 : lu dans sa sélection scellée ;
-  - C19 (R0, R4) : 2,765071 s, son J de validation sur 2101–2105 lu dans le gel amendé. D'où δ = 0,138 s pour R0 et R4.
-- Le cas R4 est déclaré : le J de validation de C19 vient de la demande de qualification, pas de R4.
-- La règle et ses deux constantes sont dans le plan et dans l'empreinte. `margins.json` est écrit au gel.
+**Procédure statistique.**
+- **Vérifié :** B appelle `paired_crossed_bootstrap` du module figé (statistics-1.1, fichier `ed133bb2…`).
+- **Rapporté :** `8b6413a9…` est l'empreinte de protocole de statistics-1.2.
+- Le gel exige une résolution :
+  - soit la procédure versionnée `b-crossed-bootstrap-1`, avec ses résultats de référence reproduits sous Windows ;
+  - soit le label statistics-1.2, avec l'extraction A003 et une revue indépendante (amendement §8).
 
 ## 8. Règles de décision
 
-Les règles s'appliquent par profil et par méthode, avec [L, U] l'intervalle à 99,5 % de D. La première règle vérifiée l'emporte.
-
-1. **ÉCHEC DE SERVICE** : au moins un échec avec compteur ouvert sous garantie.
-2. **NON ESTIMABLE** : tout autre échec appris, ou un échec du comparateur. J n'est jamais imputé. Une sensibilité descriptive est rapportée.
+Pour chacun des 12 contrastes, avec [L, U] l'intervalle à 99,5833 %, la première règle vérifiée l'emporte :
+1. **ÉCHEC DE SERVICE** : un échec avec attente ouverte dans un bras avec garantie du contraste.
+2. **NON ESTIMABLE** : un autre échec qui empêche le contraste complet. J n'est pas imputé. Une sensibilité descriptive est donnée (pour IDQN : les paires toutes deux évacuées, avec leur dénominateur).
 3. **SUPÉRIEUR AU-DELÀ DE LA MARGE** : U < −δ.
 4. **SUPÉRIEUR** : U < 0.
 5. **ÉQUIVALENT** : −δ < L et U < δ.
 6. **INFÉRIEUR AU-DELÀ DE LA MARGE** : L > δ.
 7. **INFÉRIEUR** : L > 0.
-8. **NON CONCLUANT** dans tous les autres cas.
+8. **NON CONCLUANT** dans les autres cas.
 
-**Conclusions autorisées :**
-- Elles portent sur un profil et une méthode à la fois, sans décision agrégée.
-- **Énoncé de service** pour une méthode : seulement avec 0 échec avec attente ouverte sur ses 500 évaluations avec garantie, et sous la forme « aucun échec avec attente ouverte observé ». Il est toujours accompagné des effectifs par modèle et par trafic, et jamais présenté comme un risque nul ni comme une garantie de fiabilité. La borne de 0,6 % sur 500 évaluations regroupées est retirée (rectificatif).
-- Les décisions F2 ne valent que pour le scénario de référence, avec ces 10 modèles par méthode.
-- Sont **descriptifs (95 %)** : « guarantee − none », le bras `none` et les comparateurs secondaires.
+**Portée des règles :**
+- Un échec dans un bras sans protection, descriptif, ne change pas un contraste sous garantie.
+- Un échec scientifique est une observation terminée, jamais relancée.
+- **Si un contrôle technique échoue, aucune décision n'est rendue.**
 
-## 9. Chiffrage (recompté par le code, rectificatif)
+**Énoncé de service.** Uniquement « aucun échec avec attente ouverte observé » sur le plan complet, toujours accompagné des effectifs par modèle et par trafic. Ce n'est jamais un risque nul.
+
+## 9. Statistiques de service
+
+- Effectifs bruts, présents et attendus, par profil, méthode et bras. IDQN n'est attendu qu'en R0.
+- Aucun intervalle sur les cellules regroupées.
+- Intervalles de Clopper-Pearson, bilatéraux à 95 %, avec en plus la borne unilatérale à 95 %, au niveau modèle (sur 10) et au niveau trafic (sur 10), stratifiés par profil.
+- Ils portent sur la part de modèles ou de trafics touchés, pas sur une probabilité par véhicule ou par exécution.
+
+## 10. Effets de la garantie (descriptifs)
+
+Pour chaque profil et chaque méthode (IDQN en R0 seulement) :
+- interventions pendant et après la demande, par bras ;
+- J avec garantie − J sans protection, sur les paires toutes deux évacuées ;
+- D̄ avec garantie − D̄ sans protection, sur toutes les paires valides ;
+- effectifs présents et attendus, échecs compris.
+
+## 11. Décompte et coût
 
 | Élément | Exécutions |
 |---|---|
-| QMIX et VDN : 2 méthodes × 10 modèles × 2 bras × 5 profils × 10 trafics | 2000 |
-| IDQN : 10 modèles × garantie × R0 × 10 trafics | 100 |
+| QMIX et VDN : 2 × 10 modèles × 2 bras × 5 profils × 10 trafics | 2000 |
+| IDQN : 10 modèles × 2 bras × R0 × 10 trafics | 200 |
 | Comparateurs : (3 + 7 + 7 + 7 + 3) spécifications distinctes × 10 trafics | 270 |
-| **Total** | **2370** |
+| **Total** | **2470** |
 
-Le compte est affiché par `b-plan` et testé.
+Le décompte est calculé par le code, sans être forcé.
 
-**Coût, mesuré et non promis :**
-- **Durée.** Elle est estimée par le rodage en parallèle : durées moyennes et maximales par type d'exécution, et efficacité mesurée sur 4 processus. Avant mesure, l'ordre de grandeur est de 2,4 h. **Une nuit n'est pas garantie**, à cause des coupures à 7 200 s, de la campagne IEV sur la même machine ou d'une mise en veille.
-- **Disque.** 2370 × la taille mesurée par exécution (journaux en gzip). B ne démarre pas sous ce besoin plus 4 Go. Avant mesure, l'ordre de grandeur est d'environ 8 Go, soit un seuil d'environ 12 Go.
+**Coût.** La durée et le volume viennent du rodage en parallèle. Avant mesure, l'ordre de grandeur est de 2,5 h sur 4 processus et 8,4 Go (seuil de départ : 12,7 Go). **Une nuit n'est pas garantie.**
 
-## 10. Code, tests et commandes
+## 12. Contrats techniques
 
-| Élément | État |
-|---|---|
-| Exécuteur | `tools/confirmation/b_runner.py`, dérivé du runner de robustesse. Mêmes états : complet, échec scientifique, interrompu, corrompu, non commencé. Une seule relance d'une exécution interrompue ; une exécution corrompue n'est jamais relancée. `evaluation_metrics.json` est écrit en dernier. Les dossiers en double sont retirés avant `--shard i/n`. Le seuil de disque est contrôlé au lancement. Les comparateurs passent par `evaluate_comparator.py` (via `evaluate_ext.py`), avec compteurs. |
-| Analyse | `b_runner.py analyse` relit chaque cellule depuis le gzip et produit `analysis/confirmation/` : `decisions.csv` (colonne `family` : F1 ou F2), `forest.png`, `forest_joint.png`, `service_counts.csv` (effectifs et intervalles par unité), `results.json`, `RESULTATS_B.md`. Les règles de décision sont celles de `confirmation_analysis.py`. |
-| Tests | `tests/test_b_runner.py` et `tests/test_confirmation_analysis.py` (synthétiques), plus les lecteurs réels sur des cellules complètes finalisées en gzip (`RealReaders`). Le rodage réel se fait sous Windows (`b-measure`). |
-| Commandes Windows | `ETAPES.cmd b-plan`, `b-measure`, `b-freeze`, `b-prepare <empreinte>`, `b-run`, `b-progress`, `b-analyse`. Séquence complète dans `RUNBOOK_B.md`. |
+Ils sont vérifiés sur chaque cellule, et de nouveau sur le résumé recalculé depuis les traces gzip (amendement §7) :
+- compteur ≤ 127 s dans les bras avec garantie ;
+- aucun écart de feux SUMO dans les bras appris ;
+- vert minimal propre au contrôleur évalué ;
+- cohérence des compteurs, de N et de J ;
+- champs critiques présents.
+
+Une violation est un échec technique, qui n'est jamais relancé et qui bloque les décisions.

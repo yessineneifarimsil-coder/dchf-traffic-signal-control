@@ -1,0 +1,188 @@
+{
+ "at": "2026-11-23 13:08:10",
+ "numpy": "2.4.6",
+ "platform": "Linux-6.18.44-fc-v726-x86_64-with-glibc2.39",
+ "protocol_version": "statistics-1.1",
+ "python": "3.11.17",
+ "results": {
+  "deterministic_10x10|0.950000000000|10000": {
+   "ci_high": -0.03586950000000018,
+   "ci_low": -0.17503025000000025,
+   "columns": 10,
+   "observed": -0.10474000000000011,
+   "replicates": 10000,
+   "rows": 10
+  },
+  "deterministic_10x10|0.950000000000|2000": {
+   "ci_high": -0.03547250000000024,
+   "ci_low": -0.17757350000000025,
+   "columns": 10,
+   "observed": -0.10474000000000011,
+   "replicates": 2000,
+   "rows": 10
+  },
+  "deterministic_10x10|0.995833333333|10000": {
+   "ci_high": -0.00448237499999978,
+   "ci_low": -0.20651987500000032,
+   "columns": 10,
+   "observed": -0.10474000000000011,
+   "replicates": 10000,
+   "rows": 10
+  },
+  "deterministic_10x10|0.995833333333|2000": {
+   "ci_high": 0.0028883333333338183,
+   "ci_low": -0.20599502083333357,
+   "columns": 10,
+   "observed": -0.10474000000000011,
+   "replicates": 2000,
+   "rows": 10
+  },
+  "deterministic_10x6|0.950000000000|10000": {
+   "ci_high": 0.33433749999999984,
+   "ci_low": 0.14066249999999975,
+   "columns": 6,
+   "observed": 0.23999999999999985,
+   "replicates": 10000,
+   "rows": 10
+  },
+  "deterministic_10x6|0.950000000000|2000": {
+   "ci_high": 0.3361791666666665,
+   "ci_low": 0.13863749999999986,
+   "columns": 6,
+   "observed": 0.23999999999999985,
+   "replicates": 2000,
+   "rows": 10
+  },
+  "deterministic_10x6|0.995833333333|10000": {
+   "ci_high": 0.3867250000000009,
+   "ci_low": 0.09244374999999978,
+   "columns": 6,
+   "observed": 0.23999999999999985,
+   "replicates": 10000,
+   "rows": 10
+  },
+  "deterministic_10x6|0.995833333333|2000": {
+   "ci_high": 0.3875312500000018,
+   "ci_low": 0.09949999999999977,
+   "columns": 6,
+   "observed": 0.23999999999999985,
+   "replicates": 2000,
+   "rows": 10
+  },
+  "first_draws_learned_10x10": [
+   {
+    "columns": [
+     0,
+     9,
+     4,
+     3,
+     1,
+     3,
+     2,
+     7,
+     4,
+     6
+    ],
+    "rows": [
+     5,
+     7,
+     4,
+     8,
+     1,
+     7,
+     4,
+     5,
+     2,
+     0
+    ]
+   },
+   {
+    "columns": [
+     2,
+     4,
+     9,
+     3,
+     0,
+     3,
+     0,
+     4,
+     4,
+     3
+    ],
+    "rows": [
+     0,
+     3,
+     1,
+     8,
+     4,
+     7,
+     5,
+     6,
+     7,
+     1
+    ]
+   },
+   {
+    "columns": [
+     6,
+     6,
+     1,
+     6,
+     9,
+     0,
+     7,
+     9,
+     8,
+     7
+    ],
+    "rows": [
+     5,
+     5,
+     9,
+     0,
+     7,
+     7,
+     9,
+     1,
+     4,
+     3
+    ]
+   }
+  ],
+  "learned_10x10|0.950000000000|10000": {
+   "ci_high": 0.012300499999999994,
+   "ci_low": -0.018140000000000073,
+   "columns": 10,
+   "observed": -0.0026600000000000803,
+   "replicates": 10000,
+   "rows": 10
+  },
+  "learned_10x10|0.950000000000|2000": {
+   "ci_high": 0.01186299999999987,
+   "ci_low": -0.01868050000000004,
+   "columns": 10,
+   "observed": -0.0026600000000000803,
+   "replicates": 2000,
+   "rows": 10
+  },
+  "learned_10x10|0.995833333333|10000": {
+   "ci_high": 0.0187872500000001,
+   "ci_low": -0.025533500000000067,
+   "columns": 10,
+   "observed": -0.0026600000000000803,
+   "replicates": 10000,
+   "rows": 10
+  },
+  "learned_10x10|0.995833333333|2000": {
+   "ci_high": 0.018434916666666648,
+   "ci_low": -0.025240250000000162,
+   "columns": 10,
+   "observed": -0.0026600000000000803,
+   "replicates": 2000,
+   "rows": 10
+  },
+  "non_finite_refused": "StatisticsError"
+ },
+ "statistics_module": "/tmp/claude-0/-home-user-dchf-traffic-signal-control/73095c1f-1aa4-543b-985d-68d4c4f29169/scratchpad/frozen/src/adaptive_qmix/protocol/statistics.py",
+ "statistics_module_sha256": "ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a"
+}

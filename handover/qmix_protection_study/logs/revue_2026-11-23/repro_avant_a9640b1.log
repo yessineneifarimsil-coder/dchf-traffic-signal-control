@@ -1,0 +1,3 @@
+baseline real cell: complete
+(a) classify with max_counter_s=200, sumo_mismatch_s=3 in a guarantee cell: ('complete', [])
+(b) re-read differences after changing these two fields: []

@@ -1,0 +1,3 @@
+$ python -B tools/confirmation/stats_reference.py results
+REPRODUCED: 74 numbers checked, 0 differences (numpy 2.4.6, python 3.11.17)
+exit=0

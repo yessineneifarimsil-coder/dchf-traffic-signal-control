@@ -1,0 +1,3 @@
+baseline real cell: complete
+(a) classify with max_counter_s=200, sumo_mismatch_s=3 in a guarantee cell: ('corrupted', ['TECHNICAL CONTRACT: SUMO signal mismatch 3 s (must be 0 in every learned arm)', 'TECHNICAL CONTRACT: max_counter_s = 200 above the guarantee bound 127 s', 'TECHNICAL CONTRACT: max counter logged 200 differs from recomputed 16'])
+(b) re-read differences after changing these two fields: ['max_counter_s: stored 200, re-read 16', 'sumo_mismatch_s: stored 3, re-read 0']

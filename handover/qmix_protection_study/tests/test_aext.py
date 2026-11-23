@@ -178,7 +178,7 @@ class Chain(unittest.TestCase):
         self.assertEqual(len(set.union(*shards)), 405)
 
     def test_chain_selects_by_the_frozen_rule_and_never_reruns(self):
-        codes = [self.q(self.AX.run, self.root, "aext-design", "{}/4".format(i), evaluator=self.fake) for i in range(4)]
+        codes = [self.q(self.AX.run, self.root, "aext-design", "{}/4".format(i), evaluator=self.fake, free=10 ** 13) for i in range(4)]
         self.assertEqual(codes, [0, 0, 0, 0])
         self.assertEqual(len(self.fake.calls), 405)
         self.assertEqual(self.q(self.AX.progress, self.root, "aext-design"), 0)
@@ -188,26 +188,31 @@ class Chain(unittest.TestCase):
         self.assertTrue(all(self.CS.SD.role_of(j["profile"], j["seed"]) == "comparator_validation" for j in val["jobs"]))
         top = val["inputs"]["top5"]["R1_sparse_secondary_heavy_main"]
         self.assertEqual(top[0], {"gap_s": 1, "max_green_H_s": 30, "max_green_V_s": 10, "zone_m": 40})
-        self.q(self.AX.run, self.root, "aext-validation", "0/1", evaluator=self.fake)
+        self.q(self.AX.run, self.root, "aext-validation", "0/1", evaluator=self.fake, free=10 ** 13)
         self.q(self.AX.finalise, self.root, "aext-validation")
         with open(os.path.join(self.root, "selections", "R2_single_secondary_trickle__actuated_g5.json")) as f:
             sel = json.load(f)
         self.assertEqual(sel["selected"]["spec"]["params"], top[0])
         calls = len(self.fake.calls)
-        self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake)
+        self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake, free=10 ** 13)
         self.assertEqual(len(self.fake.calls), calls)
         with self.assertRaises(self.CS.SearchError):
             self.q(self.AX.finalise, self.root, "aext-validation")                     # selections written once
 
     def test_corrupted_result_code_5_and_not_rerun(self):
-        self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake)
+        self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake, free=10 ** 13)
         j = self.CS.read_order(self.root, "aext-design")["jobs"][3]
         with open(os.path.join(self.root, j["directory"], "evaluation_metrics.json"), "w") as f:
             f.write("{")
         calls = len(self.fake.calls)
-        self.assertEqual(self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake), 5)
+        self.assertEqual(self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake, free=10 ** 13), 5)
         self.assertEqual(len(self.fake.calls), calls)
         self.assertEqual(self.q(self.AX.progress, self.root, "aext-design"), 5)
+
+    def test_a_run_refuses_to_start_without_the_disk_space(self):
+        with self.assertRaises(self.AX.AextError):
+            self.AX.run(self.root, "aext-design", "0/1", evaluator=self.fake, free=self.AX.SAFETY_BYTES)
+        self.assertEqual(self.fake.calls, [])
 
     def test_confirmation_seeds_are_refused(self):
         with self.assertRaises(self.CS.SD.SeedError):

@@ -25,7 +25,7 @@ A_STAGES = ["coarse", "fine-g5", "fine-min7", "validation-g5", "validation-min7"
             "actuated-validation", "tod-design-g5", "tod-design-min7", "tod-validation-g5", "tod-validation-min7",
             "robustness-eval"]
 # Defaults used only when the B / A-ext plans do not exist yet (both are replaced by measure.json once measured).
-DEFAULT_B_EVALUATIONS = 2270
+DEFAULT_B_EVALUATIONS = 2470                           # 2,000 QMIX/VDN + 200 IDQN (R0) + 270 comparators
 DEFAULT_B_BYTES_PER_RUN = int(2712403 * 1.25)          # campaign A full-log measure x 1.25 (counters), before gzip
 DEFAULT_AEXT_RUNS = 480
 DEFAULT_AEXT_BYTES_PER_RUN = 82030                     # campaign A compact measure
@@ -127,9 +127,19 @@ def audit(qmix_results, iev, a_root, b_root, aext_root, drives):
                                          threshold_gb=round((b["bytes"] + SAFETY_BYTES) / 1e9, 2)),
                       "A_ext": dict(x, gb=round(x["bytes"] / 1e9, 3))}
     report["B_can_start_on_free_space"] = None
-    usage = free(existing_ancestor(b_root))
-    if "free_bytes" in usage:
-        report["B_can_start_on_free_space"] = usage["free_bytes"] >= b["bytes"] + SAFETY_BYTES
+    report["A_ext_can_start_on_free_space"] = None
+    for key, root, n in (("B", b_root, b), ("A_ext", aext_root, x)):
+        anc = existing_ancestor(root)
+        drive = os.path.splitdrive(os.path.abspath(root))[0] or os.path.sep
+        usage = free(anc)
+        report["{}_target".format(key)] = {"root": root, "existing_ancestor": anc,
+                                           "volume_exists": os.path.isdir(drive + os.sep) if drive != os.path.sep else True,
+                                           "free": usage}
+        if "free_bytes" in usage:
+            report["{}_can_start_on_free_space".format(key)] = usage["free_bytes"] >= n["bytes"] + SAFETY_BYTES
+    report["notes"] = ["read-only audit: nothing is deleted or moved",
+                       "an archive COPY does not free the space of its originals; this delivery deletes nothing",
+                       "set BCONF (or AEXT) to a root on another existing volume when the target volume lacks space"]
     return report
 
 

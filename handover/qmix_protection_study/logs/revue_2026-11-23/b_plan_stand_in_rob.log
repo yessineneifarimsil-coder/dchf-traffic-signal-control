@@ -1,0 +1,24 @@
+R0_reference                     QMIX/VDN  400 | IDQN 200 | comparator runs  30 | comparators ['canonical_mp', 'fixed:min7_C25_12_7_D0', 'fixed:old_C19_8_5_D9']
+R1_sparse_secondary_heavy_main   QMIX/VDN  400 | IDQN   0 | comparator runs  70 | comparators ['actuated_g5', 'actuated_min7', 'canonical_mp', 'fixed:min7_C25_12_7_D0', 'fixed:old_C19_8_5_D9', 'oft_g5', 'oft_min7']
+R2_single_secondary_trickle      QMIX/VDN  400 | IDQN   0 | comparator runs  70 | comparators ['actuated_g5', 'actuated_min7', 'canonical_mp', 'fixed:min7_C25_12_7_D0', 'fixed:old_C19_8_5_D9', 'oft_g5', 'oft_min7']
+R3_time_varying                  QMIX/VDN  400 | IDQN   0 | comparator runs  70 | comparators ['actuated_g5', 'actuated_min7', 'canonical_mp', 'fixed:min7_C25_12_7_D0', 'fixed:old_C19_8_5_D9', 'oft_g5', 'oft_min7', 'tod_g5', 'tod_min7']
+R4_isolated_tail                 QMIX/VDN  400 | IDQN   0 | comparator runs  30 | comparators ['canonical_mp', 'fixed:min7_C25_12_7_D0', 'fixed:old_C19_8_5_D9']
+primary R0_reference                     fixed:old_C19_8_5_D9     J_val 2.7651  delta 0.1383 s
+primary R1_sparse_secondary_heavy_main   oft_g5                   J_val 1.9399  delta 0.1000 s
+primary R2_single_secondary_trickle      actuated_min7            J_val 1.3669  delta 0.1000 s
+primary R3_time_varying                  tod_g5                   J_val 2.7219  delta 0.1361 s
+primary R4_isolated_tail                 fixed:old_C19_8_5_D9     J_val 2.7651  delta 0.1383 s
+{
+ "runs": 2470,
+ "learned": 2200,
+ "comparators": 270,
+ "source": "defaults (B run-in not done yet): NOT measured with the planned parallelism",
+ "wall_h_4_workers": 2.47,
+ "wall_h_4_workers_pessimistic": 2.47,
+ "note": "estimate from the run-in, not a guarantee: runs that reach the 7,200 s cut-off, other loads on the machine (IEV) or a sleep of Windows lengthen it",
+ "disk_bytes": 8374542410,
+ "disk_gb": 8.37,
+ "start_threshold_gb": 12.67,
+ "bytes_per_run": 3390503
+}
+plan fingerprint: b53a1fb2c2a658613ef4e4b98ac97cbd66c01a73c970ac095748fe5c6eb7f62f

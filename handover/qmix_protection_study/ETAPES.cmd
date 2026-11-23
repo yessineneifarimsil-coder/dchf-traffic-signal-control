@@ -17,8 +17,10 @@ rem        archive-a-dryrun. Deleting campaign A data is DISABLED in this delive
 rem Campaign A-ext (actuated, 5 s minimum green; root AEXT): aext-plan | aext-prepare <fingerprint> |
 rem        aext-run <stage> | aext-progress | aext-finalise <stage>     (stages: aext-design, aext-validation)
 rem Campaign B (confirmation; root BCONF; RUNBOOK_B.md): b-plan | b-measure (parallel run-in, design seeds) |
-rem        b-freeze [A003 folder] (needs logs\verify_etapes_B.txt and logs\tests_B.txt, see RUNBOOK_B.md) |
-rem        b-prepare <fingerprint> | b-run | b-progress | b-analyse
+rem        b-stats-results | b-stats-inspect <A003 folder> | b-stats-extract <A003 folder> | b-stats-resolve |
+rem        b-stats-resolve-12 <review note> | b-freeze (needs logs\verify_etapes_B.txt, logs\tests_B.txt and the
+rem        statistical resolution, see RUNBOOK_B.md) | b-prepare <fingerprint> | b-run | b-progress | b-analyse
+rem Operations: b-processes (0 none running, 3 workers running) | b-backup-logs | b-watch (second terminal)
 rem Exit codes: every step ends with an explicit "exit /b <code>" so that CALL and "cmd /c ETAPES.cmd <step>"
 rem both return the code of its script (2026-11-07 correction: "command & goto :eof" returned 0 under cmd /c on
 rem Windows when the command failed). robustness-progress / comparators-progress: 0 every run finished, 3 some
@@ -82,11 +84,19 @@ if "%~1"=="aext-progress" goto s_aext_progress
 if "%~1"=="aext-finalise" goto s_aext_finalise
 if "%~1"=="b-plan" goto s_b_plan
 if "%~1"=="b-measure" goto s_b_measure
+if "%~1"=="b-stats-results" goto s_b_stats_results
+if "%~1"=="b-stats-inspect" goto s_b_stats_inspect
+if "%~1"=="b-stats-extract" goto s_b_stats_extract
+if "%~1"=="b-stats-resolve" goto s_b_stats_resolve
+if "%~1"=="b-stats-resolve-12" goto s_b_stats_resolve_12
 if "%~1"=="b-freeze" goto s_b_freeze
 if "%~1"=="b-prepare" goto s_b_prepare
 if "%~1"=="b-run" goto s_b_run
 if "%~1"=="b-progress" goto s_b_progress
 if "%~1"=="b-analyse" goto s_b_analyse
+if "%~1"=="b-processes" goto s_b_processes
+if "%~1"=="b-backup-logs" goto s_b_backup_logs
+if "%~1"=="b-watch" goto s_b_watch
 if "%~1"=="dois" goto s_dois
 if "%~1"=="archive" goto s_archive
 echo Unknown step "%~1". See the header of this file and README.md.
@@ -322,14 +332,29 @@ if not exist "%ROB%\" goto rob_missing
 python tools\confirmation\b_runner.py measure --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB%
 exit /b %errorlevel%
 
-:s_b_freeze
-if not exist "%ROB%\" goto rob_missing
-if not "%~2"=="" goto s_b_freeze_a003
-python tools\confirmation\b_runner.py freeze --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB%
+:s_b_stats_results
+python -B tools\confirmation\stats_reference.py results --out logs\stats_reference_check.json
 exit /b %errorlevel%
 
-:s_b_freeze_a003
-python tools\confirmation\b_runner.py freeze --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB% --a003-root "%~2"
+:s_b_stats_inspect
+python -B tools\confirmation\stats_reference.py inspect-a003 --a003 "%~2" --out logs\a003_inspection.json
+exit /b %errorlevel%
+
+:s_b_stats_extract
+python -B tools\confirmation\stats_reference.py extract-a003 --a003 "%~2" --inspection logs\a003_inspection.json --out logs\a003_extract.json
+exit /b %errorlevel%
+
+:s_b_stats_resolve
+python -B tools\confirmation\stats_reference.py resolve --root %BCONF% --procedure b-crossed-bootstrap-1 --results logs\stats_reference_check.json
+exit /b %errorlevel%
+
+:s_b_stats_resolve_12
+python -B tools\confirmation\stats_reference.py resolve --root %BCONF% --procedure statistics-1.2 --results logs\stats_reference_check.json --extract logs\a003_extract.json --review-note "%~2"
+exit /b %errorlevel%
+
+:s_b_freeze
+if not exist "%ROB%\" goto rob_missing
+python tools\confirmation\b_runner.py freeze --root %BCONF% --a-root %CMP% --aext-root %AEXT% --rob-root %ROB%
 exit /b %errorlevel%
 
 :s_b_prepare
@@ -363,6 +388,18 @@ exit /b %errorlevel%
 
 :s_b_analyse
 python tools\confirmation\b_runner.py analyse --root %BCONF% --out analysis\confirmation
+exit /b %errorlevel%
+
+:s_b_processes
+python tools\monitor\b_watch.py processes --b-root %BCONF% --aext-root %AEXT%
+exit /b %errorlevel%
+
+:s_b_backup_logs
+python tools\monitor\b_watch.py backup-logs --b-root %BCONF% --aext-root %AEXT%
+exit /b %errorlevel%
+
+:s_b_watch
+python tools\monitor\b_watch.py watch --b-root %BCONF% --aext-root %AEXT% --interval 600
 exit /b %errorlevel%
 
 :s_dois

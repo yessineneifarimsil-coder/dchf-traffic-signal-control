@@ -201,18 +201,20 @@ def guarantee_minus_none(plan, cells, profile, method, ST):
 
 
 UNIT_ASSUMPTIONS = (
-    "Counts are reported for every group. Evaluations are NOT independent: the same 10 models are evaluated on the "
-    "same traffics, so no interval is computed on pooled evaluations. Two units are used instead, each with its own "
-    "assumption. Model level: k = models with at least one event out of the 10 trained models; the interval treats "
-    "the 10 training seeds as independent draws of the training procedure and is conditional on these traffics. "
-    "Traffic level: k = traffics with at least one event out of the traffics of the group; the interval treats the "
-    "traffics as independent draws of the profile generators and is conditional on these 10 models. Both are exact "
-    "Clopper-Pearson 95 % intervals; with k = 0 the one-sided 95 % upper bound is also given. Neither is a "
-    "reliability guarantee, and zero observed events never establish a zero risk.")
+    "Counts are reported for every group, stratified by profile, with the expected count of the plan. Evaluations "
+    "are NOT independent: the same models are evaluated on the same traffics, so no interval is computed on pooled "
+    "evaluations. Two units are used instead, each with its own denominator and assumption. Model level: k = models "
+    "with at least one event out of the models of the group (10); the 10 training seeds are treated as independent "
+    "draws of the training procedure, conditional on these traffics. Traffic level: k = traffics with at least one "
+    "event out of the traffics of the group (10 per profile); the traffics are treated as independent draws of the "
+    "profile generator, conditional on these models. Exact Clopper-Pearson: a TWO-SIDED 95 % interval and, "
+    "separately, a ONE-SIDED 95 % upper bound. They bound the share of models (or traffics) with at least one event, "
+    "not a per-vehicle or per-run failure probability. Neither is a reliability guarantee, and zero observed events "
+    "never establish a zero risk.")
 
 
-def unit_counts(rows, event, learned=True):
-    """Counts of an event at the evaluation, model and traffic levels, with the unit-level intervals."""
+def unit_counts(rows, event, learned=True, intervals=True):
+    """Counts of an event at the evaluation, model and traffic levels; unit-level intervals when asked."""
     import clopper_pearson as CP
     out = {"evaluations": len(rows), "events": sum(1 for r in rows if event(r))}
     units = [("traffics", lambda r: (r["scenario"], int(r["seed"])))]
@@ -222,9 +224,10 @@ def unit_counts(rows, event, learned=True):
         every = set(key(r) for r in rows)
         hit = set(key(r) for r in rows if event(r))
         unit = {"units": len(every), "units_with_event": len(hit)}
-        if every:
-            unit["cp95"] = list(CP.clopper_pearson(len(hit), len(every)))
-            unit["one_sided_upper95_if_zero"] = CP.one_sided_upper_zero(len(every)) if not hit else None
+        if every and intervals:
+            unit["cp95_two_sided"] = list(CP.clopper_pearson(len(hit), len(every)))
+            unit["upper95_one_sided"] = (CP.one_sided_upper_zero(len(every)) if not hit
+                                         else CP.clopper_pearson(len(hit), len(every), confidence=0.90)[1])
         out[name] = unit
     return out
 
@@ -234,7 +237,7 @@ def open_wait(r):
 
 
 def service(cells, plan):
-    """Service events of the learned arms, all profiles together, at the evaluation / model / traffic levels."""
+    """Service events of the learned arms, all profiles together: counts at the evaluation / model / traffic levels."""
     out = []
     for method in sorted(set(c.get("method") for c in cells if c["controller"].startswith("learned:"))):
         for arm in ("guarantee", "none"):
@@ -244,10 +247,12 @@ def service(cells, plan):
             # the whole design: every policy of the method on all the traffics of the plan (50)
             full = len(rows) == len(plan["learned_policies"].get(method) or []) * sum(
                 len(v) for v in plan["traffic_seeds"].values())
+            # all profiles together: COUNTS ONLY (intervals are given per profile, never on pooled cells)
             entry = {"method": method, "arm": arm, "profiles": sorted(set(r["scenario"] for r in rows)),
-                     "failure": unit_counts(rows, lambda r: r["status"] != "CLEARED"),
-                     "open_wait_failure": unit_counts(rows, open_wait),
-                     "wait_ge_300s": unit_counts(rows, lambda r: int(r.get("vehicles_waiting_ge_300s") or 0) > 0),
+                     "failure": unit_counts(rows, lambda r: r["status"] != "CLEARED", intervals=False),
+                     "open_wait_failure": unit_counts(rows, open_wait, intervals=False),
+                     "wait_ge_300s": unit_counts(rows, lambda r: int(r.get("vehicles_waiting_ge_300s") or 0) > 0,
+                                                 intervals=False),
                      "assumptions": UNIT_ASSUMPTIONS}
             entry["n"] = entry["failure"]["evaluations"]
             entry["failures"] = entry["failure"]["events"]
@@ -256,6 +261,19 @@ def service(cells, plan):
             entry["service_claim_allowed"] = arm == "guarantee" and entry["open_wait_failures"] == 0 and full
             out.append(entry)
     return out
+
+
+def cleared_pairs(panel_a, panel_b, plan, profile, method):
+    """J difference over the (training seed, traffic) pairs where BOTH runs cleared: descriptive and conditional.
+    Excluding failures can change the comparison (a method that fails more often loses its hardest traffics)."""
+    seeds = sorted(model_seed(t) for t in plan["learned_policies"].get(method) or [])
+    traffics = plan["traffic_seeds"][profile]
+    diffs = [panel_a[k][j] - panel_b[k][j] for k in seeds for j in traffics
+             if j in panel_a.get(k, {}) and j in panel_b.get(k, {})]
+    return {"pairs_used": len(diffs), "pairs_expected": len(seeds) * len(traffics),
+            "mean_difference": (sum(diffs) / len(diffs)) if diffs else None,
+            "status": "descriptive, conditional on both runs clearing; no decision; excluding failures can change "
+                      "the comparison"}
 
 
 def learned_contrast(plan, cells, profile, method, reference, arm, confidence, delta, decide, ST):
@@ -291,13 +309,10 @@ def learned_contrast(plan, cells, profile, method, reference, arm, confidence, d
         b95 = ST.paired_crossed_bootstrap(panels[method], panels[reference], replicates=reps,
                                           confidence=plan["statistics"]["descriptive_confidence"],
                                           comparator_kind=ST.COMPARATOR_LEARNED)
-        sens = plan["learned_contrasts"]["sensitivity_confidence"]
-        bs = ST.paired_crossed_bootstrap(panels[method], panels[reference], replicates=reps, confidence=sens,
-                                         comparator_kind=ST.COMPARATOR_LEARNED)
         out.update({"mean_difference": b["observed_mean_difference"], "ci": [b["ci_low"], b["ci_high"]],
                     "ci_95": [b95["ci_low"], b95["ci_high"]],
-                    "sensitivity_all_12_bonferroni": {"confidence": sens, "ci": [bs["ci_low"], bs["ci_high"]]},
                     "per_training_seed_difference": dict(zip(b["training_seeds"], b["per_training_seed_difference"]))})
+    out["conditional_descriptive_cleared_pairs"] = cleared_pairs(panels[method], panels[reference], plan, profile, method)
     if decide:
         low, high = out.get("ci", [float("nan"), float("nan")])
         service_failure = bool(opens[method] or opens[reference])
@@ -305,8 +320,20 @@ def learned_contrast(plan, cells, profile, method, reference, arm, confidence, d
     return out
 
 
+def check_family(plan):
+    """One confirmatory family of 12 contrasts, every decision at the same Bonferroni level 1 - 0.05/12."""
+    fam = plan["statistics"]["confirmatory_family"]
+    level = 1.0 - fam["familywise_alpha"] / float(fam["size"])
+    lc = plan.get("learned_contrasts") or {}
+    got = [plan["statistics"]["decision_confidence"]] + ([lc["decision_confidence"]] if lc else [])
+    if fam["size"] != 12 or any(abs(g - level) > 1e-12 for g in got):
+        raise PlanError("decision levels {} differ from the family level {} (size {})".format(got, level, fam["size"]))
+    return level
+
+
 def analyse(plan, cells, margins, ST):
     check_plan(plan)
+    check_family(plan)
     st = plan["statistics"]
     primary, secondary = [], []
     for profile in plan["profiles"]:

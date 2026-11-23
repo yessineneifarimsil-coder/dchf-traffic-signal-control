@@ -1,133 +1,177 @@
-# RUNBOOK B — de l'installation à l'analyse de la confirmation (rectifié le 2026-11-23)
+# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-23)
 
-> **Note.** La consigne du 2026-11-19 s'arrête à « Inclure en tête : ». Ce qui devait figurer ici n'a pas été reçu (voir `RETOURS.md`). L'en-tête ci-dessous contient les prérequis et les règles d'arrêt. Complète-le si ta consigne prévoyait autre chose.
+Ce document est la séquence complète, dans une **Anaconda Prompt** sous Windows. Chaque étape donne la commande exacte, la sortie et le code attendus, les fichiers produits et la conduite à tenir en cas d'écart. Les chemins marqués **[À RENSEIGNER]** ne sont pas connus ici : remplace-les avant de lancer la commande.
 
-## En-tête : prérequis et règles
+## Règles (à relire avant chaque session)
 
-**Nouvelle copie de travail versionnée.**
-- Ne pas écraser `C:\research\qmix_protection_study`.
-- Installer cette livraison dans un **nouveau dossier**, par exemple `C:\research\qmix_protection_study_B_2026-11-23`, à partir du commit indiqué dans le rapport de livraison (branche `claude/elegant-pascal-bid0st`, dossier `handover/qmix_protection_study`).
-- Toute modification ultérieure se fait dans une nouvelle copie, jamais dans celle-ci après le gel.
-
-**Ouvrir une Anaconda Prompt**, puis :
-
-```
-cd /d C:\research\qmix_protection_study_B_2026-11-23
-```
-
-`ETAPES.cmd` active `traffic_rl` lui-même. S'il ne le trouve pas, il renvoie le code 2. La pile attendue est **Python 3.7.16, PyTorch 1.13.1 CPU, SUMO 1.25** : le gel refuse toute autre version de Python ou de SUMO.
-
-**Ne jamais toucher à :**
-- `C:\research\libsignal_repro` ;
-- `D:\IEV_Results`, ni aux processus de la campagne IEV (ne jamais les tuer) ;
-- la racine de la campagne A (`D:\QMIX_Results\comparators_robustness_profiles`) : elle n'est que lue ;
-- les artefacts A002, A003, A004 et ceux du test final.
-
-**Aucune donnée de A n'est supprimée par cette livraison.** La suppression est désactivée dans le code ; l'étape correspondante n'existe plus.
-
-**Avant le calcul long :**
-- appliquer les réglages d'alimentation de la passation du 2026-11-15, section 7 (les commandes `powercfg` y sont ; elles ne sont pas recopiées ici) ;
-- vérifier que Windows Update est en pause.
-
-**Graines :**
-- 3001–3010 sont consommées ; 3101–3120 sont réservées ; 2201–2205 ne sont jamais utilisées ;
-- les graines de confirmation 8c51–8c60 ne sont générées que par `b-prepare`, après `b-freeze`.
-
-**Codes de sortie :**
+- **Ne jamais toucher** à `C:\research\libsignal_repro`, à `D:\IEV_Results` ni à leurs processus (campagne IEV). Ne jamais les arrêter.
+- **Lecture seule** : la racine de A (`D:\QMIX_Results\comparators_robustness_profiles`), les dépôts figés, les checkpoints, et les résultats de A002, A003, A004, de l'ablation, de la robustesse et des comparateurs A. Cette livraison ne supprime aucune donnée.
+- **Aucune mise à jour de `traffic_rl`**, sauf décision explicite.
+- **Graines :**
+  - 3001–3010 sont consommées ; 3101–3120 sont réservées ; 2201–2205 ne sont jamais utilisées ;
+  - 8051–8060, 8151–8160, 8251–8260, 8351–8360 et 8451–8460 ne sont générées que par `b-prepare`, **après** `b-freeze`.
+- **Ne jamais :**
+  - relancer une cellule corrompue ou un échec scientifique ;
+  - modifier un contrôleur ou une sélection parce qu'un résultat déplaît ;
+  - modifier le code après le rodage. Il faudrait alors tout recommencer dans une nouvelle racine B.
+- **Codes de sortie :**
 
 | Code | Sens |
 |---|---|
-| 0 | Réussi, ou toutes les exécutions sont terminées |
+| 0 | Réussi, ou tout est terminé |
 | 1 | `STOP:` avec un message ; rien n'a été modifié au-delà de ce que dit le message |
 | 2 | Environnement conda ou dossier ROB introuvable |
-| 3 | Exécutions pas toutes terminées : relancer l'étape `*-run` |
-| 5 | Au moins un résultat corrompu. **Ne rien relancer.** Le noter et le signaler |
+| 3 | Pas encore terminé (pour `b-processes` : des travailleurs tournent) |
+| 5 | Au moins une cellule corrompue ou en échec technique. Ne rien relancer, signaler |
 
-Les étapes `*-run` ne font que lancer 4 fenêtres. Leur code ne porte que sur le lancement.
-
-**Ne jamais**, quel que soit le résultat :
-- modifier un contrôleur ou relancer une sélection parce qu'un résultat déplaît ;
-- relancer une exécution corrompue ;
-- supprimer un dossier de résultats.
-
-**Durées.** Ce sont des estimations, pas des engagements. **Une nuit n'est pas garantie** pour B : la durée réelle se lit en 3.3, d'après le rodage en parallèle.
+- Les étapes `*-run` ne font que **lancer** 4 fenêtres : leur code ne porte que sur le lancement.
+- **Durées** : ce sont des estimations. **Une nuit n'est pas garantie** pour B.
 
 ---
 
-## Étape 0. Installation et contrôles (avant tout)
+## Étape 0. Installation dans un nouveau dossier
 
-| # | Commande | Sortie attendue | Code | Durée | En cas d'écart |
+| # | Commande | Attendu | Code | En cas d'écart |
+|---|---|---|---|---|
+| 0.1 | `certutil -hashfile "[À RENSEIGNER : chemin du ZIP reçu]" SHA256` | Le SHA-256 donné dans le rapport de livraison | 0 | Différent : ne pas extraire, redemander le ZIP |
+| 0.2 | `mkdir C:\research\qmix_protection_study_B_2026-11-23` | Dossier créé. Il ne doit pas exister ; ne pas réutiliser l'ancien dossier | 0 | « existe déjà » : choisir un autre nom, ne rien écraser |
+| 0.3 | `%SystemRoot%\System32\tar.exe -xf "[À RENSEIGNER : chemin du ZIP]" -C C:\research\qmix_protection_study_B_2026-11-23` | Aucune sortie (le tar de conda échoue avec « Cannot connect to C: » : utiliser celui-ci) | 0 | Erreur : copier le message |
+| 0.4 | `cd /d C:\research\qmix_protection_study_B_2026-11-23` | — | 0 | — |
+| 0.5 | `conda activate traffic_rl`, puis `python --version` et `sumo --version` | `Python 3.7.16` ; `Eclipse SUMO sumo Version 1.25…` (format exact non vérifié ici) | 0 | Autre version : le gel refusera ; signaler. `sumo` introuvable : vérifier `echo %SUMO_HOME%` ; le rodage lit `%SUMO_HOME%\bin\sumo` |
+| 0.6 | `python tools\verify_manifest.py` | `… files listed, 0 problems …` puis `MANIFEST OK` | 0 | `different:` ou `missing:` : la copie n'est pas la livraison. Réextraire dans un nouveau dossier |
+
+**Racines utilisées.** Ce sont les valeurs par défaut d'`ETAPES.cmd`. Les vérifier, ou les définir avant toute étape B, dans **la même** Anaconda Prompt :
+
+```
+set QMIX_RESULTS=D:\QMIX_Results
+set ROB=D:\QMIX_Results\robustness_validation_2026-11-04
+set CMP=D:\QMIX_Results\comparators_robustness_profiles
+set AEXT=D:\QMIX_Results\comparators_actuated_g5
+set BCONF=D:\QMIX_Results\confirmation_B
+```
+
+`BCONF` et `AEXT` peuvent viser un autre volume existant, par exemple `E:\QMIX_Results\confirmation_B` **[À RENSEIGNER si besoin]**. Garder la même valeur pour toutes les étapes de la campagne.
+
+## Étape 1. Machine : alimentation, secteur, mises à jour
+
+**1.1 Alimentation** (une commande par ligne ; les réglages s'appliquent au mode actif) :
+
+```
+powercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS LIDACTION 0
+powercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION 0
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+powercfg /setactive SCHEME_CURRENT
+```
+
+Contrôle : `powercfg /qh SCHEME_CURRENT SUB_BUTTONS LIDACTION` doit afficher `0x00000000` sur secteur.
+
+**1.2 Secteur :**
+
+```
+powershell -NoProfile -Command "(Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus -ErrorAction Stop).PowerOnline"
+```
+
+- Attendu : `True`.
+- `False` : brancher le chargeur avant de continuer.
+- Une erreur, ou aucune réponse, **n'est pas une validation**. Dans ce cas, contrôle alternatif :
+
+  ```
+  powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SystemInformation]::PowerStatus.PowerLineStatus"
+  ```
+
+  Attendu : `Online`. Si les deux échouent, vérifier visuellement le voyant du chargeur et le noter dans le journal.
+
+**1.3 Pause des mises à jour :**
+
+```
+reg query "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" /v PauseUpdatesExpiryTime
+```
+
+- Une date **future** indique une pause **déclarée**. Ce n'est pas une garantie qu'aucun redémarrage ne soit déjà programmé : regarder aussi Paramètres > Windows Update.
+- Une date passée, ou une valeur absente : réactiver la pause dans Paramètres. Ne pas modifier le registre à la main.
+
+## Étape 2. Contrôles du code sous Windows
+
+| # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 0.1 | `python tools\verify_manifest.py` | `MANIFEST OK` | 0 | secondes | `different:` ou `missing:` : la copie n'est pas la livraison. Ne pas continuer, la réinstaller |
-| 0.2 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran … tests`, puis `OK`, ou `OK (skipped=n)` si un module figé manque | 0 | quelques minutes | `FAILED` : ne rien lancer. Le fichier sert au gel, qui le refusera |
-| 0.3 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_B.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_B.txt` | `Result: 319 checks passed, 0 failed.` | 0 | 5 à 15 min | Le moindre `FAIL` (`findstr FAIL logs\verify_etapes_B.txt`) : ne pas utiliser `ETAPES.cmd`, copier le rapport. Le gel le refusera |
-| 0.4 | `ETAPES.cmd disk-audit` | JSON avec l'espace libre de C: et D:, les dossiers de `D:\QMIX_Results`, les runs de A par étape, le total de `D:\IEV_Results`, les besoins estimés, et `B_can_start_on_free_space`. Écrit `logs\storage_audit.json`. Lecture seule | 0 | 1 à 10 min | `B_can_start_on_free_space` vaut `false` : voir l'étape 1 |
+| 2.1 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran … tests` puis `OK` ou `OK (skipped=n)` | 0 | `logs\tests_B.txt` (lu par le gel) | `FAILED` : ne rien lancer. Envoyer le fichier |
+| 2.2 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_B.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_B.txt` | `Result: 361 checks passed, 0 failed.` | 0 | `logs\verify_etapes_B.txt` (lu par le gel) | Le moindre `FAIL` (`findstr FAIL logs\verify_etapes_B.txt`) : ne pas utiliser `ETAPES.cmd`, envoyer le rapport |
 
-Le décompte de 319 contrôles en 0.3 se décompose ainsi :
-- 213 contrôles du 2026-11-07 ;
-- 90 pour les 15 nouveaux appels × 2 codes × 3 contrôles ;
-- 8 pour les 4 refus quand ROB manque ;
-- 2 pour le refus de `b-run` ;
-- 6 pour les lancements parallèles `aext-run` et `b-run`.
+Le harness vérifie chaque étape deux fois, par `CALL` et par `cmd /c`, en réussite comme en échec. Le nombre 361 est **calculé**, pas observé : 52 appels × 2 codes × 3 contrôles, plus 11 (LaTeX), plus 23 refus, plus 15 lancements parallèles. Avec « 0 failed » et un autre total, le noter et envoyer le rapport.
 
-Ce nombre est calculé, pas observé : s'il diffère alors qu'il y a « 0 failed », le noter.
+## Étape 3. Disque (lecture seule)
 
-## Étape 1. Si la place manque (aucune suppression)
-
-Cette livraison ne libère pas de place en supprimant des données de A. Deux options :
-
-- **Mettre la racine de B sur un disque qui a la place.** Avant 3.1, faire `set BCONF=E:\QMIX_Results\confirmation_B` (exemple), et garder la même valeur pour **toutes** les étapes `b-*` de la même Anaconda Prompt. Revérifier avec `ETAPES.cmd disk-audit`.
-- **Archiver en option**, pour une décision ultérieure : `ETAPES.cmd archive-a E:\QMIX_archives\campaignA_design_runs.zip` écrit un zip vérifié (`"ok": true`), sans rien supprimer. `ETAPES.cmd archive-a-dryrun` affiche ce qu'une suppression future, autorisée explicitement, libérerait. Rien n'est changé.
-
-## Étape 2. Campagne A-ext : actionné à vert minimal de 5 s (environ 1 h, non garanti)
-
-L'actionné g5 est une **extension des références classiques**. Il ne reproduit pas l'autorité des méthodes apprises, dont les verts peuvent finir après 2 s.
-
-| # | Commande | Sortie attendue | Code | Durée | En cas d'écart |
+| # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 2.1 | `ETAPES.cmd aext-plan` | `runs_by_stage` = 405 et 75, `runs_upper_bound` = 480, la raison d'être, puis `plan fingerprint: <64 caractères>` | 0 | secondes | Code 1 : copier le message |
-| 2.2 | `ETAPES.cmd aext-prepare <empreinte de 2.1>` | Manifestes de conception et de validation écrits, contrôlés identiques à ceux de A ; ordre `aext-design` écrit | 0 | 1 à 2 min | Manifestes différents de A : arrêter et signaler |
-| 2.3 | `ETAPES.cmd aext-run aext-design` | 4 fenêtres | 0 | environ 50 min | Une fenêtre se ferme tout de suite : lire `logs\aext_aext-design_shard<i>.log` |
-| 2.4 | `ETAPES.cmd aext-progress` | `aext-design` : 405/405 ; `aext-validation` : ordre pas encore écrit | 3 | secondes | Des dossiers interrompus : refaire 2.3. Code 5 : ne rien relancer |
-| 2.5 | `ETAPES.cmd aext-finalise aext-design` | Les 5 meilleurs réglages par profil ; ordre `aext-validation` (75) écrit | 0 | secondes | Code 1 : copier le message |
-| 2.6 | `ETAPES.cmd aext-run aext-validation` | 4 fenêtres | 0 | environ 10 min | comme 2.3 |
-| 2.7 | `ETAPES.cmd aext-progress` | Les deux étapes terminées | 0 | secondes | 3 : refaire 2.6. 5 : ne rien relancer |
-| 2.8 | `ETAPES.cmd aext-finalise aext-validation` | `selections\R1_…__actuated_g5.json`, `R2_…`, `R3_…` | 0 | secondes | Un second appel refuse : c'est normal |
+| 3.1 | `ETAPES.cmd disk-audit` | JSON contenant : l'espace libre de C: et D: ; la taille des dossiers de `D:\QMIX_Results` ; le total de `D:\IEV_Results` ; les besoins de B (2470 exécutions) et d'A-ext ; `B_target`, `A_ext_target` ; `B_can_start_on_free_space`, `A_ext_can_start_on_free_space` | 0 | `logs\storage_audit.json` | `false` : mettre `BCONF` ou `AEXT` sur un autre volume existant (étape 0), puis refaire 3.1. Les anciens chiffres d'espace libre (6,8 Go le 2026-11-15) sont périmés |
+| 3.2 | (facultatif) `ETAPES.cmd archive-a [À RENSEIGNER : E:\QMIX_archives\campaignA_design_runs.zip]` | JSON finissant par `"ok": true` ; manifeste et vérification fichier par fichier | 0 | le zip, `.manifest.json`, `.verification.json` | Une archive **copiée ne libère pas** l'espace des originaux : cette livraison ne supprime rien |
 
-## Étape 3. Campagne B : plan, rodage réel, gel
+Les étapes `b-freeze` et `b-run` refusent si l'espace libre du volume cible est inférieur au besoin restant mesuré plus 4 Go.
 
-| # | Commande | Sortie attendue | Code | Durée | En cas d'écart |
+## Étape 4. Campagne A-ext : actionné à vert minimal de 5 s
+
+C'est une extension des références classiques, pas une autorité identique à celle des apprenants. 480 simulations ; durée estimée d'environ 1 h, non garantie.
+
+| # | Commande | Attendu | Code | En cas d'écart |
+|---|---|---|---|---|
+| 4.1 | `ETAPES.cmd aext-plan` | `runs_by_stage` : 405 et 75 ; `runs_upper_bound` : 480 ; `plan fingerprint: …` | 0 | Copier le message |
+| 4.2 | `ETAPES.cmd aext-prepare <empreinte de 4.1>` | Manifestes contrôlés identiques à ceux de A ; ordre `aext-design` écrit | 0 | Manifestes différents : arrêter et signaler |
+| 4.3 | `ETAPES.cmd aext-run aext-design` | 4 fenêtres | 0 | `STOP: not enough disk space` dans une fenêtre (`logs\aext_aext-design_shard<i>.log`) : voir l'étape 3 |
+| 4.4 | `ETAPES.cmd aext-progress` | `aext-design` 405/405 ; `aext-validation` sans ordre encore | 3 | Interrompues : faire l'étape 9, puis refaire 4.3. Code 5 : ne rien relancer |
+| 4.5 | `ETAPES.cmd aext-finalise aext-design` | Les 5 meilleurs par profil ; ordre `aext-validation` (75) | 0 | Copier le message |
+| 4.6 | `ETAPES.cmd aext-run aext-validation` | 4 fenêtres | 0 | Comme 4.3 |
+| 4.7 | `ETAPES.cmd aext-progress` | Les deux étapes terminées | 0 | Comme 4.4 |
+| 4.8 | `ETAPES.cmd aext-finalise aext-validation` | `selections\R1_…__actuated_g5.json`, `R2_…`, `R3_…` | 0 | Un second appel refuse : c'est normal |
+
+## Étape 5. Plan B et rodage réel
+
+| # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 3.1 | `ETAPES.cmd b-plan` | Une ligne par profil, au format `QMIX/VDN 400 \| IDQN … \| comparator runs …` : IDQN 100 en R0 et 0 ailleurs ; comparateurs 30, 70, 70, 70, 30. Une ligne `primary` par profil. Puis `"runs": 2370`, `"learned": 2100`, `"comparators": 270`, et l'empreinte | 0 | secondes | `sealed selections … required` : A-ext n'est pas finalisé. `IDQN checkpoints have training seeds …` : le plan de robustesse n'a pas les 10 IDQN 101–110, signaler. Principal R1, R2 ou R3 différent de oft_g5 (1,9399), actuated_min7 (1,3669) ou tod_g5 (2,7219) : c'est l'actionné g5 qui fait mieux en validation (B2) ; le noter |
-| 3.2 | `ETAPES.cmd b-measure` | **Rodage réel** : 12 exécutions sur graines de **conception** (R0 8011–8012, R1 8111–8112, R3 8311), sur 4 processus en parallèle. Chacune est finalisée en gzip et relue depuis le gzip. Dernière ligne : `RUN-IN OK: 12 runs on design seeds, 4 workers, … runs/h`. Le JSON donne aussi `parallel_efficiency`, les durées moyennes et maximales, `recheck_s_per_run` et `environment` (doit montrer Python 3.7.16 et SUMO 1.25) | 0 | 2 à 10 min | `STOP: run-in failed …` : **ne pas geler**. Copier le message ; le détail est dans `measure_failed_<date>.json` de la racine B. C'est le premier passage réel de la chaîne complète (garantie, compteurs, gzip, relecture) |
-| 3.3 | `ETAPES.cmd b-plan` | Même empreinte qu'en 3.1. `"source": "measure.json (parallel run-in, 4 workers)"`, `wall_h_4_workers` (attendu), `wall_h_4_workers_pessimistic`, `start_threshold_gb` | 0 | secondes | Empreinte différente : arrêter et signaler. Si la durée pessimiste dépasse la fenêtre disponible, lancer B quand même un soir, et non la veille d'une échéance ; une exécution interrompue reprend (étape 4) |
-| 3.4 | `ETAPES.cmd b-freeze` ou `ETAPES.cmd b-freeze C:\Users\LENOVO\QMIX_A003_P3\a003` | `plan_fingerprint`, `margins_sha256`, `"jobs": 2370`, `statistics_1_2`, puis `FROZEN. Next: b-prepare <empreinte>` | 0 | secondes | **Refus attendus et voulus :** `no run-in` ; `run-in environment … is not Python 3.7 / SUMO 1.25` ; `code changed since the run-in` (refaire 3.2 dans une **nouvelle** racine B) ; `etapes_check report … does not show a clean pass` (refaire 0.3) ; `unit_tests report …` (refaire 0.2) ; `already frozen`. `equal: false` dans `statistics_1_2` : arrêter avant 4.1 et signaler |
+| 5.1 | `ETAPES.cmd b-plan` | Par profil : `QMIX/VDN 400`, `IDQN 200` en R0 et 0 ailleurs, comparateurs 30/70/70/70/30 ; une ligne `primary` par profil ; `"runs": 2470` (si les sélections restent celles attendues) ; l'empreinte | 0 | — | `sealed selections … required` : A-ext n'est pas finalisée. `IDQN checkpoints have training seeds …` : signaler. Un autre principal que oft_g5 (R1), actuated_min7 (R2), tod_g5 (R3) : c'est l'actionné g5 qui fait mieux en validation ; le noter. Un autre total : le noter, sans le corriger |
+| 5.2 | `ETAPES.cmd b-measure` | 16 exécutions réelles sur graines de **conception**, 4 processus. Dernière ligne : `RUN-IN OK: 16 runs on design seeds, 4 workers, … runs/h`. Le JSON donne `by_type` (durée moyenne et maximale, volume par type de contrôleur), `parallel_efficiency`, `finalize_gzip_s_per_run`, `recheck_s_per_run`, `environment` (Python 3.7.16, SUMO 1.25) | 0 | `<BCONF>\measure.json`, `<BCONF>\measure_runs\` | `STOP: run-in failed …` : **ne pas geler** ; envoyer `<BCONF>\measure_failed_<date>.json`. C'est le premier passage réel de la chaîne complète |
+| 5.3 | `ETAPES.cmd b-plan` | Même empreinte qu'en 5.1 ; `"source": "measure.json (parallel run-in, 4 workers)"`, `wall_h_4_workers`, `wall_h_4_workers_pessimistic`, `start_threshold_gb` | 0 | — | Empreinte différente : signaler. Une durée pessimiste trop longue n'est pas une raison de changer le plan |
 
-**Après 3.4, ne plus rien modifier** dans cette copie de travail ni dans la racine B : code, `confirmation_plan.json`, sélections, module statistique.
+## Étape 6. Référence statistique (avant le gel)
 
-## Étape 4. Campagne B : exécution
-
-| # | Commande | Sortie attendue | Code | Durée | En cas d'écart |
+| # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 4.1 | `ETAPES.cmd b-prepare <empreinte de 3.4>` | `prepared … (2370 runs)` : 50 trafics de confirmation générés, 30 checkpoints copiés et vérifiés (10 QMIX, 10 VDN, 10 IDQN) | 0 | 1 à 3 min | `differs from the freeze` : quelque chose a changé depuis le gel, signaler. `already prepared` : passer à 4.2 |
-| 4.2 | `ETAPES.cmd b-run` | `preflight OK: 2370 runs to do, … GB required …`, puis 4 fenêtres | 0 | valeur de 3.3, **sans garantie** | `STOP: not enough disk space` : aucune fenêtre lancée, voir l'étape 1. Autre `STOP` : copier le message |
-| 4.3 | `ETAPES.cmd b-progress`, à vérifier au matin | `finished 2370/2370` | 0 | 1 à 2 min | **3** et des fenêtres encore ouvertes : B tourne encore, attendre. **3** et toutes les fenêtres fermées : refaire 4.2 (une exécution interrompue est relancée une fois). **5** : ne rien relancer ; noter les dossiers `CORRUPTED` |
+| 6.1 | `ETAPES.cmd b-stats-results` | `REPRODUCED: 74 numbers checked, 0 differences (numpy …, python 3.7.16)` | 0 | `logs\stats_reference_check.json` | `DIFFERENT` (code 1) : ne pas résoudre et envoyer le fichier. La version de numpy diffère de celle de la copie de revue (2.4.6) ; il ne faut pas « corriger » la référence |
+| 6.2 | (si statistics-1.2 est visé, ou pour le signalement) `ETAPES.cmd b-stats-inspect C:\Users\LENOVO\QMIX_A003_P3\a003` | `files: … \| __pycache__: PRESENT/absent […] \| top-level code …: [] \| manifests: …` | 0 | `logs\a003_inspection.json` | Aucun import, rien n'est écrit dans A003. Un `__pycache__` présent est **signalé**, pas supprimé. Sa date n'est pas sa date de création |
+| 6.3 | (statistics-1.2 seulement) `ETAPES.cmd b-stats-extract C:\Users\LENOVO\QMIX_A003_P3\a003` | `statistics_1_2 = 8b6413a9… \| equal to declared: True \| specification objects matching: ≥ 1 \| folder changed: []` | 0 | `logs\a003_extract.json` | Code 1 : extraction non valide. Ne pas revendiquer statistics-1.2 |
+| 6.4 | **Soit** `ETAPES.cmd b-stats-resolve`, **soit** `ETAPES.cmd b-stats-resolve-12 [À RENSEIGNER : note de revue]` | `RESOLVED: b-crossed-bootstrap-1: … not labelled statistics-1.2`, ou `RESOLVED: statistics-1.2 (…)` | 0 | `<BCONF>\stats_resolution.json` | `STOP` : lire le message. La note de revue doit être écrite par une autre personne que l'opérateur |
 
-## Étape 5. Analyse
+## Étape 7. Gel
 
-| # | Commande | Sortie attendue | Code | Durée | En cas d'écart |
+| # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 5.1 | `ETAPES.cmd b-analyse` | Des lignes `F1 …` (10) et `F2 …` (2) avec les décisions, `missing cells: 0`, puis `written: analysis\confirmation` | 0 | relecture gzip : 2370 × `recheck_s_per_run` de 3.2, plus quelques minutes de bootstrap | `missing cells` > 0 : cellules absentes, corrompues ou dont la relecture diffère (`recheck_mismatch`). Elles sont listées dans `results.json`, jamais imputées ; les comparaisons concernées sont marquées INCOMPLET |
+| 7.1 | `ETAPES.cmd b-freeze` | `plan_fingerprint`, `margins_sha256`, `"jobs": 2470`, `statistical procedure: …`, puis `FROZEN. Next: b-prepare <empreinte>` | 0 | `<BCONF>\margins.json`, `<BCONF>\freeze.json` | Refus voulus : `no run-in` ; `run-in environment … is not Python 3.7 / SUMO 1.25` ; `code changed since the run-in` (rodage à refaire dans une **nouvelle** racine B) ; `etapes_check report …` (refaire 2.2) ; `unit_tests report …` (refaire 2.1) ; `statistical reference not resolved` (étape 6) ; `not enough disk space` (étape 3) ; `already frozen` |
 
-**Fichiers produits** dans `analysis\confirmation\` :
-- `decisions.csv` : colonne `family`, F1 (face au classique principal, 99,5 %) ou F2 (QMIX − IDQN et VDN − IDQN, 97,5 %) ;
-- `forest.png` et `forest_joint.png` : seulement si matplotlib est installé, non vérifié ;
-- `service_counts.csv` : tous les effectifs, et les intervalles par modèle et par trafic ;
-- `results.json` ;
-- `RESULTATS_B.md`.
+**Après 7.1, ne plus rien modifier** dans ce dossier ni dans la racine B.
 
-**Lire les taux de service correctement.**
-- Aucun intervalle n'est calculé sur les évaluations regroupées.
-- « 0 événement » n'est jamais un risque nul : la borne unilatérale par modèle, pour 0 sur 10, est de 25,9 %.
+## Étape 8. Préparation, lancement, suivi
 
-**Si `forest.png` manque :** installer matplotlib change l'environnement `traffic_rl`. Le demander avant.
+| # | Commande | Attendu | Code | En cas d'écart |
+|---|---|---|---|---|
+| 8.1 | `ETAPES.cmd b-prepare <empreinte de 7.1>` | `prepared … (2470 runs)` : 50 manifestes de confirmation, 30 checkpoints copiés et vérifiés | 0 | `differs from the freeze` : signaler. `already prepared` : passer à 8.2 |
+| 8.2 | `ETAPES.cmd b-processes` | `0 B / A-ext process(es) running: a relaunch is possible` | 0 | Code 3 : des travailleurs tournent déjà, **ne pas relancer** |
+| 8.3 | `ETAPES.cmd b-run` | `preflight OK: … runs to do, … GB required …`, puis 4 fenêtres | 0 | `STOP: not enough disk space` : aucune fenêtre lancée, voir l'étape 3. Autre `STOP` : copier le message |
+| 8.4 | Dans une **seconde** Anaconda Prompt (même dossier, `conda activate traffic_rl`, mêmes `set`) : `ETAPES.cmd b-watch` | Toutes les 10 min : avancement par étape et par profil ; exécutions terminées dans les 30 dernières minutes et débit ; estimation du restant (`estimation indisponible` sans historique suffisant) ; processus B et A-ext actifs (sans compter le suivi lui-même) ; espace libre des volumes cibles | — | Arrêt par Ctrl+C. Le décompte « finished » est rapide ; l'état qui fait foi est celui de `b-progress` |
+| 8.5 | `ETAPES.cmd b-progress` | `finished 2470/2470` | 0 | 3 : voir l'étape 9. 5 : ne rien relancer ; noter les lignes `TECHNICAL` ou `CORRUPTED` |
+
+## Étape 9. Reprise après une interruption (coupure, redémarrage)
+
+1. `ETAPES.cmd b-processes` doit répondre code 0. Avec le code 3, des travailleurs tournent encore : attendre.
+2. `ETAPES.cmd b-backup-logs` copie `logs\b_shard*.log`, `logs\aext_*_shard*.log` et les `run_log_*.jsonl` dans `logs\backup_<date>\`. Rien n'est supprimé. Une relance écrase les journaux de console.
+3. `ETAPES.cmd b-run`, ou `aext-run <étape>`. Une exécution interrompue est relancée une seule fois ; une cellule corrompue ou un échec scientifique ne le sont jamais.
+4. Pour diagnostiquer un arrêt : `Get-WinEvent` sur le journal System, événements 41, 42, 1074 et 6008.
+
+## Étape 10. Analyse
+
+| # | Commande | Attendu | Code | Fichiers | En cas d'écart |
+|---|---|---|---|---|---|
+| 10.1 | `ETAPES.cmd b-analyse` | 12 lignes `[family of 12] …` (10 face aux classiques, 2 face à IDQN) avec les décisions, `missing cells: 0`, `written: analysis\confirmation` | 0 | `analysis\confirmation\` : `decisions.csv`, `technical_checks.json`, `service_counts.csv`, `results.json`, `RESULTATS_B.md`, `forest*.png` (si matplotlib est présent) | Décisions `BLOCKED` : un contrôle technique a échoué (`technical_checks.json`), aucune décision n'est rendue, signaler. `INCOMPLETE` : cellules absentes, jamais imputées |
+
+Chaque cellule est relue depuis ses traces gzip, ce qui coûte environ 2470 × `recheck_s_per_run` de 5.2. L'option `--no-recheck`, qui ne passe pas par `ETAPES.cmd`, ne produit qu'un diagnostic, sans décision.
+
+Aucune conclusion de B n'est rédigée avant ces fichiers.

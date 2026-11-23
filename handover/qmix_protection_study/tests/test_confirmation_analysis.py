@@ -71,7 +71,9 @@ class Plan(unittest.TestCase):
         self.assertEqual(len(set(seeds)), 50)
         self.assertFalse(set(seeds) & (set(range(3001, 3011)) | set(range(3101, 3121))))
         self.assertTrue(all(s % 100 >= 51 for s in seeds))
-        self.assertEqual(PLAN["statistics"]["decision_confidence"], 0.995)
+        self.assertEqual(PLAN["statistics"]["decision_confidence"], 1 - 0.05 / 12)          # one family of 12
+        self.assertEqual(PLAN["statistics"]["confirmatory_family"]["size"], 12)
+        self.assertAlmostEqual(CA.check_family(PLAN), 0.9958333333333333)
         self.assertEqual(PLAN["statistics"]["descriptive_confidence"], 0.95)
         self.assertEqual(PLAN["statistics"]["replicates"], 10000)
         self.assertEqual(PLAN["statistics"]["reference"]["protocol_hash"], CS.REFERENCE_SHA256)   # protocol hash, not a file
@@ -82,9 +84,10 @@ class Plan(unittest.TestCase):
         lc = PLAN["learned_contrasts"]                                            # rectificatif 2026-11-23
         self.assertEqual((lc["profiles"], lc["methods"], lc["reference"], lc["arm"]),
                          (["R0_reference"], ["qmix", "vdn"], "idqn", "guarantee"))
-        self.assertEqual((lc["decision_confidence"], lc["evaluations_added"]), (0.975, 100))
-        self.assertAlmostEqual(lc["sensitivity_confidence"], 1 - 0.05 / 12)
-        self.assertIn("2,370", PLAN["costs"])
+        self.assertEqual((lc["decision_confidence"], lc["evaluations_added"]), (1 - 0.05 / 12, 100))
+        self.assertNotIn("sensitivity_confidence", lc)
+        self.assertIn("2,470", PLAN["costs"])
+        self.assertEqual(PLAN["arms"]["per_method"]["idqn"], ["guarantee", "none"])
         self.assertIn("b_runner.py plan", PLAN["costs"])                       # counted by code (amendment B)
         self.assertEqual(sorted(PLAN["amendment_B"]["deviations"]), ["B1", "B2", "B3"])
 
@@ -136,7 +139,7 @@ class Analysis(unittest.TestCase):
         r1 = self.primary(result, "R1_sparse_secondary_heavy_main", "qmix")
         self.assertEqual((r1["comparator"], r1["category"]), ("oft_g5", "INFERIOR BEYOND MARGIN"))
         self.assertAlmostEqual(r0q["delta"], 0.15)
-        self.assertEqual(r0q["confidence"], 0.995)
+        self.assertEqual(r0q["confidence"], 1 - 0.05 / 12)
         gmn = [s for s in result["secondary_descriptive"] if s.get("contrast", "").startswith("guarantee - none")]
         self.assertEqual(len(gmn), 4)
         self.assertAlmostEqual(gmn[0]["mean_difference"], 0.1, places=2)
@@ -173,12 +176,62 @@ class Analysis(unittest.TestCase):
         self.assertEqual((u["evaluations"], u["events"]), (100, 2))
         self.assertEqual((u["models"]["units"], u["models"]["units_with_event"]), (10, 1))
         self.assertEqual((u["traffics"]["units"], u["traffics"]["units_with_event"]), (10, 2))
-        self.assertNotIn("cp95", u)                                                # nothing on pooled evaluations
+        self.assertNotIn("cp95_two_sided", u)                                      # nothing on pooled evaluations
+        lo, hi = u["models"]["cp95_two_sided"]
+        self.assertTrue(lo < 0.1 < hi and u["models"]["upper95_one_sided"] < hi)   # one-sided bound is distinct
         zero = CA.unit_counts(rows[2:], CA.open_wait)
         self.assertEqual(zero["events"], 0)
-        self.assertAlmostEqual(zero["models"]["one_sided_upper95_if_zero"], 1 - 0.05 ** 0.1)   # 25.9 %, not 0
-        self.assertGreater(zero["models"]["cp95"][1], 0.25)
+        self.assertAlmostEqual(zero["models"]["upper95_one_sided"], 1 - 0.05 ** 0.1)   # 25.9 %, not 0
+        self.assertGreater(zero["models"]["cp95_two_sided"][1], 0.25)
+        pooled = CA.unit_counts(rows, CA.open_wait, intervals=False)
+        self.assertNotIn("cp95_two_sided", pooled["models"])
         self.assertIn("zero risk", CA.UNIT_ASSUMPTIONS)
+
+    def test_a_level_other_than_the_family_level_is_refused(self):
+        plan = copy.deepcopy(self.plan)
+        plan["learned_contrasts"]["decision_confidence"] = 0.975                    # the withdrawn separate family
+        plan["fingerprint"] = CA.plan_fingerprint(plan)
+        with self.assertRaises(CA.PlanError):
+            CA.analyse(plan, self.cells, self.margins, self.ST)
+
+    def test_a_failure_in_the_descriptive_none_arm_does_not_touch_the_guarantee_contrast(self):
+        cells = [dict(c) for c in self.cells]
+        victim = [i for i, c in enumerate(cells) if c["scenario"] == "R0_reference" and c["method"] == "qmix"
+                  and c["controller"] == "learned:none"][0]
+        cells[victim] = dict(cells[victim], status="CLEARANCE_FAILURE", J_primary_s="", open_wait_at_end_s="500")
+        r = self.primary(CA.analyse(self.plan, cells, self.margins, self.ST), "R0_reference", "qmix")
+        self.assertEqual(r["category"], "SUPERIOR BEYOND MARGIN")
+
+    def test_joint_contrast_rules_and_conditional_descriptive(self):
+        plan = copy.deepcopy(self.plan)
+        plan["learned_policies"]["idqn"] = ["idqn_seed{}_tX".format(s) for s in range(101, 111)]
+        plan["fingerprint"] = CA.plan_fingerprint(plan)
+        cells = [dict(c) for c in self.cells]
+        q = dict(((int(c["model"].split("_seed")[1][:3]), c["seed"]), float(c["J_primary_s"])) for c in cells
+                 if c["scenario"] == "R0_reference" and c["method"] == "qmix" and c["controller"] == "learned:guarantee")
+        for (seed, traffic), j in sorted(q.items()):
+            for arm in ("guarantee", "none"):
+                cells.append(self.row("R0_reference", traffic, "learned:" + arm, "idqn_seed{}_tX".format(seed), "idqn", j + 0.5))
+        r = [d for d in CA.analyse(plan, cells, self.margins, self.ST)["joint_learning"] if d["method"] == "qmix"][0]
+        self.assertEqual(r["category"], "SUPERIOR BEYOND MARGIN")               # QMIX 0.5 s below IDQN, delta 0.15
+        self.assertEqual(r["conditional_descriptive_cleared_pairs"]["pairs_used"], 100)
+        # an IDQN failure without open wait in the guarantee arm: NOT ESTIMABLE, conditional descriptive on 99 pairs
+        i = [k for k, c in enumerate(cells) if c["method"] == "idqn" and c["controller"] == "learned:guarantee"][0]
+        original = dict(cells[i])
+        cells[i] = dict(cells[i], status="CLEARANCE_FAILURE", J_primary_s="")
+        r = [d for d in CA.analyse(plan, cells, self.margins, self.ST)["joint_learning"] if d["method"] == "qmix"][0]
+        self.assertEqual(r["category"], "NOT ESTIMABLE")
+        self.assertEqual(r["conditional_descriptive_cleared_pairs"]["pairs_used"], 99)
+        # with an open wait: SERVICE FAILURE comes first
+        cells[i] = dict(cells[i], open_wait_at_end_s="400")
+        r = [d for d in CA.analyse(plan, cells, self.margins, self.ST)["joint_learning"] if d["method"] == "qmix"][0]
+        self.assertEqual(r["category"], "SERVICE FAILURE")
+        # an IDQN failure in the descriptive none arm only: the guarantee contrast is decided
+        cells[i] = original
+        k = [n for n, c in enumerate(cells) if c["method"] == "idqn" and c["controller"] == "learned:none"][0]
+        cells[k] = dict(cells[k], status="CLEARANCE_FAILURE", J_primary_s="", open_wait_at_end_s="400")
+        r = [d for d in CA.analyse(plan, cells, self.margins, self.ST)["joint_learning"] if d["method"] == "qmix"][0]
+        self.assertNotIn(r["category"], ("SERVICE FAILURE", "NOT ESTIMABLE"))
 
     def test_an_unresolved_primary_is_refused(self):
         plan = copy.deepcopy(self.plan)

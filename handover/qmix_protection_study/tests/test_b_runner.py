@@ -28,6 +28,7 @@ for var, default in (("QMIX_PROTECTED_ROOT", r"C:\Users\LENOVO\QMIX_PROTECTED"),
         break
 sys.path.insert(0, os.path.join(TOOLS, "confirmation"))
 import b_runner as BR  # noqa: E402
+import stats_reference as SR  # noqa: E402
 
 HAVE_STATS = os.path.isfile(BR.statistics_path())
 try:
@@ -107,18 +108,29 @@ def fake_manifest(profile, seed, prefix):
         json.dump({"scenario": profile, "seed_value": seed, "scheduled_total": 100}, f)
 
 
+SUMMARY_OVERRIDES = {}       # directory -> fields forced into the fake summary (technical-contract tests)
+
+
 def fake_summary(j, work, n):
     m = BR.read_json(os.path.join(work, "evaluation_metrics.json"))
-    return ({"status": m["clearance_status"], "J_primary_s": m.get("J"), "open_wait_at_end_s": 0,
-             "vehicles_waiting_ge_300s": 0, "D_bar_s": 1.0, "mean_completed_time_loss_s": 2.0,
-             "max_vehicle_waiting_s": 50.0}, [])
+    out = {"status": m["clearance_status"], "J_primary_s": m.get("J"), "open_wait_at_end_s": m.get("open_wait"),
+           "vehicles_waiting_ge_300s": 0, "D_bar_s": m.get("D_bar", 1.0), "mean_completed_time_loss_s": 2.0,
+           "max_vehicle_waiting_s": 50.0, "N": 100, "tripinfo_rows": 100, "max_counter_s": 40, "max_counter_recomputed_s": 40,
+           "shortest_green_s": BR.min_green_contract(j) or 5, "counter_rows_differing": 0, "sumo_mismatch_s": 0 if j["kind"] == "learned" else None,
+           "interventions_guarantee_demand": 0 if j["kind"] == "learned" else None,
+           "interventions_guarantee_after": 0 if j["kind"] == "learned" else None}
+    out.update(SUMMARY_OVERRIDES.get(j.get("directory"), {}))
+    for k in [k for k, v in out.items() if v == "<absent>"]:
+        del out[k]
+    return out, []
 
 
 class FakeEvaluator(object):
     """Writes the files of a real run; J from a synthetic law (learned: comparator J + effect)."""
 
-    def __init__(self, effect=0.0, fail=(), idqn_effect=0.0):
+    def __init__(self, effect=0.0, fail=(), idqn_effect=0.0, not_cleared=()):
         self.calls, self.effect, self.fail, self.idqn_effect = [], effect, set(fail), idqn_effect
+        self.not_cleared = set(not_cleared)
 
     def __call__(self, root, j, prefix, work):
         self.calls.append(j["directory"])
@@ -142,6 +154,8 @@ class FakeEvaluator(object):
             with open(os.path.join(work, name), "w") as f:
                 f.write("x" * 200)
         m = dict(ident, scenario=j["profile"], traffic_seed=j["seed"], clearance_status="CLEARED", J=value)
+        if j["directory"] in self.not_cleared:                                 # a scientific failure, recorded
+            m.update(clearance_status="CLEARANCE_FAILURE", J=None, D_bar=2.5)
         with open(os.path.join(work, "evaluation_metrics.json"), "w") as f:
             json.dump(m, f)
 
@@ -165,6 +179,7 @@ class Base(unittest.TestCase):
             f.write("...\nResult: 300 checks passed, 0 failed.\n")
         with open(self.tests, "w") as f:
             f.write("Ran 130 tests in 200.1s\n\nOK (skipped=3)\n")
+        SUMMARY_OVERRIDES.clear()
 
     def tearDown(self):
         BR.manifest_writer, BR.summarise_cell, BR.environment = self.saved
@@ -180,9 +195,23 @@ class Base(unittest.TestCase):
     def run_in(self, **kw):
         return self.q(BR.measure, self.root, *self.roots(), evaluator=FakeEvaluator(), workers=kw.get("workers", 1))
 
+    def resolve_stats(self):
+        """Synthetic reference results reproduced with the frozen module, then the B procedure resolution. The
+        results report is marked Python 3.7.16 as on the Windows stack (stand-in: these tests run on another Python)."""
+        os.makedirs(self.root, exist_ok=True)
+        path = os.path.join(self.reports, "stats_reference_check.json")
+        payload, diffs = SR.results(None, path)
+        self.assertEqual(diffs, [])
+        payload["python"] = "3.7.16"
+        SR.write_json(path, payload)
+        return SR.resolve(self.root, "b-crossed-bootstrap-1", path)
+
     def freeze(self, **kw):
         if not os.path.exists(os.path.join(self.root, "measure.json")):
             self.run_in()
+        if not os.path.exists(os.path.join(self.root, "stats_resolution.json")):
+            self.resolve_stats()
+        kw.setdefault("free", 10 ** 13)
         return self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests, **kw)
 
     def frozen_and_prepared(self):
@@ -255,17 +284,17 @@ class PlanCount(Base):
         comp = [j for j in plan["jobs"] if j["kind"] == "comparator"]
         self.assertEqual(len([j for j in learned if j["method"] != "idqn"]), 2 * 10 * 2 * 5 * 10)
         idqn = [j for j in learned if j["method"] == "idqn"]
-        self.assertEqual(len(idqn), 100)                                           # rectificatif point 1
+        self.assertEqual(len(idqn), 200)                                           # guarantee + none (descriptive)
         self.assertEqual(set(j["profile"] for j in idqn), {R0})
-        self.assertEqual(set(j["arm"] for j in idqn), {"guarantee"})
+        self.assertEqual(sorted(set(j["arm"] for j in idqn)), ["guarantee", "none"])
         self.assertEqual(sorted(set(j["seed"] for j in idqn)), list(range(8051, 8061)))
         per_profile = dict((p, len([j for j in comp if j["profile"] == p]) // 10) for p in BR.PROFILES)
         # R0, R4: C19, C25, MP. R1, R2: + oft_g5, oft_min7, actuated_min7, actuated_g5 (7 specs).
         # R3: oft_g5 = oft_min7 = C25 12/7 D0 (one spec), + actuated, actuated_g5, tod_g5, tod_min7 (7 specs).
         self.assertEqual(per_profile, {R0: 3, R1: 7, R2: 7, R3: 7, R4: 3})
-        self.assertEqual(len(plan["jobs"]), 2370)
-        self.assertEqual(len(set(j["directory"] for j in plan["jobs"])), 2370)
-        self.assertEqual((plan["estimate"]["learned"], plan["estimate"]["comparators"]), (2100, 270))
+        self.assertEqual(len(plan["jobs"]), 2470)
+        self.assertEqual(len(set(j["directory"] for j in plan["jobs"])), 2470)
+        self.assertEqual((plan["estimate"]["learned"], plan["estimate"]["comparators"]), (2200, 270))
         r3c25 = [j for j in comp if j["profile"] == R3 and "fixed:min7_C25_12_7_D0" in j["labels"]][0]
         self.assertEqual(sorted(r3c25["labels"]), ["fixed:min7_C25_12_7_D0", "oft_g5", "oft_min7"])
         self.assertEqual(sorted(set(j["model"] for j in learned if j["method"] != "idqn")), sorted(
@@ -276,8 +305,8 @@ class PlanCount(Base):
         plan = BR.build_plan(self.root, *self.roots())
         jobs = plan["jobs"] + plan["jobs"][:9]
         parts = [set(j["directory"] for j in BR.shard(jobs, "{}/4".format(i))) for i in range(4)]
-        self.assertEqual(sum(len(p) for p in parts), 2370)
-        self.assertEqual(len(set.union(*parts)), 2370)
+        self.assertEqual(sum(len(p) for p in parts), 2470)
+        self.assertEqual(len(set.union(*parts)), 2470)
 
     def test_the_10_idqn_checkpoints_are_required(self):
         path = os.path.join(self.rob, "plan.json")
@@ -300,7 +329,7 @@ class PlanCount(Base):
         self.assertNotEqual(plan["estimate"], again["estimate"])
         self.assertTrue(again["estimate"]["source"].startswith("measure.json (parallel run-in, 4 workers)"))
         e = again["estimate"]
-        self.assertAlmostEqual(e["wall_h_4_workers"], round((2100 * 20.0 + 270 * 15.0) / 4 / 0.8 / 3600, 2))
+        self.assertAlmostEqual(e["wall_h_4_workers"], round((2200 * 20.0 + 270 * 15.0) / 4 / 0.8 / 3600, 2))
         self.assertGreater(e["wall_h_4_workers_pessimistic"], e["wall_h_4_workers"])
         self.assertIn("not a guarantee", e["note"])
 
@@ -326,7 +355,13 @@ class Freeze(Base):
         self.assertEqual(payload["runs"], BR.MEASURE_RUNS)
         self.assertTrue(made and all(BR.SD.role_of(p, s) == "comparator_design" for p, s in made))
         self.assertFalse(os.path.isdir(os.path.join(self.root, "manifests")))
-        self.assertEqual(set(r["method"] for r in payload["results"] if r["kind"] == "learned"), {"qmix", "vdn", "idqn"})
+        types = set(r["type"] for r in payload["results"])
+        for t in ("learned:qmix:guarantee", "learned:qmix:none", "learned:vdn:guarantee", "learned:vdn:none",
+                  "learned:idqn:guarantee", "learned:idqn:none", "comparator:fixed", "comparator:actuated",
+                  "comparator:actuated_g5", "comparator:tod", "comparator:canonical_mp"):
+            self.assertIn(t, types)                                               # every path of B is exercised
+        self.assertEqual(sorted(payload["by_type"]), sorted(types))
+        self.assertIn("finalize_gzip_s_per_run", payload)
         self.assertTrue(all(r["recheck"] == [] for r in payload["results"]))          # re-read from gzip
 
     def test_measure_with_the_planned_parallelism(self):
@@ -344,7 +379,7 @@ class Freeze(Base):
             self.run_in()
         self.assertFalse(os.path.exists(os.path.join(self.root, "measure.json")))
         with self.assertRaises(BR.BError):
-            self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests)
+            self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests, free=10 ** 13)
 
     def test_freeze_needs_the_run_in_the_stack_the_tested_code_and_clean_reports(self):
         with self.assertRaises(BR.BError):                                        # no run-in
@@ -371,9 +406,17 @@ class Freeze(Base):
             f.write("Ran 3 tests\n\nFAILED (errors=1)\n")
         with self.assertRaises(BR.BError):
             self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=bad)
+        with self.assertRaises(BR.BError):                                        # statistical reference unresolved
+            self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests, free=10 ** 13)
+        self.resolve_stats()
+        with self.assertRaises(BR.BError):                                        # not enough disk on the target volume
+            self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests, free=BR.SAFETY_BYTES)
         self.assertFalse(os.path.exists(os.path.join(self.root, "freeze.json")))
-        fr, _plan = self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests)
+        fr, _plan = self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=self.tests, free=10 ** 13)
         self.assertEqual(sorted(fr["prerequisites"]), ["etapes_check", "run_in", "unit_tests"])
+        self.assertTrue(fr["statistical_procedure"]["label"].startswith("b-crossed-bootstrap-1"))
+        self.assertEqual(fr["statistical_procedure"]["procedure"], "b-crossed-bootstrap-1")
+        self.assertIn("not labelled statistics-1.2", fr["statistical_procedure"]["label"])
 
     def test_nothing_runs_before_the_freeze(self):
         os.makedirs(self.root)
@@ -393,18 +436,27 @@ class Freeze(Base):
         self.assertEqual(len([n for n in os.listdir(os.path.join(self.root, "manifests"))]), 50)
         self.assertEqual(len(os.listdir(os.path.join(self.root, "checkpoints"))), 30)      # 10 QMIX, 10 VDN, 10 IDQN
 
-    def test_the_A003_check_is_recorded_and_writes_nothing_there(self):
-        a003 = os.path.join(self.base, "a003")
-        os.makedirs(a003)
-        with open(os.path.join(a003, "amendment003.py"), "w") as f:
-            f.write("def protocol_hashes():\n    return {'statistics_1_2': '%s'}\n" % BR.conf_plan()["statistics"]["reference"]["protocol_hash"])
-        before = sorted(os.listdir(a003))
-        fr, _plan = self.freeze(a003_root=a003)
-        sys.modules.pop("amendment003", None)
-        self.assertEqual(sorted(os.listdir(a003)), before)                        # no __pycache__
-        self.assertTrue(fr["statistics_1_2"]["checked"] and fr["statistics_1_2"]["equal"])
-        self.assertNotIn(a003, sys.path)
-        self.assertEqual(fr["statistics_module_path"], os.path.abspath(BR.statistics_path()))
+    def test_a_resolution_with_another_statistics_module_or_a_changed_report_is_refused(self):
+        self.run_in()
+        r = self.resolve_stats()
+        path = os.path.join(self.root, "stats_resolution.json")
+        bad = dict(r, results=dict(r["results"], statistics_module_sha256="0" * 64))
+        BR.write_json(path, bad)
+        with self.assertRaises(BR.BError):
+            self.freeze()
+        BR.write_json(path, r)
+        with open(r["results"]["path"], "a") as f:
+            f.write(" ")
+        with self.assertRaises(BR.BError):
+            self.freeze()
+
+    def test_statistics_1_2_label_needs_extraction_and_review(self):
+        os.makedirs(self.root)
+        path = os.path.join(self.reports, "stats_reference_check.json")
+        SR.results(None, path)
+        with self.assertRaises(SR.StatsRefError):
+            SR.resolve(self.root, "statistics-1.2", path)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "stats_resolution.json")))
 
     def test_a_new_selection_after_the_freeze_is_refused(self):
         _fr, plan = self.freeze()
@@ -467,8 +519,8 @@ class Run(Base):
         ev = FakeEvaluator(fail={crash})
         codes = [self.q(BR.run, self.root, "{}/4".format(i), evaluator=ev, free=10 ** 13) for i in range(4)]
         self.assertEqual(sorted(codes), [0, 0, 0, 3])
-        self.assertEqual(len(ev.calls), 2370)
-        self.assertEqual(len(set(ev.calls)), 2370)                                  # no folder twice
+        self.assertEqual(len(ev.calls), 2470)
+        self.assertEqual(len(set(ev.calls)), 2470)                                  # no folder twice
         self.assertEqual(BR.classify(self.root, jobs[5])[0], "interrupted")
         self.assertEqual(self.q(BR.progress, self.root), 3)
         ev2 = FakeEvaluator()
@@ -495,7 +547,7 @@ class Run(Base):
 
     def test_finished_cells_have_gzipped_readable_logs_and_metrics_last(self):
         j = self.plan["jobs"][0]
-        self.q(BR.run, self.root, "0/2370", evaluator=FakeEvaluator(), free=10 ** 13)
+        self.q(BR.run, self.root, "0/2470", evaluator=FakeEvaluator(), free=10 ** 13)
         d = os.path.join(self.root, j["directory"])
         self.assertEqual(BR.classify(self.root, j)[0], "complete")
         for name in ("tripinfo.xml", "service_counters.csv", "signal_phases.csv"):
@@ -508,12 +560,59 @@ class Run(Base):
     def test_cell_metrics_problems_make_a_cell_corrupted(self):
         j = self.plan["jobs"][0]
         BR.summarise_cell = lambda jj, w, n: (fake_summary(jj, w, n)[0], ["tripinfo has 99 rows for N = 100"])
-        self.q(BR.run, self.root, "0/2370", evaluator=FakeEvaluator(), free=10 ** 13)
+        self.q(BR.run, self.root, "0/2470", evaluator=FakeEvaluator(), free=10 ** 13)
         self.assertEqual(BR.classify(self.root, j)[0], "corrupted")
+
+    def run_one(self, j, **override):
+        SUMMARY_OVERRIDES[j["directory"]] = override
+        self.q(BR.run, self.root, "{}/2470".format(self.plan["jobs"].index(j)), evaluator=FakeEvaluator(), free=10 ** 13)
+        return BR.classify(self.root, j)
+
+    def pick(self, **kw):
+        return [j for j in self.plan["jobs"] if all(j.get(k) == v for k, v in kw.items())][0]
+
+    def test_cleared_guarantee_cell_above_the_counter_bound_is_a_technical_failure(self):
+        state, why = self.run_one(self.pick(kind="learned", arm="guarantee"), max_counter_s=128, max_counter_recomputed_s=128)
+        self.assertEqual(state, "corrupted")
+        self.assertTrue(any("above the guarantee bound 127" in w for w in why), why)
+
+    def test_the_counter_bound_is_not_imposed_on_the_none_arm(self):
+        state, why = self.run_one(self.pick(kind="learned", arm="none"), max_counter_s=400, max_counter_recomputed_s=400)
+        self.assertEqual((state, why), ("complete", []))
+
+    def test_a_sumo_signal_mismatch_fails_every_learned_arm(self):
+        for arm in ("guarantee", "none"):
+            state, why = self.run_one(self.pick(kind="learned", arm=arm, method="idqn"), sumo_mismatch_s=1)
+            self.assertEqual(state, "corrupted", arm)
+
+    def test_a_missing_critical_field_is_a_technical_failure(self):
+        state, why = self.run_one(self.pick(kind="learned", arm="guarantee", method="vdn"), shortest_green_s="<absent>")
+        self.assertEqual(state, "corrupted")
+        self.assertTrue(any("critical field shortest_green_s missing" in w for w in why), why)
+
+    def test_minimum_green_follows_the_evaluated_controller(self):
+        self.assertEqual(self.run_one(self.pick(kind="learned", arm="guarantee", method="qmix"), shortest_green_s=2)[0],
+                         "complete")                                           # 2 s greens are allowed to learners
+        self.assertEqual(self.run_one(self.pick(kind="learned", arm="none", method="qmix"), shortest_green_s=1)[0], "corrupted")
+        g5 = [j for j in self.plan["jobs"] if j["kind"] == "comparator" and j["spec"]["kind"] == "actuated_g5"][0]
+        self.assertEqual(self.run_one(g5, shortest_green_s=5)[0], "complete")
+        g5b = [j for j in self.plan["jobs"] if j["kind"] == "comparator" and j["spec"]["kind"] == "actuated_g5"][1]
+        self.assertEqual(self.run_one(g5b, shortest_green_s=4)[0], "corrupted")
+        fixed = [j for j in self.plan["jobs"] if j["kind"] == "comparator" and j["spec"]["kind"] == "fixed"][0]
+        self.assertEqual(self.run_one(fixed, shortest_green_s=1)[0], "complete")   # pretimed: no realised-minimum contract
+
+    def test_a_scientific_failure_is_finished_and_never_rerun(self):
+        j = self.pick(kind="learned", arm="none", method="idqn")
+        ev = FakeEvaluator(not_cleared={j["directory"]})
+        pos = "{}/2470".format(self.plan["jobs"].index(j))
+        self.q(BR.run, self.root, pos, evaluator=ev, free=10 ** 13)
+        self.assertEqual(BR.classify(self.root, j)[0], "scientific_failure")
+        self.assertEqual(self.q(BR.run, self.root, pos, evaluator=ev, free=10 ** 13), 0)
+        self.assertEqual(ev.calls, [j["directory"]])                              # finished: not rerun
 
     def test_identity_mismatch_is_corrupted(self):
         j = self.plan["jobs"][0]
-        self.q(BR.run, self.root, "0/2370", evaluator=FakeEvaluator(), free=10 ** 13)
+        self.q(BR.run, self.root, "0/2470", evaluator=FakeEvaluator(), free=10 ** 13)
         path = os.path.join(self.root, j["directory"], "evaluation_metrics.json")
         m = BR.read_json(path)
         m["checkpoint_sha256"] = "0" * 64
@@ -554,7 +653,8 @@ class Analyse(Base):
         comps = dict((d["profile"], d["comparator"]) for d in result["primary"])
         self.assertEqual((comps[R1], comps[R2], comps[R3], comps[R0]), ("oft_g5", "actuated_min7", "tod_g5", BR.C19_LABEL))
         for d in result["primary"]:
-            self.assertLessEqual(d["ci"][0], d["ci_95"][0])                      # 99.5 % wider than 95 %
+            self.assertLessEqual(d["ci"][0], d["ci_95"][0])                      # 1 - 0.05/12 wider than 95 %
+            self.assertEqual(d["confidence"], 1 - 0.05 / 12)
         try:
             import matplotlib  # noqa: F401
             self.assertTrue(os.path.getsize(os.path.join(out, "forest.png")) > 1000)
@@ -566,25 +666,33 @@ class Analyse(Base):
         with open(os.path.join(out, "RESULTATS_B.md")) as f:
             text = f.read()
         for words in ("scénario de référence", "scénario 3", "plan fixe optimisé", "règle anti-attente",
-                      "temps d'attente moyen par véhicule", "n'établit pas un risque nul", "Famille 2",
-                      "extension des références", "relue et recalculée"):
+                      "temps d'attente moyen par véhicule", "n'établit pas un risque nul", "une seule famille de 12 contrastes",
+                      "extension des références", "relue et recalculée", "Effet de la règle anti-attente",
+                      "n'est pas une pénalité appariée", "ne prouve pas un effet causal"):
             self.assertIn(words, text)
-        # F2: joint learners 0.5 s better than IDQN on R0, decided at 97.5 % within its own family
+        # joint learners 0.5 s better than IDQN on R0, decided with the same global correction (family of 12)
         joint = dict((d["method"], d) for d in result["joint_learning"])
         self.assertEqual(sorted(joint), ["qmix", "vdn"])
         for d in joint.values():
-            self.assertEqual((d["profile"], d["reference"], d["confidence"]), (R0, "idqn", 0.975))
+            self.assertEqual((d["profile"], d["reference"], d["confidence"]), (R0, "idqn", 1 - 0.05 / 12))
             self.assertEqual(d["category"], "SUPERIOR BEYOND MARGIN")
             self.assertAlmostEqual(d["mean_difference"], -0.5, places=6)
-            sens = d["sensitivity_all_12_bonferroni"]
-            self.assertAlmostEqual(sens["confidence"], 1 - 0.05 / 12)
-            self.assertLessEqual(sens["ci"][0], d["ci"][0])
+            self.assertEqual(d["conditional_descriptive_cleared_pairs"]["pairs_used"], 100)
+        res = BR.read_json(os.path.join(out, "results.json"))
+        self.assertEqual(res["mode"], "confirmatory")
+        eff = dict(((e["profile"], e["method"]), e) for e in res["guarantee_effects"])
+        self.assertEqual(sorted(k for k in eff if k[1] == "idqn"), [(R0, "idqn")])      # IDQN only on R0
+        self.assertEqual(eff[(R0, "idqn")]["guarantee"]["expected"], 100)
+        self.assertEqual(eff[(R0, "idqn")]["D_bar_guarantee_minus_none_all_valid_pairs"]["pairs"], 100)
+        self.assertEqual(len(res["D_bar_contrasts"]), 12)
         import csv as _csv
         with open(os.path.join(out, "service_counts.csv")) as f:
             rows = list(_csv.DictReader(f))
-        g = [r for r in rows if r["profile"] == R0 and r["method"] == "idqn" and r["event"] == "failure"][0]
-        self.assertEqual((g["evaluations"], g["events"], g["models"], g["traffics"]), ("100", "0", "10", "10"))
-        self.assertAlmostEqual(float(g["model_upper95_if_zero"]), 1 - 0.05 ** 0.1)
+        g = [r for r in rows if r["profile"] == R0 and r["method"] == "idqn" and r["arm"] == "guarantee"
+             and r["event"] == "failure"][0]
+        self.assertEqual((g["expected"], g["evaluations"], g["events"], g["models"], g["traffics"]), ("100", "100", "0", "10", "10"))
+        self.assertAlmostEqual(float(g["models_upper95_one_sided"]), 1 - 0.05 ** 0.1)
+        self.assertEqual(set(r["profile"] for r in rows if r["method"] == "idqn"), {R0})   # no false incompleteness
         cmp_row = [r for r in rows if r["method"] == "canonical_mp" and r["profile"] == R0][0]
         self.assertEqual(cmp_row["models"], "")                                   # one deterministic controller
 
@@ -612,8 +720,26 @@ class Analyse(Base):
                                               else saved(jj, w, n)[0], [])
         result, missing = self.q(BR.analyse, self.root, os.path.join(self.base, "analysis"))
         self.assertEqual([(m["directory"], m["state"]) for m in missing], [(victim["directory"], "recheck_mismatch")])
-        joint = dict((d["method"], d["category"]) for d in result["joint_learning"])
-        self.assertTrue(joint["qmix"].startswith("INCOMPLETE") and joint["vdn"].startswith("INCOMPLETE"))
+        # a technical failure blocks EVERY confirmatory decision, not only the contrasts of that cell
+        self.assertTrue(all(d["category"] == BR.BLOCKED for d in result["primary"] + result["joint_learning"]))
+
+    def test_without_re_read_nothing_is_confirmatory(self):
+        self.small()
+        self.run_all(-0.5)
+        result, _missing = self.q(BR.analyse, self.root, os.path.join(self.base, "diag"), recheck=False)
+        self.assertTrue(all(d["category"] == BR.DIAGNOSTIC for d in result["primary"] + result["joint_learning"]))
+        with open(os.path.join(self.base, "diag", "RESULTATS_B.md")) as f:
+            self.assertIn("MODE DIAGNOSTIC", f.read())
+
+    def test_a_technical_contract_violation_blocks_the_decisions(self):
+        self.small()
+        victim = [j for j in self.plan["jobs"] if j["kind"] == "learned" and j["arm"] == "guarantee" and j["profile"] == R3][0]
+        SUMMARY_OVERRIDES[victim["directory"]] = {"max_counter_s": 200, "max_counter_recomputed_s": 200}
+        self.run_all(-0.5)
+        self.assertEqual(BR.classify(self.root, victim)[0], "corrupted")
+        self.assertEqual(self.q(BR.progress, self.root), 5)
+        result, missing = self.q(BR.analyse, self.root, os.path.join(self.base, "analysis"))
+        self.assertTrue(all(d["category"] == BR.BLOCKED for d in result["primary"] + result["joint_learning"]))
 
 
 class RealReaders(Base):
@@ -688,6 +814,36 @@ class RealReaders(Base):
         rows, missing = BR.cell_rows(self.root, self.plan)
         self.assertIn((j["directory"], "recheck_mismatch"), [(m["directory"], m["state"]) for m in missing])
 
+    def test_a_changed_counter_in_the_gzip_trace_is_detected(self):
+        j = self.jobs()[0]
+        d = self.make(j)
+        path = os.path.join(d, "service_counters.csv.gz")
+        with gzip.open(path, "rt") as f:
+            lines = f.read().splitlines()
+        head = lines[0].split(",")
+        k = head.index("c_V")
+        cells = lines[200].split(",")
+        cells[k] = str(int(cells[k]) + 150)
+        lines[200] = ",".join(cells)
+        with gzip.open(path, "wt") as f:
+            f.write("\n".join(lines) + "\n")
+        diff = BR.recheck_cell(self.root, j, self.manifests)
+        self.assertTrue(any("counter_rows_differing" in x or "max_counter" in x for x in diff), diff)
+
+    def test_a_scientific_failure_cell_from_the_real_reader_stays_a_finished_observation(self):
+        # none arm: a clearance failure with a long red is a scientific observation (no counter contract there)
+        j = [x for x in self.plan["jobs"] if x["profile"] == R0 and x["seed"] == 8051 and x["kind"] == "learned"
+             and x["method"] == "idqn" and x["arm"] == "none"][0]
+        work = os.path.join(self.root, j["directory"]) + ".tmp"
+        self.world.model_sha[j["model"]] = j["checkpoint_sha256"]
+        os.makedirs(os.path.dirname(work), exist_ok=True)
+        self.world.cell({"scenario": R0, "seed": j["seed"], "controller": j["controller"], "model": j["model"],
+                         "directory": work}, fail=True)
+        BR.finalize_cell(self.root, j, work, os.path.join(self.root, j["directory"]), self.world.n[R0])
+        state, why = BR.classify(self.root, j)
+        self.assertEqual(state, "scientific_failure", why)
+        self.assertEqual(BR.recheck_cell(self.root, j, self.manifests), [])
+
     def test_a_truncated_gzip_log_is_reported_not_crashing(self):
         j = self.jobs()[1]
         d = self.make(j)
@@ -698,6 +854,18 @@ class RealReaders(Base):
             f.write(data[: len(data) // 2])
         diff = BR.recheck_cell(self.root, j, self.manifests)
         self.assertTrue(diff and diff[0].startswith("re-read from gzip failed"), diff)
+
+    def test_the_same_failure_in_a_guarantee_arm_is_a_technical_violation(self):
+        j = self.jobs()[1]                                            # IDQN with the guarantee
+        work = os.path.join(self.root, j["directory"]) + ".tmp"
+        self.world.model_sha[j["model"]] = j["checkpoint_sha256"]
+        os.makedirs(os.path.dirname(work), exist_ok=True)
+        self.world.cell({"scenario": R0, "seed": j["seed"], "controller": j["controller"], "model": j["model"],
+                         "directory": work}, fail=True)
+        BR.finalize_cell(self.root, j, work, os.path.join(self.root, j["directory"]), self.world.n[R0])
+        state, why = BR.classify(self.root, j)
+        self.assertEqual(state, "corrupted")                          # not hidden as a scientific failure
+        self.assertTrue(any("above the guarantee bound" in w for w in why), why)
 
 
 if __name__ == "__main__":

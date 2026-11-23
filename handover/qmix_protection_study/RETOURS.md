@@ -1,84 +1,91 @@
-# RETOURS — ce qui manque, ce qui n'a pas été vérifié, ce qui reste à décider (2026-11-19, rectifié le 2026-11-23)
+# RETOURS — vérifié, non vérifié, blocages (version du 2026-11-23, après la consigne de finalisation)
 
-Ce fichier liste tout ce que le travail n'a pas pu établir, conformément à la consigne : « Si quelque chose manque, écris-le dans RETOURS.md. » Rien de ce qui suit n'a été supposé dans le code : chaque point non établi y est soit refusé, soit enregistré tel quel.
+**B n'est pas gelé.** Aucune graine de confirmation n'a été lancée et aucun manifeste de confirmation n'a été généré. Aucune donnée n'a été supprimée, aucun dépôt figé ni résultat existant n'a été modifié, aucun entraînement n'a eu lieu.
 
-**B n'est pas gelé.** Aucune graine de confirmation n'a été générée ni lancée. Le gel définitif reste à faire sous Windows, dans les conditions de `PROTOCOL_AMENDMENT_B.md` section 6.
+Le détail des commandes lancées ici se trouve dans `logs/revue_2026-11-23/JOURNAL_CONTROLES.md`.
 
-## 0. Rectificatif du 2026-11-23 : ce qui a été fait
+## 1. Sources
 
-| Point | Fait | Où |
+| Source | État |
+|---|---|
+| `HANDOFF_QMIX_2026-11-15.md` | lu en entier |
+| `plans/PROTOCOL_AMENDMENT_B.md`, `plans/PLAN_CONFIRMATION.md`, `confirmation_plan.json`, `RUNBOOK_B.md`, ce fichier | lus, puis réécrits de façon cohérente |
+| Fichiers de sélection de A (`comparateurs_resultats.zip`) | lus, chacun contrôlé contre son sceau ; l'archive est égale à `24a4f5f6…` |
+| `guarantee_diagnostic/` (analyses du 2026-11-07) | lu (section 2) |
+| `A_comparators_results.md` | **jamais reçu.** Les valeurs de A viennent des fichiers de sélection scellés |
+| Plan de robustesse (`<ROB>\plan.json`, checkpoints) | **non disponible ici.** Les 30 étiquettes et leurs SHA-256 sont lus sur Windows par `b-plan` et `b-prepare`, qui refusent toute incohérence |
+| A003 (`amendment003.py`, dossier `C:\Users\LENOVO\QMIX_A003_P3\a003`) | **non disponible ici** (section 4) |
+| Paquet A004 | **non vu** |
+
+## 2. Vérifié ici
+
+- **Les deux défauts du runner** de a9640b1 sont reproduits puis corrigés, preuves avant et après à l'appui :
+  - (a) `classify` acceptait une cellule avec garantie à compteur de 200 s et écart SUMO de 3 ;
+  - (b) la relecture ignorait ces deux champs.
+- Désormais, tout le résumé est recalculé depuis les traces gzip par le vrai lecteur, comparé en entier, et les contrats sont réévalués. Une violation bloque toute décision.
+- **Paramètres figés**, lus dans le code :
+  - décisions toutes les 5 s, jaune de 3 s, nouveau vert de 2 s (`switch_new_green_s`) : c'est le contrat de vert minimal des apprenants ;
+  - Max Pressure : vert minimal de 10 s, valeur par défaut de l'exécuteur.
+- **Procédure statistique de B**, lue dans `statistics.py` (statistics-1.1, `ed133bb2…`) : rééchantillonnage croisé indépendant des graines et des trafics, appariement ou diffusion, PCG64 et `SeedSequence`, percentiles, refus des valeurs non finies. Résultats de référence reproduits : 74 nombres.
+- **R0 :** les 35 paires IDQN dégradées (D2) sont en R1 (17) et R2 (18), aucune en R0. Les seules interventions de la garantie listées en R0 sont 2 interventions QMIX après la demande.
+- **Décompte :** 2470, par le code, sur les sélections réelles de A (avec des doublures pour A-ext et la racine robustesse).
+- **Tests :** 167, dont 165 passent. Les 2 erreurs viennent de l'absence du paquet protégé, et sont identiques sur les versions précédentes.
+- **Statique :** vermin indique Python 3.5 minimum ; `ETAPES.cmd` est en CRLF, avec 57 étapes et aucune commande de suppression.
+
+## 3. Rapporté, non vérifié ici
+
+- `8b6413a9…437a` = `amendment003.protocol_hashes()['statistics_1_2']` (passation).
+- En R0, aucune intervention pendant la demande pour VDN et pour les autres exécutions IDQN, avec un ΔD̄ nul et aucune hausse appariée de J. Le fichier lu ne couvre que les exécutions sélectionnées ; B le mesurera.
+- Un `import amendment003` lancé sans `-B` dans le dossier A003, et donc la présence possible d'un `__pycache__`. **Ni son existence, ni sa date, ni son effet ne sont établis ici.** `ETAPES.cmd b-stats-inspect` les constate en lecture seule, sans rien supprimer.
+- Que les 30 checkpoints du plan de robustesse soient ceux du paquet A004.
+
+## 4. Non fait, et pourquoi
+
+| Point | Raison | Ce qui le remplace |
 |---|---|---|
-| 1. IDQN | 10 checkpoints IDQN historiques (lus dans le plan de robustesse, graines 101–110), garantie seule, R0, 10 trafics : 100 évaluations. Contrastes QMIX − IDQN et VDN − IDQN : effet, procédure, famille F2 à 97,5 % distincte de F1 à 99,5 %, sensibilité à 1 − 0,05/12. Total recompté : **2370** | `PROTOCOL_AMENDMENT_B.md` §1 B3, §3, §4 ; `confirmation_plan.json` `learned_contrasts` ; `confirmation_analysis.learned_contrast` ; tests |
-| 2. Conservation | Suppression des données de A désactivée dans le code (refus, test) ; étape `archive-a-delete` retirée ; audit et archives vérifiées conservés ; livraison dans une nouvelle copie versionnée, vérifiable par `tools/verify_manifest.py` | `archive_campaign_A.py`, `ETAPES.cmd`, `RUNBOOK_B.md` étape 0 |
-| 3. Service | Tous les effectifs ; plus aucun intervalle sur les évaluations regroupées ; intervalles par modèle et par trafic, avec leurs hypothèses ; borne unilatérale si 0 ; aucun bootstrap de taux | `PROTOCOL_AMENDMENT_B.md` §5 ; `confirmation_analysis.unit_counts` ; `service_counts.csv` |
-| 4. Validation et gel | Lecteurs réels testés sur des cellules complètes finalisées en gzip, altérations détectées ; relecture gzip de chaque cellule à l'analyse et au rodage ; rodage réel en parallèle ; gel refusé sans rodage sous Python 3.7 / SUMO 1.25, sans code identique au code rodé, sans rapport Windows « 0 failed », sans tests « OK » | `b_runner.py` (`recheck_cell`, `measure`, `check_freeze_prerequisites`) ; tests `RealReaders`, `Freeze` |
-| 5. Coût et formulation | Débit mesuré avec 4 processus (efficacité parallèle) ; estimation attendue et pessimiste ; « une nuit n'est pas garantie » ; actionné g5 présenté comme extension des références, sans prétendre reproduire l'autorité des apprenants (verts possibles de 2 s) | `b_runner.estimate` ; plans ; `RUNBOOK_B.md` |
+| Rodage réel sous Python 3.7 / SUMO 1.25 | Python 3.7 n'est pas installable ici (refusé par le proxy) ; SUMO est en 1.28 ; le paquet protégé manque | `b-measure` sous Windows : 16 cellules réelles, tous les chemins. Le gel l'exige |
+| Codes de retour sous un vrai `cmd.exe` | Wine plante ici (`free(): invalid pointer`, code 134) | `verify_etapes_cmd.cmd` sous Windows, qui teste par `CALL` et par `cmd /c` les réussites et les échecs. **361 contrôles attendus : nombre calculé, pas observé.** Le gel exige « 0 failed » |
+| A-ext (480 simulations) | Ni D:, ni la pile Windows | Commandes prêtes ; tests sur des doublures ; contrôle de disque ajouté au lancement |
+| Vérification de la procédure statistics-1.2 d'A003 | A003 n'est pas disponible ici | `b-stats-inspect` et `b-stats-extract` (lecture seule, `-B`, instantané avant et après). Sans revue indépendante, la procédure est étiquetée `b-crossed-bootstrap-1`, jamais statistics-1.2 |
+| Audit disque actualisé | Pas d'accès à D: | `ETAPES.cmd disk-audit`. Les 6,8 Go libres du 2026-11-15 sont périmés |
 
-## 1. Documents et consignes non reçus
+## 5. Blocages et décisions qui restent avant le gel
 
-1. **`A_comparators_results.md` n'a jamais été reçu.** Seuls `HANDOFF_QMIX_2026-11-15.md` et `comparateurs_resultats.zip` sont arrivés.
-   - Les valeurs de A utilisées (J de validation, réglages retenus) ont été lues **dans les fichiers de sélection scellés du zip**, contrôlés contre leur sceau.
-   - Le zip est contrôlé égal à l'archive A `24a4f5f6…`. L'empreinte du plan de A est `03af6200…`.
-   - Les valeurs attendues (R1 1,940 ; R2 1,367 ; R3 2,722) y sont retrouvées exactement.
-2. **La consigne du 2026-11-19 s'arrête à « Inclure en tête : ».** Le contenu demandé pour l'en-tête de `RUNBOOK_B.md` n'est pas connu. J'y ai mis les prérequis et les règles d'arrêt, en le signalant en tête du fichier.
-3. **Le paquet A004 n'a pas été vu.** Les 30 politiques (QMIX, VDN, IDQN) sont lues dans le plan de robustesse (`<ROB>\plan.json`, copies dans `<ROB>\checkpoints\`).
-   - `b-plan` refuse si les étiquettes QMIX/VDN diffèrent de `confirmation_plan.json`, ou s'il n'y a pas exactement 10 IDQN avec les graines 101–110.
-   - `b-prepare` refuse si un SHA-256 diffère.
-   - Que ce soient exactement les checkpoints du paquet A004 n'a pas été vérifié ici.
-4. **Les étiquettes IDQN ne sont écrites nulle part à la main.** Elles ne sont pas connues ici. Elles sont lues dans le plan de robustesse et figées par l'empreinte du plan B. Le mot « historiques » de la consigne est compris comme « ceux du plan de robustesse ». **À confirmer** : si d'autres checkpoints IDQN sont visés, le dire avant `b-freeze`.
+1. **Référence statistique.** Choisir entre :
+   - la procédure versionnée `b-crossed-bootstrap-1`, avec ses résultats de référence reproduits sous Windows ;
+   - le label statistics-1.2, qui exige l'extraction A003 valide et une note de revue d'une autre personne que l'opérateur.
 
-## 2. Référence statistique (à trancher avant `b-freeze`)
+   Si `b-stats-results` donne `DIFFERENT` (la version de numpy diffère), ne pas résoudre et signaler.
+2. **Contrat de vert minimal des apprenants à 2 s.** Il découle de la configuration figée. S'il était démenti par le rodage (`shortest green … below`), arrêter et signaler : ne pas changer le seuil après coup.
+3. **Le format de `sumo --version` sous SUMO 1.25 n'est pas vérifié ici.** Le gel exige que la version contienne « 1.25 ». Si `environment.sumo` vaut « unknown », vérifier le PATH ou `SUMO_HOME`.
+4. **matplotlib** n'est peut-être pas installé dans `traffic_rl`. Sans lui, il n'y a pas de graphique en forêt ; aucune installation n'est faite sans demande.
+5. **Espace disque.** Le volume cible de B doit avoir environ 8,4 Go plus 4 Go (à remesurer par le rodage). Sinon, choisir une racine sur un autre volume : rien n'est supprimé.
+6. **En-tête du runbook.** La consigne du 2026-11-19 était tronquée après « Inclure en tête : ». Le runbook complet de cette version la remplace ; à compléter si quelque chose manquait.
 
-5. **statistics-1.2.** D'après la passation, `8b6413a9…437a` est `amendment003.protocol_hashes()['statistics_1_2']`, pas le hash d'un fichier.
-   - C'est corrigé (`PROTOCOL_AMENDMENT_B.md` §2).
-   - `tools/confirmation/check_statistics.py` reposait sur l'ancienne lecture. Il n'est plus une étape du gel.
-6. **amendment003 n'a pas été vu.** On ne sait pas si statistics-1.2 spécifie exactement `paired_crossed_bootstrap` du module figé, utilisé par F1 (comparateur déterministe) et F2 (comparateur appris).
-   - **Décision à prendre avant le gel :** confirmer ce module, ou en désigner un autre (`--statistics`).
-   - `b-freeze <dossier A003>` enregistre la valeur statistics-1.2, en lecture seule.
-7. **Appariement de F2 par numéro de graine.** C'est la convention du module figé pour un comparateur appris : il refuse des graines différentes. Ce numéro ne crée aucun lien causal entre un modèle QMIX et un modèle IDQN. L'intervalle reflète le rééchantillonnage croisé des graines et des trafics. C'est déclaré dans le plan.
+## 6. Changements de cette version, par rapport à a9640b1
 
-## 3. Non vérifié dans cet environnement (Linux, sans Windows)
+**Protocole.**
+- IDQN sans protection en R0 : 100 évaluations, descriptives seulement. Total : 2470.
+- Une seule famille de 12 contrastes, à 1 − 0,05/12, au lieu des familles séparées à 99,5 % et 97,5 %.
+- Pour IDQN, la décision reste fondée sur J, avec un descriptif conditionnel aux paires évacuées.
+- D̄ est calculé sur toutes les paires valides, échecs compris.
+- Effets appariés de la garantie et interventions.
+- La règle de desserte est limitée aux bras du contraste.
 
-8. **Aucun accès à Windows ni à D:.** Aucune commande n'a été lancée sur la machine de Yessine.
-9. **Le rodage réel sous Python 3.7 / SUMO 1.25 n'a pas pu être fait ici.**
-   - Ce conteneur a Python 3.11 et SUMO 1.28. Python 3.7 n'est pas installable ici : `uv` ne le fournit plus, et le téléchargement direct est refusé (404 via le proxy).
-   - Le paquet protégé `adaptive_qmix_protected` (garantie, compteurs) n'existe pas ici. Aucune évaluation apprise ni aucun comparateur avec compteurs ne peut donc tourner.
-   - **Le rodage se fait sous Windows (`b-measure`, RUNBOOK 3.2).** Le gel le rend obligatoire : il refuse sans rodage réussi sous Python 3.7 / SUMO 1.25, avec exactement le code gelé.
-10. **Ce qui a été testé ici :**
-    - la logique du runner, avec des évaluateurs factices ;
-    - le **lecteur réel** `robustness_analysis.cell_metrics` sur des cellules complètes et cohérentes (fichiers du même format que les évaluateurs), finalisées en gzip puis relues depuis le gzip, avec altérations détectées (`RealReaders`) ;
-    - le rodage en parallèle avec 4 processus (évaluateur factice) ;
-    - le contrôleur g5 sous SUMO 1.28, sans compteurs (2026-11-19).
-11. **Le harness `verify_etapes_cmd.cmd` n'a pas pu tourner ici.** Wine plante dans ce conteneur (`free(): invalid pointer`, même sur `cmd /c echo`).
-    - Le contrôle statique `tests/test_etapes_cmd.py` passe.
-    - À lancer sous Windows (RUNBOOK 0.3) ; attendu : `319 checks passed, 0 failed`. Ce nombre est calculé, pas observé.
-12. **matplotlib dans `traffic_rl` : inconnu.** Sans lui, `b-analyse` produit tout sauf les graphiques en forêt.
-13. **Python 3.7 : compatibilité statique seulement.** vermin indique un minimum de 3.5. Les tests doivent repasser sous 3.7.16 (`ETAPES.cmd tests`), ce que le gel exige.
-14. **La version de SUMO est lue par `sumo --version`** (PATH, puis `%SUMO_HOME%\bin`). Si elle est introuvable, `environment.sumo` vaut « unknown » et le gel refuse. Il faudra alors mettre SUMO dans le PATH ou définir `SUMO_HOME`.
+**Code.**
+- Contrats techniques et relecture complète.
+- Mode diagnostic sans décision.
+- Blocage des décisions en cas d'échec technique.
 
-## 4. Disque et conservation
+**Statistique.** Outil `stats_reference.py` ; le gel exige une résolution ; l'import A003 au gel est supprimé.
 
-15. Le 2026-11-15, D: avait 6,8 Go libres. Avant mesure, **B demande environ 12 Go** (environ 8 Go plus 4 Go). Cette livraison ne supprime rien. Si la place manque, mettre la racine B sur un autre disque (`set BCONF=…`, RUNBOOK étape 1), ou attendre une décision explicite sur les données de A.
-16. Un zip des runs de conception de A écrit sur D: n'y libère rien tant que rien n'est supprimé. La suppression reste désactivée.
+**Rodage et gel.**
+- Rodage étendu à 16 cellules, avec débit par type de contrôleur et coûts de gzip et de relecture.
+- Gel conditionné au disque et à la résolution statistique.
 
-## 5. Défauts de A corrigés dans le nouveau code seulement
+**Exploitation.**
+- `b-processes`, `b-backup-logs`, `b-watch`.
+- Contrôle de disque d'A-ext ; audit pour B (2470) et A-ext, avec la racine cible.
+- Runbook complet.
 
-Les 8 fichiers de code de A ne sont pas modifiés (SHA-256 du plan de A inchangés, testé).
-
-17. Dossiers en double dans un ordre : A-ext et B les retirent avant le partage entre processus.
-18. `report` non réinitialisé dans `finalise` : A-ext le reconstruit à chaque version.
-19. `estimate_upper_bound` omettait `robustness-eval` : A-ext compte toutes ses étapes.
-
-## 6. Remarques sur le plan
-
-20. **Recomptage :** 2000 évaluations QMIX/VDN, 100 IDQN, 270 comparateurs, soit **2370**. Calculé par le code et testé.
-21. **Sans A-ext, B ne se construit pas** : le contrôle d'intégralité des sélections refuse.
-22. **Si l'actionné g5 fait mieux en validation pour un profil, il devient principal**, et δ change en conséquence (règle B1, appliquée avant le gel).
-23. **Durée.** Avant mesure, environ 2,4 h sur 4 processus, sur une base d'environ 14,5 s par exécution apprise. C'est une valeur ancienne, mesurée hors parallélisme. La valeur à retenir est celle de `b-plan` après `b-measure`, attendue et pessimiste. **Une nuit n'est pas garantie.**
-
-## 7. Tests exécutés ici
-
-24. **Suite complète** (Python 3.11, SUMO 1.28, module statistique figé `8c14f32`) : 138 tests, dont 136 passent, plus les 2 tests de `tests/test_verify_manifest.py` (OK), écrits pendant ce lancement et passés séparément. Nouveaux ou modifiés : `test_b_runner` 33 (dont `RealReaders` 3), `test_confirmation_analysis` 12, `test_disk` 6, `test_etapes_cmd` 9, `test_aext` 12, `test_verify_manifest` 2.
-    - Les 2 erreurs (`test_ablation_metrics.CounterReconstruction`, `test_robustness.Adapter`) demandent le paquet protégé `adaptive_qmix_protected`, absent de ce conteneur. Elles sont identiques sur la version livrée en `42b58f2` : ce sont des limites de l'environnement, pas des régressions.
-    - À repasser sous Windows avec `ETAPES.cmd tests`. Le gel l'exige.
-25. **`test_b_runner` a tourné sur les vrais fichiers de sélection de A** (`B_TEST_A_SELECTIONS`). Sans cette variable, il utilise une doublure scellée avec les mêmes J de validation.
+**Formulation.** La garantie n'est plus dite pénalisante pour IDQN en R0 ; l'actionné g5 est présenté comme une extension des références.
