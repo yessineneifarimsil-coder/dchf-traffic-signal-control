@@ -14,6 +14,9 @@ results       runs paired_crossed_bootstrap of the given statistics module (defa
               synthetic panels (deterministic and learned comparators, 95 % and 1 - 0.05/12, 10,000 and 2,000
               replicates, square and rectangular panels) and compares every number with
               tools/confirmation/stats_reference_results.json (computed with the same file in the review copy).
+              Module identity: byte-identical to the reference file, or identical after CRLF->LF normalisation (a
+              Git checkout on Windows writes CRLF); any other difference fails. The module identity and the numbers
+              are reported separately and every difference is printed in full.
               Also checks that a non-finite value is refused (missing data are never resampled). Exit 0 when every
               number is reproduced (tolerance 1e-12), 1 otherwise.
 inspect-a003  NO IMPORT. Lists the folder (relative path, size, modification time, SHA-256), reports whether a
@@ -157,7 +160,11 @@ def results(statistics, out, write_reference=False):
     ST = load_module(path)
     got = compute(ST)
     import numpy
+    with open(path, "rb") as handle:
+        raw = handle.read()
     payload = {"statistics_module": path, "statistics_module_sha256": sha256_file(path),
+               "statistics_module_sha256_lf": hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest(),
+               "statistics_module_crlf_count": raw.count(b"\r\n"),
                "protocol_version": getattr(ST, "PROTOCOL_VERSION", None), "numpy": numpy.__version__,
                "python": platform.python_version(), "platform": platform.platform(), "results": got,
                "at": time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -165,13 +172,26 @@ def results(statistics, out, write_reference=False):
         write_json(REFERENCE_RESULTS, payload)
         return payload, []
     ref = read_json(REFERENCE_RESULTS)
-    diffs = []
-    if payload["statistics_module_sha256"] != ref["statistics_module_sha256"]:
-        diffs.append("statistics module {} is not the reference file {}".format(payload["statistics_module_sha256"],
-                                                                                 ref["statistics_module_sha256"]))
-    diffs += compare(got, ref["results"])
+    # Module identity: the reference is the LF file ed133bb2...; a Git checkout on Windows writes it with CRLF line
+    # endings (other bytes, same source). Accepted: byte-identical, or identical once CRLF is turned into LF. Any
+    # other content difference is a module difference.
+    if payload["statistics_module_sha256"] == ref["statistics_module_sha256"]:
+        identity, module_diffs = "byte-identical to the reference file", []
+    elif payload["statistics_module_sha256_lf"] == ref["statistics_module_sha256"]:
+        identity, module_diffs = ("identical to the reference file after CRLF->LF normalisation ({} CRLF line endings; "
+                                  "raw SHA-256 {})".format(payload["statistics_module_crlf_count"],
+                                                           payload["statistics_module_sha256"])), []
+    else:
+        identity = "DIFFERENT from the reference file"
+        module_diffs = ["module identity: statistics module {} (after CRLF->LF {}) is not the reference file {}".format(
+            payload["statistics_module_sha256"], payload["statistics_module_sha256_lf"], ref["statistics_module_sha256"])]
+    number_diffs = ["number: " + d for d in compare(got, ref["results"])]
+    diffs = module_diffs + number_diffs
     payload.update({"reference_file": REFERENCE_RESULTS, "reference_sha256": sha256_file(REFERENCE_RESULTS),
                     "reference_environment": {"python": ref["python"], "numpy": ref["numpy"]},
+                    "module_identity": identity, "module_differences": module_diffs,
+                    "numbers_checked": sum(len(v) if isinstance(v, dict) else 1 for v in got.values()),
+                    "number_differences": number_diffs,
                     "differences": diffs, "status": "REPRODUCED" if not diffs else "DIFFERENT"})
     write_json(out, payload)
     return payload, diffs
@@ -368,11 +388,12 @@ def main(argv=None):
             return 0
         if a.action == "results":
             payload, diffs = results(a.statistics, a.out or os.path.join("logs", "stats_reference_check.json"))
-            for d in diffs[:20]:
+            print("module identity: {}".format(payload["module_identity"]))
+            for d in diffs:                                             # every difference, in full
                 print("DIFFERENT:", d)
-            print("{}: {} numbers checked, {} differences (numpy {}, python {})".format(
-                payload["status"], sum(len(v) if isinstance(v, dict) else 1 for v in payload["results"].values()),
-                len(diffs), payload["numpy"], payload["python"]))
+            print("{}: module identity {} | numbers: {} checked, {} differing (numpy {}, python {})".format(
+                payload["status"], "OK" if not payload["module_differences"] else "DIFFERENT",
+                payload["numbers_checked"], len(payload["number_differences"]), payload["numpy"], payload["python"]))
             return 0 if not diffs else 1
         if a.action == "inspect-a003":
             rep = inspect_a003(a.a003, a.out or os.path.join("logs", "a003_inspection.json"))

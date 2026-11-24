@@ -1,4 +1,4 @@
-# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-23)
+# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-24)
 
 Ce document est la séquence complète, dans une **Anaconda Prompt** sous Windows. Chaque étape donne la commande exacte, la sortie et le code attendus, les fichiers produits et la conduite à tenir en cas d'écart. Les chemins marqués **[À RENSEIGNER]** ne sont pas connus ici : remplace-les avant de lancer la commande.
 
@@ -34,9 +34,9 @@ Ce document est la séquence complète, dans une **Anaconda Prompt** sous Window
 | # | Commande | Attendu | Code | En cas d'écart |
 |---|---|---|---|---|
 | 0.1 | `certutil -hashfile "[À RENSEIGNER : chemin du ZIP reçu]" SHA256` | Le SHA-256 donné dans le rapport de livraison | 0 | Différent : ne pas extraire, redemander le ZIP |
-| 0.2 | `mkdir C:\research\qmix_protection_study_B_2026-11-23` | Dossier créé. Il ne doit pas exister ; ne pas réutiliser l'ancien dossier | 0 | « existe déjà » : choisir un autre nom, ne rien écraser |
-| 0.3 | `%SystemRoot%\System32\tar.exe -xf "[À RENSEIGNER : chemin du ZIP]" -C C:\research\qmix_protection_study_B_2026-11-23` | Aucune sortie (le tar de conda échoue avec « Cannot connect to C: » : utiliser celui-ci) | 0 | Erreur : copier le message |
-| 0.4 | `cd /d C:\research\qmix_protection_study_B_2026-11-23` | — | 0 | — |
+| 0.2 | `mkdir C:\research\qmix_protection_study_B_2026-11-24` | Dossier créé. Il ne doit pas exister ; ne pas réutiliser l'ancien dossier | 0 | « existe déjà » : choisir un autre nom, ne rien écraser |
+| 0.3 | `%SystemRoot%\System32\tar.exe -xf "[À RENSEIGNER : chemin du ZIP]" -C C:\research\qmix_protection_study_B_2026-11-24` | Aucune sortie (le tar de conda échoue avec « Cannot connect to C: » : utiliser celui-ci) | 0 | Erreur : copier le message |
+| 0.4 | `cd /d C:\research\qmix_protection_study_B_2026-11-24` | — | 0 | — |
 | 0.5 | `conda activate traffic_rl`, puis `python --version` et `sumo --version` | `Python 3.7.16` ; `Eclipse SUMO sumo Version 1.25…` (format exact non vérifié ici) | 0 | Autre version : le gel refusera ; signaler. `sumo` introuvable : vérifier `echo %SUMO_HOME%` ; le rodage lit `%SUMO_HOME%\bin\sumo` |
 | 0.6 | `python tools\verify_manifest.py` | `… files listed, 0 problems …` puis `MANIFEST OK` | 0 | `different:` ou `missing:` : la copie n'est pas la livraison. Réextraire dans un nouveau dossier |
 
@@ -134,11 +134,13 @@ C'est une extension des références classiques, pas une autorité identique à 
 
 ## Étape 6. Procédure statistique : b-crossed-bootstrap-1 (avant le gel)
 
+**Fins de ligne.** Sous Windows, git extrait `statistics.py` en CRLF : son SHA-256 brut est `0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab`. Après normalisation CRLF→LF, il vaut `ed133bb2…`, celui du fichier de référence. Seule cette normalisation est admise ; tout autre écart de contenu est une différence de module.
+
 La procédure retenue pour B est **`b-crossed-bootstrap-1`** : le bootstrap croisé apparié de l'implémentation statistics-1.1, avec la reproduction obligatoire de ses résultats de référence sur cette machine. statistics-1.2 n'est pas revendiqué.
 
 | # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 6.1 | `ETAPES.cmd b-stats-results` | `REPRODUCED: 74 numbers checked, 0 differences (numpy …, python 3.7.16)` | 0 | `logs\stats_reference_check.json` | `DIFFERENT` (code 1) : ne pas résoudre, envoyer le fichier. La version de numpy diffère de celle de la copie de revue (2.4.6). Ne jamais « corriger » la référence |
+| 6.1 | `ETAPES.cmd b-stats-results` | Deux lignes : `module identity: identical to the reference file after CRLF->LF normalisation (635 CRLF line endings; raw SHA-256 0e43bf5b…)` (ou `byte-identical …` si le fichier est en LF), puis `REPRODUCED: module identity OK \| numbers: 74 checked, 0 differing (numpy 1.21.6, python 3.7.16)` | 0 | `logs\stats_reference_check.json` | `DIFFERENT` (code 1) : ne pas résoudre, envoyer le fichier. Chaque différence est affichée sur sa propre ligne `DIFFERENT: …`, préfixée `module identity:` (le contenu du module diffère au-delà des fins de ligne) ou `number:` (une valeur recalculée diffère). Ne jamais « corriger » la référence |
 | 6.2 | `ETAPES.cmd b-stats-resolve` | `RESOLVED: b-crossed-bootstrap-1: … not labelled statistics-1.2` | 0 | `<BCONF>\stats_resolution.json` | `STOP` : lire le message. 6.1 doit avoir réussi |
 | 6.3 | (diagnostic facultatif, pour signaler l'état d'A003) `ETAPES.cmd b-stats-inspect C:\Users\LENOVO\QMIX_A003_P3\a003` | `files: … \| __pycache__: PRESENT/absent […] \| top-level code …: [] \| manifests: …` | 0 | `logs\a003_inspection.json` | Aucun import, rien n'est écrit dans A003. Un `__pycache__` présent est **signalé**, pas supprimé ; sa date n'est pas sa date de création. Ce diagnostic ne change pas la procédure de B |
 

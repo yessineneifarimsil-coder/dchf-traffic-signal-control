@@ -104,3 +104,37 @@ Le détail des commandes lancées ici se trouve dans `logs/revue_2026-11-23/JOUR
 - Sont inchangés : l'algorithme, les 10 000 réplicats, la famille de 12, le niveau 1 − 0,05/12, les intervalles à 95 %, les marges, les règles et les garde-fous du gel.
 
 **Contrôles de cette finalisation :** voir `logs/revue_2026-11-23/finalisation/`.
+
+## 8. Retour Windows du 2026-11-24 sur b058301
+
+**Rapporté par Yessine (sous Windows) :**
+- `statistics.py` : SHA-256 brut `0e43bf5b…`, 635 fins de ligne CRLF ; `ed133bb2…` après normalisation CRLF→LF.
+- `b-stats-results` : `DIFFERENT … 74 numbers checked, 1 differences (numpy 1.21.6, python 3.7.16)`.
+- `disk-audit`, avec `BCONF=C:\research\confirmation_B_2026-11-24` : `B can start on current free space: True` (17,71 Go libres sur C:). C'est une estimation avant rodage : le besoin définitif reste le volume mesuré par le rodage plus 4 Go.
+- `tests_B.txt` (lu ici) : 172 tests, 28 échecs et 3 erreurs. Les deux tests du paquet protégé passent.
+
+**Diagnostic, vérifié ici.**
+- **L'unique différence est le contrôle d'empreinte du module, pas un nombre.** Dans b058301, la liste des différences contenait le message d'empreinte (sha brut CRLF ≠ `ed133bb2…`), suivi des écarts numériques. Le décompte de 1 et `tests_B.txt` montrent qu'aucun nombre ne différait : les 74 nombres sont reproduits sous numpy 1.21.6 et Python 3.7.16 (rapporté, déduit du décompte).
+- Une copie CRLF du fichier de référence donne exactement `0e43bf5b…` et 635 CRLF.
+- **Les 28 échecs et 2 des 3 erreurs ont la même cause.** La préparation commune des tests (`setUp`) exigeait une résolution statistique sans différence. Un `setUp` en échec saute le `tearDown`, et le résumé factice restait donc installé pour les tests suivants. C'est pourquoi `RealReaders` voyait J absent et un compteur non détecté.
+- **La 3e erreur** (`IndexError` dans les travailleurs du rodage) vient de `spawn` : sous Windows, les travailleurs n'héritent pas du résumé factice du test.
+- Ces deux motifs sont reproduits ici avec un code figé converti en CRLF (`logs/revue_2026-11-24/`).
+
+**Corrections, sans changement scientifique.**
+- `stats_reference.py` :
+  - le module est accepté s'il est identique octet pour octet, ou identique **après la seule normalisation CRLF→LF** ;
+  - le rapport sépare l'identité du module (`module_identity`, `module_differences`, avec le sha brut, le sha LF et le nombre de CRLF) des nombres (`numbers_checked`, `number_differences`) ;
+  - chaque différence est affichée en entier, préfixée `module identity:` ou `number:`.
+- `b_runner.py` : le rodage passe au travailleur le résumeur à utiliser. Une option `start_method` permet de tester `spawn`. Le comportement normal est inchangé.
+- Tests :
+  - `addCleanup` restaure l'état même si `setUp` échoue ;
+  - 3 tests ajoutés : copie CRLF reproduite, contenu modifié au-delà des fins de ligne détecté, rodage sous `spawn`.
+- Ce qui n'a pas changé : l'algorithme, la référence (74 nombres), le plan (empreinte `693bab0a…`), la famille de 12, les marges, les règles et le décompte de 2470.
+
+**À refaire sous Windows avec cette livraison, dans un nouveau dossier :**
+1. `ETAPES.cmd tests`. Le gel lit `logs\tests_B.txt`, qui doit finir par `OK` (attendu : 175 tests).
+2. `verify_etapes_cmd.cmd`.
+3. `b-stats-results`. Attendu : `module identity: identical … after CRLF->LF normalisation …`, puis `REPRODUCED: module identity OK | numbers: 74 checked, 0 differing`.
+4. `disk-audit`.
+
+Le `tests_B.txt` actuel, en `FAILED`, ne peut pas servir au gel.

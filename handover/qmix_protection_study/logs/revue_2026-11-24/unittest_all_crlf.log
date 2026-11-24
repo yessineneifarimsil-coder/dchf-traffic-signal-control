@@ -1,0 +1,149 @@
+E...REFUSED: /tmp/tmpfqd2_9md already exists
+REFUSED: --approved-plan must be f
+..................{
+ "selection_counts": {
+  "idqn_pairs": {
+   "guarantee": {
+    "pairs": 2,
+    "D1": 1,
+    "D2": 1,
+    "D3": 2
+   },
+   "both": {
+    "pairs": 0,
+    "D1": 0,
+    "D2": 0,
+    "D3": 0
+   }
+  },
+  "qmix_runs_where_guarantee_acts": 1,
+  "qmix_runs_where_guarantee_acts_in_demand": 0,
+  "reported_elsewhere_not_recomputed": {
+   "idqn_degraded_pairs": 35,
+   "qmix_evaluations_guarantee_acts": 17
+  }
+ },
+ "primary_idqn_definition": "D2 (dD_bar_demand_window_s > 0)",
+ "idqn_degraded_D2": {
+  "interventions": 1,
+  "in_demand": 1,
+  "runs": 1,
+  "with_opposite_green": 1,
+  "opposite_green_gt_60s": 1,
+  "runs_with_opposite_green_gt_60s": 1,
+  "opposite_green_median_s": 80,
+  "located_by": {
+   "yellow_start": 1
+  }
+ },
+ "qmix_guarantee_acts": {
+  "interventions": 0,
+  "in_demand": 0,
+  "runs": 0,
+  "with_opposite_green": 0,
+  "opposite_green_gt_60s": 0,
+  "runs_with_opposite_green_gt_60s": 0,
+  "opposite_green_median_s": null,
+  "located_by": {}
+ },
+ "threshold_opposite_green_s": 60,
+ "cells_not_readable": [
+  {
+   "cell": [
+    "R2_single_secondary_trickle",
+    "8203",
+    "qmix_seed101_t350000",
+    "both"
+   ],
+   "selection": "qmix_guarantee_acts",
+   "error": "[Errno 2] No such file or directory: '/tmp/tmp_5h_f0oa/rob/cells/R2_single_secondary_trickle/8203/qmix_seed101_t350000/both/signal_phases.csv'"
+  }
+ ]
+}
+......................................................................................{
+ "a004_sha256": "0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab",
+ "a004_hash_ok": true,
+ "verdict": "IDENTICAL_BOOTSTRAP",
+ "signature": {
+  "a004": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)",
+  "frozen_8c14f32": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)"
+ }
+}
+{
+ "a004_sha256": "588a27b8209054db20366a567028d361311264230f719ccd860e4f3907a27e66",
+ "a004_hash_ok": true,
+ "verdict": "DIFFERENT_BOOTSTRAP",
+ "signature": {
+  "a004": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)",
+  "frozen_8c14f32": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)"
+ }
+}
+.{
+ "a004_sha256": "0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab",
+ "a004_hash_ok": false,
+ "verdict": "A004_FILE_NOT_VERIFIED",
+ "signature": null
+}
+................../usr/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 507 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 506 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+...E...............{
+ "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+ "cells_planned": 44,
+ "cells_analysed": 44,
+ "cells_missing_declared": [],
+ "complete": true,
+ "integrity_ok": true,
+ "all_ok": true,
+ "analysis_sha256": "f48f12ec0ebcc8089cbe14b075047eb16f72891e45060366b0ec62ce0a2e0336"
+}
+....{
+ "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+ "cells_planned": 44,
+ "cells_analysed": 43,
+ "cells_missing_declared": [
+  "cells/R0_reference/8001/qmix_seed101_t350000/both"
+ ],
+ "complete": false,
+ "integrity_ok": true,
+ "all_ok": false,
+ "analysis_sha256": "f48f12ec0ebcc8089cbe14b075047eb16f72891e45060366b0ec62ce0a2e0336"
+}
+.....STOP: 1 cells have no result and are not declared missing, e.g. ['cells/R0_reference/8001/qmix_seed101_t350000/both']
+....................
+======================================================================
+ERROR: test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<copie>/tests/test_ablation_metrics.py", line 52, in test_equals_protected_service_counters
+    from adaptive_qmix_protected.protection import ServiceCounters
+ModuleNotFoundError: No module named 'adaptive_qmix_protected'
+
+======================================================================
+ERROR: test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<copie>/tests/test_robustness.py", line 91, in test_equivalence_at_2800_and_denominator_otherwise
+    n_adapter.install()
+  File "<copie>/tools/comparators/../robustness/n_adapter.py", line 60, in install
+    mod = importlib.import_module(name)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1126, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1140, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'adaptive_qmix_protected'
+
+----------------------------------------------------------------------
+Ran 175 tests in 359.701s
+
+FAILED (errors=2)

@@ -1,0 +1,3 @@
+module identity: DIFFERENT from the reference file
+DIFFERENT: module identity: statistics module d357d545cfcdca4f71d2c4c3e973909c536a99d584f0768fb1ab830c9a353294 (after CRLF->LF 876d3557a145764d614b10327f9750d9243d91a5be6e5c18bea18274a3548a7e) is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a
+DIFFERENT: module identity DIFFERENT | numbers: 74 checked, 0 differing (numpy 2.4.6, python 3.11.17)

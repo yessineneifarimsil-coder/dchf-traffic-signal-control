@@ -1,0 +1,4 @@
+$ python -m pyflakes <4 fichiers modifiés>
+tests/test_b_runner.py:35:5: 'numpy' imported but unused
+tests/test_b_runner.py:681:13: 'matplotlib' imported but unused
+tests/test_stats_reference.py:17:5: 'numpy' imported but unused

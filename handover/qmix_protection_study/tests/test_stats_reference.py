@@ -125,7 +125,33 @@ class Results(unittest.TestCase):
                                 "rows = generator.integers(0, row_count, size=row_count)[::-1].copy()"))
         payload, diffs = SR.results(changed, os.path.join(self.base, "r2.json"))
         self.assertEqual(payload["status"], "DIFFERENT")
-        self.assertTrue(diffs)
+        self.assertEqual(len(payload["module_differences"]), 1)          # identity and numbers reported apart
+        self.assertTrue(payload["number_differences"])
+        self.assertTrue(all(d.startswith("number: ") for d in payload["number_differences"]))
+
+    def crlf_copy(self, extra=b""):
+        path = os.path.join(self.base, "statistics.py")
+        with open(SR.default_statistics(), "rb") as f:
+            data = f.read().replace(b"\r\n", b"\n")       # the source may itself be a CRLF checkout
+        with open(path, "wb") as f:
+            f.write(data.replace(b"\n", b"\r\n") + extra)
+        return path
+
+    def test_a_crlf_checkout_of_the_reference_file_is_the_same_module(self):
+        path = self.crlf_copy()
+        payload, diffs = SR.results(path, os.path.join(self.base, "r.json"))
+        self.assertEqual((payload["status"], diffs), ("REPRODUCED", []))
+        self.assertIn("after CRLF->LF normalisation", payload["module_identity"])
+        self.assertNotEqual(payload["statistics_module_sha256"], payload["statistics_module_sha256_lf"])
+        self.assertEqual(payload["numbers_checked"], 74)
+
+    def test_a_content_change_beyond_line_endings_is_a_module_difference_only(self):
+        path = self.crlf_copy(extra=b"# a comment\r\n")                # same numbers, other source
+        payload, diffs = SR.results(path, os.path.join(self.base, "r.json"))
+        self.assertEqual(payload["status"], "DIFFERENT")
+        self.assertEqual(payload["number_differences"], [])
+        self.assertEqual(len(payload["module_differences"]), 1)
+        self.assertTrue(payload["module_differences"][0].startswith("module identity: "))
 
     def test_resolution_requires_reproduced_results(self):
         out = os.path.join(self.base, "r.json")

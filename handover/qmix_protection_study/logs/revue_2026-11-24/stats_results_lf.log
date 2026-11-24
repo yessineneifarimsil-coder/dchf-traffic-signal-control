@@ -1,0 +1,2 @@
+module identity: byte-identical to the reference file
+REPRODUCED: module identity OK | numbers: 74 checked, 0 differing (numpy 2.4.6, python 3.11.17)

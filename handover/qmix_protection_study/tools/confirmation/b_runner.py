@@ -623,14 +623,17 @@ def summarise_cell(j, work, n_scheduled):
     return RA.cell_metrics(cell, work, n_scheduled)
 
 
-def finalize_cell(root, j, work, final, n_scheduled):
+ORIGINAL_SUMMARISE = summarise_cell
+
+
+def finalize_cell(root, j, work, final, n_scheduled, summariser=None):
     """Set metrics aside, summarise, gzip, rename, restore metrics LAST."""
     metrics = os.path.join(work, "evaluation_metrics.json")
     pending = metrics + ".pending"
     os.rename(metrics, pending)
     shutil.copyfile(pending, metrics)                    # cell_metrics reads it; removed again below
     try:
-        summary, problems = summarise_cell(j, work, n_scheduled)
+        summary, problems = (summariser or summarise_cell)(j, work, n_scheduled)
     finally:
         os.remove(metrics)
     summary["problems"] = problems
@@ -658,7 +661,7 @@ def same(a, b):
     return a == b
 
 
-def recheck_cell(root, j, manifests):
+def recheck_cell(root, j, manifests, summariser=None):
     """Re-read a FINISHED cell from its gzip logs: decompress into a scratch folder under root, recompute the summary
     with the same reader (robustness_analysis.cell_metrics) and compare it with cell_summary.json."""
     d = os.path.join(root, j["directory"])
@@ -672,7 +675,7 @@ def recheck_cell(root, j, manifests):
                     shutil.copyfileobj(a, b)
             elif os.path.isfile(src):
                 shutil.copyfile(src, os.path.join(scratch, name))
-        again, problems = summarise_cell(j, scratch, n)
+        again, problems = (summariser or summarise_cell)(j, scratch, n)
     except Exception as error:  # noqa: BLE001 - an unreadable gzip log is a finding, not a crash
         return ["re-read from gzip failed: {!r}".format(error)]
     finally:
@@ -855,7 +858,9 @@ def measure_jobs(models, comps):
 
 def _measure_one(task):
     """One run-in job, in a worker process: evaluate, finalise as in B, classify, re-read from gzip."""
-    work_root, j, prefix, evaluator = task
+    # Everything the worker needs travels in the task: under Windows the workers are started by "spawn" and do not
+    # inherit any module state of the parent.
+    work_root, j, prefix, evaluator, summariser = task
     final = os.path.join(work_root, j["directory"])
     t0 = time.time()
     out = {"directory": j["directory"], "kind": j["kind"], "method": j.get("method", ""),
@@ -865,7 +870,8 @@ def _measure_one(task):
     try:
         (evaluator or default_evaluator)(work_root, j, prefix, final + ".tmp")
         t_eval = time.time()
-        finalize_cell(work_root, j, final + ".tmp", final, int(read_json(prefix + ".metadata.json")["scheduled_total"]))
+        finalize_cell(work_root, j, final + ".tmp", final, int(read_json(prefix + ".metadata.json")["scheduled_total"]),
+                      summariser)
     except Exception as error:  # noqa: BLE001 - reported to the parent, the run-in fails
         out.update({"wall_s": time.time() - t0, "state": "interrupted", "problems": [repr(error)]})
         return out
@@ -873,7 +879,8 @@ def _measure_one(task):
     out["evaluation_s"], out["finalize_gzip_s"] = t_eval - t0, time.time() - t_eval
     out["state"], out["problems"] = classify(work_root, j)
     t1 = time.time()
-    out["recheck"] = recheck_cell(work_root, j, os.path.join(work_root, "manifests")) if out["state"] in FINISHED else []
+    out["recheck"] = (recheck_cell(work_root, j, os.path.join(work_root, "manifests"), summariser)
+                      if out["state"] in FINISHED else [])
     out["recheck_s"] = time.time() - t1
     out["bytes"] = sum(os.path.getsize(os.path.join(a, f)) for a, _d, fs in os.walk(final) for f in fs) \
         if os.path.isdir(final) else 0
@@ -887,7 +894,7 @@ def group_by(rows, key):
     return out
 
 
-def measure(root, a_root, aext_root, rob_root, evaluator=None, workers=WORKERS):
+def measure(root, a_root, aext_root, rob_root, evaluator=None, workers=WORKERS, start_method=None):
     """Parallel run-in on design seeds: the throughput of B is measured with the planned parallelism."""
     if os.path.exists(os.path.join(root, "measure.json")):
         raise BError("measure.json exists (the run-in is done once per B root)")
@@ -915,13 +922,17 @@ def measure(root, a_root, aext_root, rob_root, evaluator=None, workers=WORKERS):
         prefix = os.path.join(work_root, "manifests", "{}_{}".format(j["profile"], j["seed"]))
         if not os.path.exists(prefix + ".metadata.json"):
             manifest_writer(j["profile"], j["seed"], prefix)
-        tasks.append((work_root, j, prefix, evaluator))
+        tasks.append((work_root, j, prefix, evaluator, None if summarise_cell is ORIGINAL_SUMMARISE else summarise_cell))
     t0 = time.time()
     if workers <= 1:
         results = [_measure_one(t) for t in tasks]
     else:
         from concurrent.futures import ProcessPoolExecutor
-        with ProcessPoolExecutor(max_workers=workers) as pool:
+        kw = {}
+        if start_method:                               # e.g. "spawn" to reproduce Windows on another system
+            import multiprocessing
+            kw["mp_context"] = multiprocessing.get_context(start_method)
+        with ProcessPoolExecutor(max_workers=workers, **kw) as pool:
             results = list(pool.map(_measure_one, tasks))
     elapsed = time.time() - t0
     bad = [r for r in results if r["state"] not in FINISHED or r["recheck"]]

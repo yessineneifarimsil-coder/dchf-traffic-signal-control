@@ -1,0 +1,2 @@
+module identity: identical to the reference file after CRLF->LF normalisation (635 CRLF line endings; raw SHA-256 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab)
+REPRODUCED: module identity OK | numbers: 74 checked, 0 differing (numpy 2.4.6, python 3.11.17)

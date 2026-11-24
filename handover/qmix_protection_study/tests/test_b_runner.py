@@ -169,6 +169,10 @@ class Base(unittest.TestCase):
         write_aext(self.x, {R1: 2.10, R2: 1.50, R3: 3.00})          # worse than the A primaries: secondary (B2)
         write_rob(self.rob)
         self.saved = (BR.manifest_writer, BR.summarise_cell, BR.environment)
+        # restored by addCleanup, which also runs when a subclass setUp fails after this point (a failed setUp
+        # skips tearDown: without this, the stand-ins would leak into the next tests)
+        self.addCleanup(self.restore, self.saved)
+        self.addCleanup(SUMMARY_OVERRIDES.clear)
         BR.manifest_writer, BR.summarise_cell = fake_manifest, fake_summary
         BR.environment = lambda: {"python": "3.7.16", "sumo": "Eclipse SUMO sumo Version 1.25.0", "platform": "test"}
         self.reports = os.path.join(self.base, "logs")
@@ -181,8 +185,11 @@ class Base(unittest.TestCase):
             f.write("Ran 130 tests in 200.1s\n\nOK (skipped=3)\n")
         SUMMARY_OVERRIDES.clear()
 
+    @staticmethod
+    def restore(saved):
+        BR.manifest_writer, BR.summarise_cell, BR.environment = saved
+
     def tearDown(self):
-        BR.manifest_writer, BR.summarise_cell, BR.environment = self.saved
         shutil.rmtree(self.base)
 
     def roots(self):
@@ -372,6 +379,15 @@ class Freeze(Base):
         self.assertGreater(payload["throughput_runs_per_h"], 0)
         self.assertEqual(len(payload["results"]), BR.MEASURE_RUNS)
         self.assertEqual(payload["environment"]["python"], "3.7.16")
+
+    def test_measure_under_spawn_as_on_windows(self):
+        # Windows starts the workers by "spawn": they inherit no module state, so the stand-in reader must travel
+        # in the task (the defect seen in logs/tests_B.txt of 2026-11-24: IndexError in every worker)
+        payload = self.q(BR.measure, self.root, *self.roots(), evaluator=FakeEvaluator(), workers=2,
+                         start_method="spawn")
+        self.assertTrue(payload["ok"])
+        self.assertEqual(len(payload["results"]), BR.MEASURE_RUNS)
+        self.assertTrue(all(r["state"] == "complete" and r["recheck"] == [] for r in payload["results"]))
 
     def test_measure_is_a_gate(self):
         BR.summarise_cell = lambda j, w, n: (fake_summary(j, w, n)[0], ["J differs from tripinfo"])

@@ -1,0 +1,675 @@
+FFFFFFFFFFFF...............FF..EFFFFFFFFFFFFF....FE
+======================================================================
+ERROR: test_real_summary_gzip_logs_and_re_read (tests.test_b_runner.RealReaders.test_real_summary_gzip_logs_and_re_read)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 800, in test_real_summary_gzip_logs_and_re_read
+    self.assertAlmostEqual(summary["J_primary_s"], 3.0)
+  File "/usr/lib/python3.11/unittest/case.py", line 904, in assertAlmostEqual
+    diff = abs(first - second)
+               ~~~~~~^~~~~~~~
+TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'
+
+======================================================================
+ERROR: test_resolution_requires_reproduced_results (tests.test_stats_reference.Results.test_resolution_requires_reproduced_results)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_stats_reference.py", line 138, in test_resolution_requires_reproduced_results
+    r = SR.resolve(self.base, "b-crossed-bootstrap-1", out)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tools/confirmation/stats_reference.py", line 341, in resolve
+    raise StatsRefError("the synthetic reference results are not reproduced ({}): no resolution".format(res.get("status")))
+stats_reference.StatsRefError: the synthetic reference results are not reproduced (DIFFERENT): no resolution
+
+======================================================================
+FAIL: test_a_cell_that_differs_when_re_read_is_excluded (tests.test_b_runner.Analyse.test_a_cell_that_differs_when_re_read_is_excluded)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 635, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_technical_contract_violation_blocks_the_decisions (tests.test_b_runner.Analyse.test_a_technical_contract_violation_blocks_the_decisions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 635, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_decisions_on_synthetic_effects (tests.test_b_runner.Analyse.test_decisions_on_synthetic_effects)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 635, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_equivalence_and_missing_cells_are_not_imputed (tests.test_b_runner.Analyse.test_equivalence_and_missing_cells_are_not_imputed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 635, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_without_re_read_nothing_is_confirmatory (tests.test_b_runner.Analyse.test_without_re_read_nothing_is_confirmatory)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 635, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_code_change_after_the_freeze_is_refused (tests.test_b_runner.Freeze.test_a_code_change_after_the_freeze_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 483, in test_a_code_change_after_the_freeze_is_refused
+    plan = self.frozen_and_prepared()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_new_selection_after_the_freeze_is_refused (tests.test_b_runner.Freeze.test_a_new_selection_after_the_freeze_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 468, in test_a_new_selection_after_the_freeze_is_refused
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_resolution_with_another_statistics_module_or_a_changed_report_is_refused (tests.test_b_runner.Freeze.test_a_resolution_with_another_statistics_module_or_a_changed_report_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 441, in test_a_resolution_with_another_statistics_module_or_a_changed_report_is_refused
+    r = self.resolve_stats()
+        ^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_statistics_1_2_resolution_is_refused (tests.test_b_runner.Freeze.test_a_statistics_1_2_resolution_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 462, in test_a_statistics_1_2_resolution_is_refused
+    r = self.resolve_stats()
+        ^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_tampered_plan_or_margins_is_refused (tests.test_b_runner.Freeze.test_a_tampered_plan_or_margins_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 494, in test_a_tampered_plan_or_margins_is_refused
+    self.frozen_and_prepared()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_freeze_needs_the_run_in_the_stack_the_tested_code_and_clean_reports (tests.test_b_runner.Freeze.test_freeze_needs_the_run_in_the_stack_the_tested_code_and_clean_reports)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 411, in test_freeze_needs_the_run_in_the_stack_the_tested_code_and_clean_reports
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_freeze_once_then_prepare_with_the_frozen_fingerprint (tests.test_b_runner.Freeze.test_freeze_once_then_prepare_with_the_frozen_fingerprint)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 428, in test_freeze_once_then_prepare_with_the_frozen_fingerprint
+    fr, plan = self.freeze()
+               ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_changed_counter_in_the_gzip_trace_is_detected (tests.test_b_runner.RealReaders.test_a_changed_counter_in_the_gzip_trace_is_detected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 837, in test_a_changed_counter_in_the_gzip_trace_is_detected
+    self.assertTrue(any("counter_rows_differing" in x or "max_counter" in x for x in diff), diff)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_a_changed_gzip_log_is_detected_on_re_read (tests.test_b_runner.RealReaders.test_a_changed_gzip_log_is_detected_on_re_read)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 819, in test_a_changed_gzip_log_is_detected_on_re_read
+    self.assertTrue(diff and any("problems differ" in x or "J_primary_s" in x for x in diff), diff)
+AssertionError: [] is not true : []
+
+======================================================================
+FAIL: test_the_same_failure_in_a_guarantee_arm_is_a_technical_violation (tests.test_b_runner.RealReaders.test_the_same_failure_in_a_guarantee_arm_is_a_technical_violation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 873, in test_the_same_failure_in_a_guarantee_arm_is_a_technical_violation
+    self.assertEqual(state, "corrupted")                          # not hidden as a scientific failure
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'scientific_failure' != 'corrupted'
+- scientific_failure
++ corrupted
+
+
+======================================================================
+FAIL: test_a_missing_critical_field_is_a_technical_failure (tests.test_b_runner.Run.test_a_missing_critical_field_is_a_technical_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_scientific_failure_is_finished_and_never_rerun (tests.test_b_runner.Run.test_a_scientific_failure_is_finished_and_never_rerun)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_second_interruption_is_left_for_diagnosis (tests.test_b_runner.Run.test_a_second_interruption_is_left_for_diagnosis)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_a_sumo_signal_mismatch_fails_every_learned_arm (tests.test_b_runner.Run.test_a_sumo_signal_mismatch_fails_every_learned_arm)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_cell_metrics_problems_make_a_cell_corrupted (tests.test_b_runner.Run.test_cell_metrics_problems_make_a_cell_corrupted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_cleared_guarantee_cell_above_the_counter_bound_is_a_technical_failure (tests.test_b_runner.Run.test_cleared_guarantee_cell_above_the_counter_bound_is_a_technical_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_disk_threshold (tests.test_b_runner.Run.test_disk_threshold)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_finished_cells_have_gzipped_readable_logs_and_metrics_last (tests.test_b_runner.Run.test_finished_cells_have_gzipped_readable_logs_and_metrics_last)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_identity_mismatch_is_corrupted (tests.test_b_runner.Run.test_identity_mismatch_is_corrupted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_minimum_green_follows_the_evaluated_controller (tests.test_b_runner.Run.test_minimum_green_follows_the_evaluated_controller)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_resume_one_retry_and_corrupted_never_rerun (tests.test_b_runner.Run.test_resume_one_retry_and_corrupted_never_rerun)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_the_counter_bound_is_not_imposed_on_the_none_arm (tests.test_b_runner.Run.test_the_counter_bound_is_not_imposed_on_the_none_arm)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 508, in setUp
+    self.plan = self.frozen_and_prepared()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 218, in frozen_and_prepared
+    _fr, plan = self.freeze()
+                ^^^^^^^^^^^^^
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 213, in freeze
+    self.resolve_stats()
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_b_runner.py", line 204, in resolve_stats
+    self.assertEqual(diffs, [])
+AssertionError: Lists differ: ['statistics module 0e43bf5b65696f7184d61e[130 chars]a7a'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'statistics module 0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the reference file ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'
+
++ []
+- ['statistics module '
+-  '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-  'reference file '
+-  'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a']
+
+======================================================================
+FAIL: test_reference_results_are_reproduced_and_a_changed_module_is_detected (tests.test_stats_reference.Results.test_reference_results_are_reproduced_and_a_changed_module_is_detected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/b058301/handover/qmix_protection_study/tests/test_stats_reference.py", line 118, in test_reference_results_are_reproduced_and_a_changed_module_is_detected
+    self.assertEqual((payload["status"], diffs), ("REPRODUCED", []))
+AssertionError: Tuples differ: ('DIFFERENT', ['statistics module 0e43bf5b6[144 chars]7a']) != ('REPRODUCED', [])
+
+First differing element 0:
+'DIFFERENT'
+'REPRODUCED'
+
++ ('REPRODUCED', [])
+- ('DIFFERENT',
+-  ['statistics module '
+-   '0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab is not the '
+-   'reference file '
+-   'ed133bb26705f9f6ad245e45d9eaef2c1dd464de8bfa0c46e1c4f68e88aa9a7a'])
+
+----------------------------------------------------------------------
+Ran 51 tests in 32.171s
+
+FAILED (failures=28, errors=2)

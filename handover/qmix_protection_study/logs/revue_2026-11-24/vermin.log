@@ -1,0 +1,5 @@
+$ vermin -t=3.7- --no-tips --violations <4 fichiers modifiés>
+Detecting python files..
+Analyzing 4 files using 4 processes..
+Minimum required versions: 3.5
+Incompatible versions:     2.x
