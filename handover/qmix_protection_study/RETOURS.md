@@ -172,3 +172,32 @@ Le `tests_B.txt` actuel, en `FAILED`, ne peut pas servir au gel.
 **Conséquence pour A-ext.** `aext_search.py` fait partie des fichiers corrigés, et donc des empreintes de code d'A-ext. Si un `aext-plan` a déjà été produit, `aext-prepare` et `aext-run` refuseront avec « code differs ». Il faut refaire `aext-plan` dans une racine neuve. Rien n'a été lancé.
 
 **À refaire sous Windows, dans un nouveau dossier :** `ETAPES.cmd tests` (attendu : 181 tests, `OK`), `verify_etapes_cmd.cmd` (355 attendus, 0 failed), `b-stats-results`.
+
+## 10. Retour Windows du 2026-11-25 sur b574cbd : le test statique dépendait de la version de Python
+
+**Rapporté :**
+- 181 tests : 179 réussis, 2 échecs, tous deux dans `test_text_encoding` ;
+- les 5 tests `test_b_runner.Analyse` passent, dont le test cp1252 ;
+- `verify_etapes_cmd` : 355 contrôles, 0 failed ;
+- `b-stats-results` : `REPRODUCED`.
+
+**Cause, vérifiée ici : la version de Python, pas les chemins ni les fins de ligne.** Le test lisait les chaînes littérales par `ast.Constant`. Python 3.8 et suivants les produisent sous cette forme, mais **Python 3.7 les produit en `ast.Str`**. Sous 3.7 :
+- chaque mode littéral (`"rb"`, `"w"`…) passait donc pour un mode non littéral. D'où les 34 signalements, dont le premier est `make_archive.py:60`, qui est en réalité `open(dest, "rb")` ;
+- et la ligne 3 de l'échantillon, `open(p, "rb")`, était retenue à tort.
+- Le contrôle des `print` ne voyait, pour la même raison, aucun littéral sous 3.7 : il passait sans rien vérifier.
+
+**Reproduction ici.** J'ai fourni à l'ancienne règle (b574cbd) des arbres reconstruits sous la forme de Python 3.7. Elle donne `[1, 2, 3, 5, 8, 9]` sur l'échantillon. Sur le code, elle donne 34 signalements, le premier étant `tools/make_archive.py:60` : exactement le résultat Windows (`logs/revue_2026-11-25/regle_py37_avant.log`).
+
+**Correction : le test seul.**
+- `literal_str` accepte les deux formes (`Str.s` et `Constant.value`).
+- L'échantillon est vérifié en LF et en CRLF, sous les deux formes d'arbre.
+- Deux tests sont ajoutés :
+  - tout le code, sous la forme 3.7, donne 0 ouverture fautive et 0 littéral non ASCII dans les `print` ;
+  - les chemins sont comparés avec `/`, et les 12 fichiers exemptés sont bien trouvés.
+- L'analyse ignore les avertissements du parseur. Le `DeprecationWarning: invalid escape sequence \c` vient de la docstring de `tools/disk/archive_campaign_A.py` (`logs\campaignA_archive.json`) : c'est un avertissement sans effet sur l'encodage, et le fichier n'a pas été modifié.
+
+**Aucune vraie ouverture sans encodage n'a été trouvée** : aucun fichier d'outil n'a été modifié, et les 12 fichiers figés sont inchangés.
+
+**Contrôles ici :** 183 tests ; seules les 2 erreurs du paquet protégé absent, avec le code figé en CRLF et sous une locale ASCII stricte.
+
+**À refaire sous Windows**, dans un nouveau dossier : `ETAPES.cmd tests` (attendu : 183 tests, `OK`).

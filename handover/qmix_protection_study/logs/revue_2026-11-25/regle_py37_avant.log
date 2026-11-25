@@ -1,0 +1,3 @@
+old rule, Python 3.7 form, sample: [1, 2, 3, 5, 8, 9]
+old rule, Python 3.7 form, whole code: 35 | first: tools/make_archive.py:60 open with a non-literal mode
+excluding the new version of test_text_encoding.py itself: 34 (Windows on b574cbd: 34)

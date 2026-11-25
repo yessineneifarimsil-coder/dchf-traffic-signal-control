@@ -14,3 +14,11 @@
 **Les 2 erreurs** de chaque suite sont `No module named 'adaptive_qmix_protected'`. Ce sont des contrôles non réalisés ici, pas des réussites ; ils passent sous Windows (rapporté).
 
 **Non observé :** cette livraison n'a été lancée ni sous Windows, ni sous Python 3.7.
+
+## Complément : test statique sous Python 3.7 (retour sur b574cbd)
+
+| Fichier | Commande | Résultat observé |
+|---|---|---|
+| `regle_py37_avant.log` | `python regle_py37_repro.py <ancien test> tests .` : l'ancienne règle (b574cbd), sur des arbres reconstruits sous la forme de Python 3.7 (`ast.Str`) | échantillon `[1, 2, 3, 5, 8, 9]` ; 34 signalements, le premier étant `tools/make_archive.py:60`, comme sous Windows. Le 35e est le nouveau fichier de test lui-même |
+| `unittest_all_crlf_v2.log` | suite complète, code figé CRLF | `Ran 183 tests`, `FAILED (errors=2)` (paquet protégé absent) |
+| `unittest_all_locale_ascii_v2.log` | suite complète sous locale C, avec `PYTHONIOENCODING=ascii:strict` | même résultat |

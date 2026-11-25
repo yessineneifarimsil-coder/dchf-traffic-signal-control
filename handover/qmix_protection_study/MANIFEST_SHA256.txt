@@ -1,10 +1,10 @@
-# base: 1aa6731 + Windows return of 2026-11-25 (explicit UTF-8 on every text open outside the 12 sealed files; PYTHONIOENCODING=utf-8 in ETAPES.cmd; ASCII print literals; cp1252 report test) | 234 files
+# base: b574cbd + Windows return of 2026-11-25 (static encoding test independent of the Python version: ast.Str on 3.7, ast.Constant on 3.8+) | 238 files
 705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da           8  .gitattributes
 e20257adaa5ca06f499dc79c1c03e8a1350128132fd70920a579884de69a0329          35  .gitignore
 bb563c8cfe74777d76ebce0b96262e127b3fc7df83af0953a5ac289e2510d5f4       20256  ETAPES.cmd
 fb3dc6c90053d6eed2c74708420775cdd0fa4542fc204734f54926061e3c7da8        7761  README.md
-09f1eefc8721a2ae74aab0f0a952486c6c0136f99183a3781a60781f057db916       16558  RETOURS.md
-a6f5bc5d8685a81cc9aa181ed91f9e54f5547ee4d813e1ce4b595f4dee2a90bc       17510  RUNBOOK_B.md
+bd01b4e5f6a77717450653fd1e996b18fe7109f7b23f8e13dd323a372e224c28       18990  RETOURS.md
+e94d4e0b05f71b75e9563855931de997fd02c3fe50c952069c4dad4c7c8c709c       17510  RUNBOOK_B.md
 2a47a02d209c24d6c4db656176e49f3cdd013d65dba452e64e1db1324bc3f872       26722  analysis/mp_check_robustness.json
 4c1f4dde9b7f835ddd0b447bb7465adf11772ef08897e33d4165e08c4bdbaa83      147951  analysis/ablation/cells.csv
 f898fc06966a35e5f0b74ebab9954e02157660e69e0f01d1da5809eb40c1218b        7394  analysis/ablation/failures.json
@@ -122,7 +122,7 @@ ba24f3bc2c03057b23ce4ba608e50c2c3e68fd125109d972bcf0cf9aa91a933c          16  lo
 03422a49f9614e389d1829926d4389cc1924639833e8633d6733a67e798cca7b       14740  logs/revue_2026-11-07c/unittest_all_with_frozen_code.log
 bcc754b36b5068dfc72930ceba81182015cd92589612cea6cf579ef8d5d11843       14672  logs/revue_2026-11-07c/unittest_all_without_frozen.log
 d70733f9b92ee353ee69c69c6b691e2d10e391e9faccd685dba788a28c0a6d28         213  logs/revue_2026-11-07c/vermin.log
-3e555b3538a940471da9bb23b7934a26b9017c8db3672e73bc1112dd7948cdbe        4614  logs/revue_2026-11-23/JOURNAL_CONTROLES.md
+565835f56c28fa9012180605633f46c33959fcc44aa06bd684ae46c330b82273        4958  logs/revue_2026-11-23/JOURNAL_CONTROLES.md
 8a60f5701082bd51b41f999c938e570524a75b1edcd88781744a9fc9ceda6a93        2021  logs/revue_2026-11-23/b_plan_stand_in_rob.log
 02bf55b2b7c925ab97de301417f93ca2ed20742bf1e7b120db4157d1ad7bde71         305  logs/revue_2026-11-23/pyflakes.log
 14995b1b611bd5c8978b27a063c8d5a5118e4adc48c97960c45fdb71d793807f         489  logs/revue_2026-11-23/repro_apres_correctif.log
@@ -148,12 +148,16 @@ fb7c9f9528c5b534432fd08d8d1f61853b1a33ba0c7a2fd0a999ec8e0c4ed30e       39588  lo
 43816f86c8de8a54487e6a8f585a9f3ed20fcb463f4b53394d669bdc66af11a4        5961  logs/revue_2026-11-24/unittest_all_crlf.log
 0e24ddf783225d40742d2fc8c72652c7368f8e252b5dc1c4d0808845a2951659        5961  logs/revue_2026-11-24/unittest_all_lf.log
 c173d406df6c10186172a39d3121f9e45c7d75f61023a5574c486575bd5efc03         188  logs/revue_2026-11-24/vermin.log
-4b3496b24a9c9a6eb48c30f88d608a771085a221ffbbdf7514d4c4b884aaaf29        1575  logs/revue_2026-11-25/README.md
+22c2db9e95febf718f4dbab888c6f52f5f37437945e6a2f5e4a0dc3e6e6d3794        2309  logs/revue_2026-11-25/README.md
 f14fba0a520044a59622548671d432d7f0e81971a233cc322fa849ffc3141b80        1791  logs/revue_2026-11-25/cp1252_avant_1aa6731.log
 16b1d698e8e1169767646ec6c1dc4d5be80f14e80d05b63fba7614f9449eab67         376  logs/revue_2026-11-25/pyflakes.log
+6563a78be3a6c19d4bc05890c97eb7572d49c665368ba9b740fb862713a26d15         246  logs/revue_2026-11-25/regle_py37_avant.log
+f6297564c8cbcae89994a228ea7a1293709b0b39081b07a4f53bb5626fb0a884        1138  logs/revue_2026-11-25/regle_py37_repro.py
 4a421c484408a5f83ab2d54926de30979ea1ac68bfe41015c26e5e0db01daa02       30300  logs/revue_2026-11-25/unittest_all_crlf.log
+7a6334a73f1e0a462459f75c3b19948e7f31d8bbeaf71265291d088e2ceeafc4       30537  logs/revue_2026-11-25/unittest_all_crlf_v2.log
 18a5c169ceead12654046cfc8c37d202a9ce1a90d337be1799f3a2223649c3cb        6091  logs/revue_2026-11-25/unittest_all_lf.log
 6391779e628e4596214d486391d9c26dd24491e01bf104811f3d3153e6365048        6091  logs/revue_2026-11-25/unittest_all_locale_ascii.log
+e39c5f2a0a6a3308506f1bea426965f7979b1f8f128b73654e7aaff454ae7885        5969  logs/revue_2026-11-25/unittest_all_locale_ascii_v2.log
 73ea8ecbbab1e0d0e2673246accf27f885c3057c4e61fab099faa0cd8921e2e5         180  logs/revue_2026-11-25/vermin.log
 0341a65d07f01d35d0d23848001c01e81647d83634bf2c374acc161a35e0bcdb        3663  logs/windows_2026-11-07/a_cp_robustesse.txt
 c8a7d080e2bac1927ebaaae3965436bc7417d66686e2e6f7c482dd7ec693468d        1124  logs/windows_2026-11-07/a_garantie.txt
@@ -192,7 +196,7 @@ f1f1a379983434e948bf2e6ee78c78992a02225b513e558bad7d7ddbf7e85565        6427  te
 a922b4327d4f118cbb75c00d36d5810a3410f2c09237c9d2d55103e95f0a4619        5449  tests/test_robustness_end_to_end.py
 8069c1df5c6fc8a952eca7623c47db7ed98ab46416dcf011fe0408dd893b255e       11875  tests/test_robustness_runner.py
 4fecf7cf29308040d4c9b25d57dd39f6013496321170e874f971fd8dcb8174a7        8571  tests/test_stats_reference.py
-d5c1d9a3713a3c06106aebcd8e01e4206bdcb4e939afac0b09c46cbd27f77fcd        5521  tests/test_text_encoding.py
+67b86eb330b1680aa5be6cec7436b5c037d31761d8ad52709a8828edbec56c68        8524  tests/test_text_encoding.py
 6f8ef5e2560cb1246bffe3f139f9f7a0b6f809393a0cabe379f99af885a12d52        2007  tests/test_verify_manifest.py
 27feb3f8ed10d409614c83fbd471e88f89fa82c3b7adb109157f38ffd1c6b57b       13487  tools/ablation_analysis.py
 3ecff0b6b612584842458c7d61edc8129f5c462f1f2006351a43180d91e1134c        6269  tools/ablation_metrics.py

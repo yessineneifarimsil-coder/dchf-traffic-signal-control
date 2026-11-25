@@ -16,6 +16,7 @@ write ASCII files (json.dump keeps ensure_ascii, numeric CSV, SUMO outputs). His
 import ast
 import os
 import unittest
+import warnings
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCOPE = ("tools", "tests", "diagnosis", "docs", "figures", "manuscript")
@@ -39,6 +40,24 @@ def python_files():
                     yield os.path.relpath(p, ROOT).replace(os.sep, "/"), p
 
 
+def literal_str(node):
+    """The value of a string literal, whatever the Python version: Python 3.7 parses it as ast.Str (field s),
+    Python 3.8 and later as ast.Constant (field value). None for anything else."""
+    if type(node).__name__ == "Constant":
+        return node.value if isinstance(node.value, str) else None
+    if type(node).__name__ == "Str":
+        return node.s if isinstance(getattr(node, "s", None), str) else None
+    return None
+
+
+def parse(source):
+    """Parse without warnings: a docstring such as "logs\\campaign" gives an invalid-escape warning on parse,
+    which says nothing about the file's encoding."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return ast.parse(source)
+
+
 def mode_of(node, position):
     for k in node.keywords:
         if k.arg == "mode":
@@ -47,9 +66,11 @@ def mode_of(node, position):
 
 
 def unencoded_text_opens(source):
-    """(line, call) of every text-mode open-like call without encoding=; a non-literal mode is reported too."""
+    """(line, call) of every text-mode open-like call without encoding=; a non-literal mode is reported too.
+    source: the text of a file, or an already parsed tree."""
     found = []
-    for node in ast.walk(ast.parse(source)):
+    tree = parse(source) if isinstance(source, str) else source
+    for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or any(k.arg == "encoding" for k in node.keywords):
             continue
         f = node.func
@@ -61,10 +82,10 @@ def unencoded_text_opens(source):
         if name != "open" or owner not in (None, "io", "codecs") + COMPRESSED:
             continue
         mode = mode_of(node, 1)
-        if mode is not None and not (isinstance(mode, ast.Constant) and isinstance(mode.value, str)):
+        if mode is not None and literal_str(mode) is None:
             found.append((node.lineno, "open with a non-literal mode"))
             continue
-        text = mode.value if mode is not None else ("rb" if owner in COMPRESSED else "r")
+        text = literal_str(mode) if mode is not None else ("rb" if owner in COMPRESSED else "r")
         if "b" not in text:
             found.append((node.lineno, "{}open({!r})".format(owner + "." if owner else "", text)))
     return found
@@ -72,15 +93,32 @@ def unencoded_text_opens(source):
 
 def non_ascii_print_literals(source):
     found = []
-    for node in ast.walk(ast.parse(source)):
+    tree = parse(source) if isinstance(source, str) else source
+    for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "print":
             for sub in ast.walk(node):
-                if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                text = literal_str(sub)
+                if text is not None:
                     try:
-                        sub.value.encode("ascii")
+                        text.encode("ascii")
                     except UnicodeEncodeError:
-                        found.append((node.lineno, sub.value[:40]))
+                        found.append((node.lineno, text[:40]))
     return found
+
+
+class Str(ast.AST):
+    """The string node of Python 3.7 (ast.Str, field s), rebuilt here so that the rule is checked on both forms."""
+    _fields = ("s",)
+
+
+def as_python37(tree):
+    """The same tree with every string literal as Python 3.7 parses it (Str instead of Constant)."""
+    class Back(ast.NodeTransformer):
+        def visit_Constant(self, node):
+            if isinstance(node.value, str):
+                return ast.copy_location(Str(s=node.value), node)
+            return node
+    return Back().visit(tree)
 
 
 class TextEncoding(unittest.TestCase):
@@ -98,8 +136,33 @@ class TextEncoding(unittest.TestCase):
         sample = ('open(p)\nopen(p, "w")\nopen(p, "rb")\nopen(p, mode="a", encoding="utf-8")\n'
                   'gzip.open(p, "rt")\ngzip.open(p)\nos.open(p, 1)\nopen(p, m)\nq.read_text()\n'
                   'NamedTemporaryFile("w")\n')
-        lines = sorted(line for line, _ in unencoded_text_opens(sample))
-        self.assertEqual(lines, [1, 2, 5, 8, 9])         # NamedTemporaryFile is not used by this code
+        expected = [1, 2, 5, 8, 9]                        # NamedTemporaryFile is not used by this code
+        for source in (sample, sample.replace("\n", "\r\n")):          # LF and CRLF files
+            self.assertEqual(sorted(line for line, _ in unencoded_text_opens(source)), expected)
+            # Python 3.7 form of the same code (ast.Str), whatever the Python running the test
+            self.assertEqual(sorted(line for line, _ in unencoded_text_opens(as_python37(parse(source)))), expected)
+        printed = 'print("ok")\nprint("D\u0304 {}".format(x))\n'
+        self.assertEqual([line for line, _ in non_ascii_print_literals(printed)], [2])
+        self.assertEqual([line for line, _ in non_ascii_print_literals(as_python37(parse(printed)))], [2])
+
+    def test_the_whole_code_under_the_python37_form(self):
+        """The rules give the same answer on the trees rebuilt as Python 3.7 parses them (retour of 2026-11-25:
+        under Python 3.7 every literal mode was taken for a non-literal one)."""
+        bad = []
+        for rel, path in python_files():
+            if rel in SEALED:
+                continue
+            with open(path, "rb") as f:
+                source = f.read().decode("utf-8")
+            bad += ["{}:{} {}".format(rel, line, what) for line, what in unencoded_text_opens(as_python37(parse(source)))]
+            if rel.startswith("tools/"):
+                bad += ["{}:{} {!r}".format(rel, line, t) for line, t in non_ascii_print_literals(as_python37(parse(source)))]
+        self.assertEqual(bad, [])
+
+    def test_paths_are_compared_with_forward_slashes(self):
+        rels = dict(python_files())
+        self.assertTrue(all("\\" not in rel for rel in rels))
+        self.assertTrue(SEALED <= set(rels), sorted(SEALED - set(rels)))
 
     def test_the_sealed_files_exist(self):
         for rel in SEALED:

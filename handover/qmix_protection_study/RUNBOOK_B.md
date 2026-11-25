@@ -97,7 +97,7 @@ reg query "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" /v PauseUpdatesExp
 
 | # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 2.1 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran 181 tests` (attendu avec cette livraison) puis `OK` ou `OK (skipped=n)` | 0 | `logs\tests_B.txt` (lu par le gel) | `FAILED` : ne rien lancer. Envoyer le fichier |
+| 2.1 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran 183 tests` (attendu avec cette livraison) puis `OK` ou `OK (skipped=n)` | 0 | `logs\tests_B.txt` (lu par le gel) | `FAILED` : ne rien lancer. Envoyer le fichier |
 | 2.2 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_B.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_B.txt` | `Result: … checks passed, 0 failed.` (total **attendu : 355**, non observé) | 0 | `logs\verify_etapes_B.txt` (lu par le gel) | Le moindre `FAIL` (`findstr FAIL logs\verify_etapes_B.txt`) : ne pas utiliser `ETAPES.cmd`, envoyer le rapport |
 
 Le harness vérifie chaque étape deux fois, par `CALL` et par `cmd /c`, en réussite comme en échec. **Le total de 355 est attendu, pas observé** : 51 appels × 2 codes × 3 contrôles, plus 11 (LaTeX), plus 23 refus, plus 15 lancements parallèles. Ce qui compte, c'est **0 failed**. Les contrôles essentiels (2.1 et 2.2) doivent passer sans échec avant tout le reste. Un autre total avec « 0 failed » est à noter et à signaler, sans le corriger.
