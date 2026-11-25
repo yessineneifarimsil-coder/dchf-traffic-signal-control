@@ -59,7 +59,7 @@ def collect(roots, family=DESIGN_FAMILY):
             if "evaluation_metrics.json" not in names:
                 continue
             try:
-                with open(os.path.join(d, "evaluation_metrics.json")) as f:
+                with open(os.path.join(d, "evaluation_metrics.json"), encoding="utf-8") as f:
                     m = json.load(f)
             except (ValueError, OSError):
                 continue
@@ -114,7 +114,7 @@ def best(scores, low=None, high=None, min_green=5):
 def development_reference(ablation_cells, fixed_runs):
     out = {}
     if ablation_cells:
-        with open(ablation_cells) as f:
+        with open(ablation_cells, encoding="utf-8") as f:
             rows = [r for r in csv.DictReader(f) if r["method"] == "qmix" and r["arm"] == "none"]
         js = [float(r["J_primary_s"]) for r in rows if r["status"] == "CLEARED" and finite(r["J_primary_s"])]
         per_model = {}
@@ -127,7 +127,7 @@ def development_reference(ablation_cells, fixed_runs):
                                                             max(statistics.mean(v) for v in per_model.values())]
                                       if per_model else None}
     if fixed_runs:
-        with open(fixed_runs) as f:
+        with open(fixed_runs, encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
         for label in sorted(set(r["group"] for r in rows if r["group"].lower().startswith(("old fixed", "fixed plan")))):
             js = [float(r["J_primary_s"]) for r in rows if r["group"] == label and r["status"] == "CLEARED"]
@@ -186,9 +186,9 @@ def main(argv=None):
         "development_reference": development_reference(a.ablation_cells, a.fixed_plan_runs)}
     if not os.path.isdir(a.out):
         os.makedirs(a.out)
-    with open(os.path.join(a.out, "j_cycle.json"), "w") as f:
+    with open(os.path.join(a.out, "j_cycle.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, indent=1)
-    with open(os.path.join(a.out, "j_cycle.csv"), "w", newline="") as f:
+    with open(os.path.join(a.out, "j_cycle.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["min_green_s", "cycle_s", "plans", "complete", "valid", "best_J",
                                           "median_J", "best_plan"])
         w.writeheader()

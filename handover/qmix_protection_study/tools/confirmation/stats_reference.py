@@ -75,12 +75,12 @@ def write_json(path, payload):
     folder = os.path.dirname(os.path.abspath(path))
     if not os.path.isdir(folder):
         os.makedirs(folder)
-    with open(path, "w") as handle:
+    with open(path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=1, sort_keys=True)
 
 
 def read_json(path):
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 

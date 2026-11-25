@@ -130,7 +130,7 @@ def prepare(root, approved, a_root=None):
         if differ:
             raise AextError("manifests differ from campaign A: {}".format(differ[:5]))
         print("manifests identical to campaign A's ({} files, read only)".format(len(os.listdir(os.path.join(root, "manifests")))))
-    with open(os.path.join(root, "plan.json"), "w") as f:
+    with open(os.path.join(root, "plan.json"), "w", encoding="utf-8") as f:
         json.dump(plan, f, indent=1, sort_keys=True)
     jobs = []
     for profile in PROFILES:
@@ -188,7 +188,7 @@ def run(root, stage, shard, evaluator=None, free=None):
         evaluator = evaluate_ext.evaluate
     corrupted, unfinished = [], []
     i, n = shard.split("/")
-    log = open(os.path.join(root, "run_log_{}_shard{}of{}.jsonl".format(stage, i, n)), "a")
+    log = open(os.path.join(root, "run_log_{}_shard{}of{}.jsonl".format(stage, i, n)), "a", encoding="utf-8")
     for j in shard_jobs(order["jobs"], shard):
         SD.assert_search_seed(j["profile"], j["seed"])
         state, why = CS.classify(root, j)

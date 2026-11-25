@@ -53,7 +53,7 @@ class Fake(object):
         name = os.path.basename(prefix)
         profile, seed = name.rsplit("_", 1)
         self.calls.append(out_dir)
-        with open(prefix + ".csv") as f:
+        with open(prefix + ".csv", encoding="utf-8") as f:
             vehicles = list(csv.DictReader(f))
         fail = spec["kind"] == "fixed" and spec["plan"]["cycle_s"] == 16
         trips = []
@@ -74,18 +74,18 @@ class Fake(object):
                    "mean_completed_time_loss_s": j + 1, "scenario": profile, "traffic_seed": int(seed),
                    "comparator_spec_sha256": self.sha_obj(spec)}
         for n in ("run_manifest.json", "episode_summary.csv"):
-            with open(os.path.join(out_dir, n), "w") as f:
+            with open(os.path.join(out_dir, n), "w", encoding="utf-8") as f:
                 f.write("{}")
         xml = "<tripinfos>" + "".join('<tripinfo id="{}" waitingTime="{}" departDelay="0"/>'.format(v, w)
                                       for v, w in trips) + "</tripinfos>"
         if compact:
-            with gzip.open(os.path.join(out_dir, "tripinfo.xml.gz"), "wt") as f:
+            with gzip.open(os.path.join(out_dir, "tripinfo.xml.gz"), "wt", encoding="utf-8") as f:
                 f.write(xml)
         else:
             for n in ("tripinfo.xml", "signal_phases.csv", "reward_seconds.csv", "service_counters.csv"):
-                with open(os.path.join(out_dir, n), "w") as f:
+                with open(os.path.join(out_dir, n), "w", encoding="utf-8") as f:
                     f.write(xml if n == "tripinfo.xml" else "x")
-        with open(os.path.join(out_dir, "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(out_dir, "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             json.dump(metrics, f)
         return metrics
 
@@ -104,7 +104,7 @@ class Pipeline(unittest.TestCase):
         for profile in PROFILES:
             for role in ("comparator_design", "comparator_validation", "robustness_evaluation"):
                 for seed in SD.seeds(profile, role):
-                    with open(os.path.join(self.root, "manifests", "{}_{}.csv".format(profile, seed)), "w") as f:
+                    with open(os.path.join(self.root, "manifests", "{}_{}.csv".format(profile, seed)), "w", encoding="utf-8") as f:
                         f.write("vehicle_id,depart\n" + "".join("v{},{}\n".format(k, k * 120) for k in range(30)))
         keys = sorted(G.groups(G.coarse_labels(5, CS.COARSE_OFFSET_STEP_S)))
         chosen = [k for k in keys if k[0] in (16, 20, 25, 30, 40, 60) and k[3] in (0, 10) and (k[1] % 3 == 0 or k[0] == 16)]
@@ -117,7 +117,7 @@ class Pipeline(unittest.TestCase):
         sys.modules["evaluate_comparator"] = types.SimpleNamespace(evaluate=self.fake.evaluate)
         plan = CS.build_plan(self.root)
         plan["profiles"] = PROFILES
-        with open(os.path.join(self.root, "plan.json"), "w") as f:
+        with open(os.path.join(self.root, "plan.json"), "w", encoding="utf-8") as f:
             json.dump(plan, f)
         with redirect_stdout(io.StringIO()):
             CS.initial_orders(self.root, plan)
@@ -144,7 +144,7 @@ class Pipeline(unittest.TestCase):
         return self.CS.read_order(self.root, name)
 
     def selection(self, name):
-        with open(os.path.join(self.root, "selections", name + ".json")) as f:
+        with open(os.path.join(self.root, "selections", name + ".json"), encoding="utf-8") as f:
             return json.load(f)
 
     def test_every_stage_chains_and_selects_by_the_frozen_rules(self):
@@ -207,7 +207,7 @@ class Pipeline(unittest.TestCase):
     def test_a_corrupted_result_blocks_finalise_and_is_never_rerun(self):
         self.stage("coarse", finalise=False)
         j = self.order("coarse")["jobs"][7]
-        with open(os.path.join(self.root, j["directory"], "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(self.root, j["directory"], "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             f.write('{"clearance')
         self.assertEqual(self.q(self.CS.progress, self.root, "coarse"), 5)
         calls = len(self.fake.calls)
@@ -221,10 +221,10 @@ class Pipeline(unittest.TestCase):
         with self.assertRaises(self.CS.SearchError):
             self.q(self.CS.finalise, self.root, "coarse")
         path = self.CS.order_path(self.root, "fine-g5")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             payload = json.load(f)
         payload["jobs"] = payload["jobs"][1:]
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f)
         with self.assertRaises(self.CS.SearchError):
             self.CS.read_order(self.root, "fine-g5")
@@ -246,10 +246,10 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(plan["runs_by_stage_exact"]["robustness-eval"], 55)
 
     def test_code_changed_after_the_plan_is_refused(self):
-        with open(os.path.join(self.root, "plan.json")) as f:
+        with open(os.path.join(self.root, "plan.json"), encoding="utf-8") as f:
             plan = json.load(f)
         plan["code_sha256"]["grids.py"] = "0" * 64
-        with open(os.path.join(self.root, "plan.json"), "w") as f:
+        with open(os.path.join(self.root, "plan.json"), "w", encoding="utf-8") as f:
             json.dump(plan, f)
         with self.assertRaises(self.CS.SearchError):
             self.CS.load_plan(self.root)

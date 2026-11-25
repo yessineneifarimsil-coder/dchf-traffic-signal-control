@@ -17,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 def check(root):
     listed, problems = set(), []
-    with open(os.path.join(root, "MANIFEST_SHA256.txt")) as handle:
+    with open(os.path.join(root, "MANIFEST_SHA256.txt"), encoding="utf-8") as handle:
         for line in handle:
             if not line.strip() or line.startswith("#"):
                 continue

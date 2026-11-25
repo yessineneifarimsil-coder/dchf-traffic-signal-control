@@ -1,6 +1,8 @@
-# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-24)
+# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-25)
 
 Ce document est la séquence complète, dans une **Anaconda Prompt** sous Windows. Chaque étape donne la commande exacte, la sortie et le code attendus, les fichiers produits et la conduite à tenir en cas d'écart. Les chemins marqués **[À RENSEIGNER]** ne sont pas connus ici : remplace-les avant de lancer la commande.
+
+**Encodage (2026-11-25).** Les fichiers texte des outils sont lus et écrits en UTF-8, quel que soit l'encodage par défaut de Windows (cp1252). `ETAPES.cmd` fixe `PYTHONIOENCODING=utf-8` : un accent dans un message ne peut plus faire échouer une commande. `RESULTATS_B.md` est en UTF-8 : l'ouvrir dans un éditeur qui lit l'UTF-8, par exemple VS Code ou le Bloc-notes récent.
 
 ## Règles (à relire avant chaque session)
 
@@ -34,9 +36,9 @@ Ce document est la séquence complète, dans une **Anaconda Prompt** sous Window
 | # | Commande | Attendu | Code | En cas d'écart |
 |---|---|---|---|---|
 | 0.1 | `certutil -hashfile "[À RENSEIGNER : chemin du ZIP reçu]" SHA256` | Le SHA-256 donné dans le rapport de livraison | 0 | Différent : ne pas extraire, redemander le ZIP |
-| 0.2 | `mkdir C:\research\qmix_protection_study_B_2026-11-24` | Dossier créé. Il ne doit pas exister ; ne pas réutiliser l'ancien dossier | 0 | « existe déjà » : choisir un autre nom, ne rien écraser |
-| 0.3 | `%SystemRoot%\System32\tar.exe -xf "[À RENSEIGNER : chemin du ZIP]" -C C:\research\qmix_protection_study_B_2026-11-24` | Aucune sortie (le tar de conda échoue avec « Cannot connect to C: » : utiliser celui-ci) | 0 | Erreur : copier le message |
-| 0.4 | `cd /d C:\research\qmix_protection_study_B_2026-11-24` | — | 0 | — |
+| 0.2 | `mkdir C:\research\qmix_protection_study_B_2026-11-25` | Dossier créé. Il ne doit pas exister ; ne pas réutiliser l'ancien dossier | 0 | « existe déjà » : choisir un autre nom, ne rien écraser |
+| 0.3 | `%SystemRoot%\System32\tar.exe -xf "[À RENSEIGNER : chemin du ZIP]" -C C:\research\qmix_protection_study_B_2026-11-25` | Aucune sortie (le tar de conda échoue avec « Cannot connect to C: » : utiliser celui-ci) | 0 | Erreur : copier le message |
+| 0.4 | `cd /d C:\research\qmix_protection_study_B_2026-11-25` | — | 0 | — |
 | 0.5 | `conda activate traffic_rl`, puis `python --version` et `sumo --version` | `Python 3.7.16` ; `Eclipse SUMO sumo Version 1.25…` (format exact non vérifié ici) | 0 | Autre version : le gel refusera ; signaler. `sumo` introuvable : vérifier `echo %SUMO_HOME%` ; le rodage lit `%SUMO_HOME%\bin\sumo` |
 | 0.6 | `python tools\verify_manifest.py` | `… files listed, 0 problems …` puis `MANIFEST OK` | 0 | `different:` ou `missing:` : la copie n'est pas la livraison. Réextraire dans un nouveau dossier |
 
@@ -95,7 +97,7 @@ reg query "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" /v PauseUpdatesExp
 
 | # | Commande | Attendu | Code | Fichiers | En cas d'écart |
 |---|---|---|---|---|---|
-| 2.1 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran … tests` puis `OK` ou `OK (skipped=n)` | 0 | `logs\tests_B.txt` (lu par le gel) | `FAILED` : ne rien lancer. Envoyer le fichier |
+| 2.1 | `ETAPES.cmd tests > logs\tests_B.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_B.txt` | `Ran 181 tests` (attendu avec cette livraison) puis `OK` ou `OK (skipped=n)` | 0 | `logs\tests_B.txt` (lu par le gel) | `FAILED` : ne rien lancer. Envoyer le fichier |
 | 2.2 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_B.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_B.txt` | `Result: … checks passed, 0 failed.` (total **attendu : 355**, non observé) | 0 | `logs\verify_etapes_B.txt` (lu par le gel) | Le moindre `FAIL` (`findstr FAIL logs\verify_etapes_B.txt`) : ne pas utiliser `ETAPES.cmd`, envoyer le rapport |
 
 Le harness vérifie chaque étape deux fois, par `CALL` et par `cmd /c`, en réussite comme en échec. **Le total de 355 est attendu, pas observé** : 51 appels × 2 codes × 3 contrôles, plus 11 (LaTeX), plus 23 refus, plus 15 lancements parallèles. Ce qui compte, c'est **0 failed**. Les contrôles essentiels (2.1 et 2.2) doivent passer sans échec avant tout le reste. Un autre total avec « 0 failed » est à noter et à signaler, sans le corriger.

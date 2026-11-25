@@ -1,0 +1,25 @@
+E
+======================================================================
+ERROR: test_the_report_is_written_when_the_default_encoding_is_cp1252 (tests.test_b_runner.Analyse.test_the_report_is_written_when_the_default_encoding_is_cp1252)
+Windows retour of 2026-11-25: open() without encoding used cp1252 and "D̄" (D-bar) failed in write_report.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<scratchpad>/repro_cp1252/q/tests/test_b_runner.py", line 742, in test_the_report_is_written_when_the_default_encoding_is_cp1252
+    rc = BR.main(["analyse", "--root", self.root, "--out", out])          # the console lines of b-analyse
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/repro_cp1252/q/tests/../tools/confirmation/b_runner.py", line 1431, in main
+    result, missing = analyse(a.root, a.out, recheck=not a.no_recheck)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratchpad>/repro_cp1252/q/tests/../tools/confirmation/b_runner.py", line 1246, in analyse
+    write_report(os.path.join(out, "RESULTATS_B.md"), plan, result, service, missing, plotted, secondary, plotted_joint,
+  File "<scratchpad>/repro_cp1252/q/tests/../tools/confirmation/b_runner.py", line 1374, in write_report
+    f.write("\n".join(L) + "\n")
+  File "/usr/lib/python3.11/encodings/cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0304' in position 726: character maps to <undefined>
+
+----------------------------------------------------------------------
+Ran 1 test in 19.799s
+
+FAILED (errors=1)

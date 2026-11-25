@@ -149,7 +149,7 @@ def main(argv=None):
     if bool(a.ablation) == bool(a.robustness):
         ap.error("give exactly one of --ablation / --robustness")
     source = "ablation" if a.ablation else "robustness"
-    with open(a.ablation or a.robustness) as f:
+    with open(a.ablation or a.robustness, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     result = table(rows, source)
     if source == "ablation":
@@ -162,12 +162,12 @@ def main(argv=None):
                          "all scenarios / learned none")
     if not os.path.isdir(a.out):
         os.makedirs(a.out)
-    with open(os.path.join(a.out, "clopper_pearson.csv"), "w", newline="") as f:
+    with open(os.path.join(a.out, "clopper_pearson.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["group", "event", "k", "n", "rate", "cp_low", "cp_high",
                                           "one_sided_upper_if_zero"], extrasaction="ignore")
         w.writeheader()
         w.writerows(result)
-    with open(os.path.join(a.out, "clopper_pearson.json"), "w") as f:
+    with open(os.path.join(a.out, "clopper_pearson.json"), "w", encoding="utf-8") as f:
         json.dump({"source": source, "input": os.path.abspath(a.ablation or a.robustness), "confidence": 0.95,
                    "rows": result}, f, indent=1)
     for r in result:

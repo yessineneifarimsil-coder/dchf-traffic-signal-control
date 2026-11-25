@@ -31,7 +31,7 @@ WINDOW_S = 1800
 
 
 def read_json(path):
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -117,7 +117,7 @@ def recent(root_logs, now):
     n, stamped = 0, 0
     for path in root_logs:
         try:
-            with open(path) as handle:
+            with open(path, encoding="utf-8") as handle:
                 for line in handle:
                     try:
                         t = json.loads(line).get("t_end")

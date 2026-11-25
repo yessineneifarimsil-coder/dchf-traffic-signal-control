@@ -124,11 +124,11 @@ class Fake(object):
         j = 1.0 + q["gap_s"] / 10.0 + q["max_green_V_s"] / 100.0 + q["max_green_H_s"] / 1000.0 + int(seed) % 10 / 1e4
         os.makedirs(out_dir)
         for name in ("run_manifest.json", "episode_summary.csv"):
-            with open(os.path.join(out_dir, name), "w") as f:
+            with open(os.path.join(out_dir, name), "w", encoding="utf-8") as f:
                 f.write("{}")
-        with gzip.open(os.path.join(out_dir, "tripinfo.xml.gz"), "wt") as f:
+        with gzip.open(os.path.join(out_dir, "tripinfo.xml.gz"), "wt", encoding="utf-8") as f:
             f.write("<tripinfos/>")
-        with open(os.path.join(out_dir, "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(out_dir, "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             json.dump({"clearance_status": "CLEARED", "J_primary_valid": True,
                        "J_primary_mean_scheduled_waiting_burden_s": j, "mean_completed_time_loss_s": j + 5,
                        "scenario": profile, "traffic_seed": int(seed), "comparator_spec_sha256": self.sha(spec)}, f)
@@ -145,7 +145,7 @@ class Chain(unittest.TestCase):
         self.root = os.path.join(self.base, "aext")
         os.makedirs(self.root)
         plan = AX.build_plan(self.root)
-        with open(os.path.join(self.root, "plan.json"), "w") as f:
+        with open(os.path.join(self.root, "plan.json"), "w", encoding="utf-8") as f:
             json.dump(plan, f)
         jobs = []
         for profile in AX.PROFILES:
@@ -190,7 +190,7 @@ class Chain(unittest.TestCase):
         self.assertEqual(top[0], {"gap_s": 1, "max_green_H_s": 30, "max_green_V_s": 10, "zone_m": 40})
         self.q(self.AX.run, self.root, "aext-validation", "0/1", evaluator=self.fake, free=10 ** 13)
         self.q(self.AX.finalise, self.root, "aext-validation")
-        with open(os.path.join(self.root, "selections", "R2_single_secondary_trickle__actuated_g5.json")) as f:
+        with open(os.path.join(self.root, "selections", "R2_single_secondary_trickle__actuated_g5.json"), encoding="utf-8") as f:
             sel = json.load(f)
         self.assertEqual(sel["selected"]["spec"]["params"], top[0])
         calls = len(self.fake.calls)
@@ -202,7 +202,7 @@ class Chain(unittest.TestCase):
     def test_corrupted_result_code_5_and_not_rerun(self):
         self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake, free=10 ** 13)
         j = self.CS.read_order(self.root, "aext-design")["jobs"][3]
-        with open(os.path.join(self.root, j["directory"], "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(self.root, j["directory"], "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             f.write("{")
         calls = len(self.fake.calls)
         self.assertEqual(self.q(self.AX.run, self.root, "aext-design", "0/1", evaluator=self.fake, free=10 ** 13), 5)
@@ -219,10 +219,10 @@ class Chain(unittest.TestCase):
             self.CS.search_jobs("R1_sparse_secondary_heavy_main", "confirmation", [self.AX.spec(self.AX.GRID[0])])
 
     def test_code_change_is_refused(self):
-        with open(os.path.join(self.root, "plan.json")) as f:
+        with open(os.path.join(self.root, "plan.json"), encoding="utf-8") as f:
             plan = json.load(f)
         plan["code_sha256"]["controllers_g5.py"] = "0" * 64
-        with open(os.path.join(self.root, "plan.json"), "w") as f:
+        with open(os.path.join(self.root, "plan.json"), "w", encoding="utf-8") as f:
             json.dump(plan, f)
         with self.assertRaises(self.AX.AextError):
             self.AX.load_plan(self.root)

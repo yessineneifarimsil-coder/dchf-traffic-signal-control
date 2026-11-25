@@ -402,11 +402,11 @@ def main(argv=None):
     ap.add_argument("--plan", default=os.path.join(HERE, "confirmation_plan.json"))
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    with open(a.plan) as f:
+    with open(a.plan, encoding="utf-8") as f:
         plan = json.load(f)
-    with open(a.cells) as f:
+    with open(a.cells, encoding="utf-8") as f:
         cells = list(csv.DictReader(f))
-    with open(a.margins) as f:
+    with open(a.margins, encoding="utf-8") as f:
         margins = json.load(f)
     try:
         result = analyse(plan, cells, margins, load_statistics(a.statistics, plan, a.statistics_sha256))
@@ -415,7 +415,7 @@ def main(argv=None):
         return 1
     if not os.path.isdir(a.out):
         os.makedirs(a.out)
-    with open(os.path.join(a.out, "confirmation_results.json"), "w") as f:
+    with open(os.path.join(a.out, "confirmation_results.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, indent=1, default=str)
     for r in result["primary"]:
         print("{:32} {:5} vs {:8} {:28} {}".format(r["profile"], r["method"], r["comparator"], r["category"],

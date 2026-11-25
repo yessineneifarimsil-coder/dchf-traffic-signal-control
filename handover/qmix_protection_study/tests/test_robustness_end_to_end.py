@@ -84,10 +84,10 @@ class EndToEnd(unittest.TestCase):
         out = os.path.join(self.base, "analysis")
         code, _ = self.quiet(ra.main, ["--root", self.world.root, "--out", out])
         self.assertEqual(code, 0)
-        with open(os.path.join(out, "summary.json")) as handle:
+        with open(os.path.join(out, "summary.json"), encoding="utf-8") as handle:
             summary = json.load(handle)
         self.assertEqual((summary["cells_analysed"], summary["complete"], summary["all_ok"]), (n, True, True))
-        with open(os.path.join(out, "REPORT.md")) as handle:
+        with open(os.path.join(out, "REPORT.md"), encoding="utf-8") as handle:
             report = handle.read()
         self.assertNotIn("INCOMPLETE", report)
         self.assertIn("no indefinite denial of service", report)

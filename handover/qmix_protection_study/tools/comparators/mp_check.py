@@ -36,7 +36,7 @@ def sha256(path):
 def static(protected_root):
     sys.path.insert(0, os.path.join(protected_root, "src"))
     from adaptive_qmix.baselines import pressure as PR
-    read = lambda rel: open(os.path.join(protected_root, rel)).read()  # noqa: E731
+    read = lambda rel: open(os.path.join(protected_root, rel), encoding="utf-8").read()  # noqa: E731
     executors = read("src/adaptive_qmix/baselines/executors.py")
     default_min = re.search(r'settings\.get\("minimum_green_s", (\d+)\)', executors)
     default_yellow = re.search(r'settings\.get\("yellow_duration_s", (\d+)\)', executors)
@@ -74,7 +74,7 @@ def static(protected_root):
 
 def segments(path):
     seq = {}
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         for r in csv.DictReader(f):
             seq.setdefault(r["intersection"], []).append((int(float(r["time"])), r["actual_phase"]))
     out = {}
@@ -102,7 +102,7 @@ def quantile(values, q):
 def run_stats(directory, minimum_green_s=10):
     segs = segments(os.path.join(directory, "signal_phases.csv"))
     metrics_path = os.path.join(directory, "evaluation_metrics.json")
-    m = json.load(open(metrics_path)) if os.path.isfile(metrics_path) else {}
+    m = json.load(open(metrics_path, encoding="utf-8")) if os.path.isfile(metrics_path) else {}
     out = {"directory": directory, "scenario": m.get("scenario"), "traffic_seed": m.get("traffic_seed"),
            "controller": m.get("controller"), "status": m.get("clearance_status"),
            "J_s": m.get("J_primary_mean_scheduled_waiting_burden_s"), "intersections": {}}
@@ -174,7 +174,7 @@ def main(argv=None):
         payload = {"runs": len(stats), "summary_by_scenario": summary, "per_run_intersection": rows}
     text = json.dumps(payload, indent=1, sort_keys=True, default=str)
     if a.out:
-        with open(a.out, "w") as f:
+        with open(a.out, "w", encoding="utf-8") as f:
             f.write(text + "\n")
     print(text if a.action == "static" else json.dumps(payload["summary_by_scenario"], indent=1))
     return 0

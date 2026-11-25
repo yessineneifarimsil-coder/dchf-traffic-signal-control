@@ -60,7 +60,7 @@ def sha256_file(path):
 
 
 def read_json(path):
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -130,7 +130,7 @@ def archive(root, zip_path):
             mode = zipfile.ZIP_STORED if rel.endswith(".gz") else zipfile.ZIP_DEFLATED
             z.write(src, member, compress_type=mode)
             manifest.append({"member": member, "bytes": os.path.getsize(src), "sha256": sha256_file(src)})
-    with open(zip_path + ".manifest.json", "w") as handle:
+    with open(zip_path + ".manifest.json", "w", encoding="utf-8") as handle:
         json.dump({"a_root": os.path.abspath(root), "folders": [f.replace(os.sep, "/") for f in folders],
                    "files": manifest}, handle, indent=0)
     return verify(root, zip_path)
@@ -154,7 +154,7 @@ def verify(root, zip_path):
     result = {"zip": os.path.abspath(zip_path), "zip_sha256": sha256_file(zip_path), "members": len(names),
               "folders": len(manifest["folders"]), "bytes_archived": sum(e["bytes"] for e in manifest["files"]),
               "ok": not problems, "problems": problems[:50]}
-    with open(zip_path + ".verification.json", "w") as handle:
+    with open(zip_path + ".verification.json", "w", encoding="utf-8") as handle:
         json.dump(result, handle, indent=1)
     return result
 
@@ -195,7 +195,7 @@ def delete(root, zip_path, confirm):
             raise ArchiveError("refusing to delete {}".format(rel))
         freed += sum(os.path.getsize(os.path.join(d, n)) for d, _s, ns in os.walk(os.path.join(root, rel)) for n in ns)
         shutil.rmtree(os.path.join(root, rel))
-    with open(zip_path + ".deleted.json", "w") as handle:
+    with open(zip_path + ".deleted.json", "w", encoding="utf-8") as handle:
         json.dump({"folders_deleted": len(manifest["folders"]), "bytes_freed": freed, "zip_sha256": confirm}, handle)
     return {"folders_deleted": len(manifest["folders"]), "gb_freed": round(freed / 1e9, 3)}
 
@@ -229,7 +229,7 @@ def main(argv=None):
             result = archive(a.a_root, zip_path)
             if not os.path.isdir("logs"):
                 os.makedirs("logs")
-            with open(pointer, "w") as handle:
+            with open(pointer, "w", encoding="utf-8") as handle:
                 json.dump({"zip": os.path.abspath(zip_path), "zip_sha256": result["zip_sha256"]}, handle)
         else:
             ap.error("choose archive or --dry-run (--delete is disabled in this delivery)")

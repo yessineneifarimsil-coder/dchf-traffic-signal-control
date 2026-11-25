@@ -41,9 +41,9 @@ def main():
     for ctrl, sc, ck in runs:
         d = os.path.join(a.root, "runs", sc, ctrl.replace(":", "__"))
         m = ea.evaluate(ctrl, prefixes[sc], d, checkpoint=ck)
-        meta = json.load(open(prefixes[sc] + ".metadata.json"))
-        rows = list(csv.DictReader(open(os.path.join(d, "service_counters.csv"))))
-        end = float(list(csv.DictReader(open(os.path.join(d, "episode_summary.csv"))))[0]["end_time"])
+        meta = json.load(open(prefixes[sc] + ".metadata.json", encoding="utf-8"))
+        rows = list(csv.DictReader(open(os.path.join(d, "service_counters.csv"), encoding="utf-8")))
+        end = float(list(csv.DictReader(open(os.path.join(d, "episode_summary.csv"), encoding="utf-8")))[0]["end_time"])
         r = {"controller": ctrl, "scenario": sc, "status": m["clearance_status"], "N": meta["scheduled_total"],
              "scheduled_count": m["scheduled_count"], "J": m["J_primary_mean_scheduled_waiting_burden_s"],
              "J_total": m["J_primary_total_scheduled_waiting_burden_vehicle_s"], "end_time": end,
@@ -52,7 +52,7 @@ def main():
                    and (r["J"] is None or r["status"] != "CLEARED" or abs(r["J"] - r["J_total"] / r["N"]) < 1e-9))
         report.append(r)
         print(json.dumps(r))
-    with open(os.path.join(a.root, "smoke_report.json"), "w") as f:
+    with open(os.path.join(a.root, "smoke_report.json"), "w", encoding="utf-8") as f:
         json.dump(report, f, indent=1)
     return 0 if all(r["ok"] for r in report) else 1
 

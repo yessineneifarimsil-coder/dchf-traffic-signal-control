@@ -1,0 +1,335 @@
+test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters) ... ERROR
+test_rejects_gaps_duplicates_and_early_end (test_ablation_metrics.DemandCost.test_rejects_gaps_duplicates_and_early_end) ... ok
+test_window_split (test_ablation_metrics.DemandCost.test_window_split) ... ok
+test_censored_final_spell_excluded (test_ablation_metrics.GreenSpells.test_censored_final_spell_excluded) ... ok
+test_prepare_refuses_existing_root (test_ablation_metrics.RunnerGuards.test_prepare_refuses_existing_root) ... REFUSED: /tmp/tmp6qvcqkzm already exists
+REFUSED: --approved-plan must be f
+ok
+test_a_run_refuses_to_start_without_the_disk_space (test_aext.Chain.test_a_run_refuses_to_start_without_the_disk_space) ... ok
+test_chain_selects_by_the_frozen_rule_and_never_reruns (test_aext.Chain.test_chain_selects_by_the_frozen_rule_and_never_reruns) ... ok
+test_code_change_is_refused (test_aext.Chain.test_code_change_is_refused) ... ok
+test_confirmation_seeds_are_refused (test_aext.Chain.test_confirmation_seeds_are_refused) ... ok
+test_corrupted_result_code_5_and_not_rerun (test_aext.Chain.test_corrupted_result_code_5_and_not_rerun) ... ok
+test_plan_counts_grid_and_bound (test_aext.Chain.test_plan_counts_grid_and_bound) ... ok
+test_shards_never_share_a_folder (test_aext.Chain.test_shards_never_share_a_folder) ... ok
+test_campaign_A_controller_file_is_unchanged_and_still_refuses_5_s (test_aext.ControllerG5.test_campaign_A_controller_file_is_unchanged_and_still_refuses_5_s) ... ok
+test_gap_out_after_5_s (test_aext.ControllerG5.test_gap_out_after_5_s) ... ok
+test_minimum_5_maximum_and_yellow_hold_under_random_demand (test_aext.ControllerG5.test_minimum_5_maximum_and_yellow_hold_under_random_demand) ... ok
+test_refusals (test_aext.ControllerG5.test_refusals) ... ok
+test_secondary_max_out_at_10_s (test_aext.ControllerG5.test_secondary_max_out_at_10_s) ... ok
+test_dispatch_extends_without_changing_campaign_A_kinds (test_aext.EvaluateExt.test_dispatch_extends_without_changing_campaign_A_kinds) ... ok
+test_bounds_satisfy_their_defining_equalities (test_article_analyses.ClopperPearson.test_bounds_satisfy_their_defining_equalities) ... ok
+test_closed_forms_at_the_edges (test_article_analyses.ClopperPearson.test_closed_forms_at_the_edges) ... ok
+test_event_definitions (test_article_analyses.ClopperPearson.test_event_definitions) ... ok
+test_on_the_ablation_table_when_present (test_article_analyses.ClopperPearson.test_on_the_ablation_table_when_present) ... ok
+test_selection_definitions_and_long_opposite_green (test_article_analyses.GuaranteeDiagnostic.test_selection_definitions_and_long_opposite_green) ... {
+ "selection_counts": {
+  "idqn_pairs": {
+   "guarantee": {
+    "pairs": 2,
+    "D1": 1,
+    "D2": 1,
+    "D3": 2
+   },
+   "both": {
+    "pairs": 0,
+    "D1": 0,
+    "D2": 0,
+    "D3": 0
+   }
+  },
+  "qmix_runs_where_guarantee_acts": 1,
+  "qmix_runs_where_guarantee_acts_in_demand": 0,
+  "reported_elsewhere_not_recomputed": {
+   "idqn_degraded_pairs": 35,
+   "qmix_evaluations_guarantee_acts": 17
+  }
+ },
+ "primary_idqn_definition": "D2 (dD_bar_demand_window_s > 0)",
+ "idqn_degraded_D2": {
+  "interventions": 1,
+  "in_demand": 1,
+  "runs": 1,
+  "with_opposite_green": 1,
+  "opposite_green_gt_60s": 1,
+  "runs_with_opposite_green_gt_60s": 1,
+  "opposite_green_median_s": 80,
+  "located_by": {
+   "yellow_start": 1
+  }
+ },
+ "qmix_guarantee_acts": {
+  "interventions": 0,
+  "in_demand": 0,
+  "runs": 0,
+  "with_opposite_green": 0,
+  "opposite_green_gt_60s": 0,
+  "runs_with_opposite_green_gt_60s": 0,
+  "opposite_green_median_s": null,
+  "located_by": {}
+ },
+ "threshold_opposite_green_s": 60,
+ "cells_not_readable": [
+  {
+   "cell": [
+    "R2_single_secondary_trickle",
+    "8203",
+    "qmix_seed101_t350000",
+    "both"
+   ],
+   "selection": "qmix_guarantee_acts",
+   "error": "[Errno 2] No such file or directory: '/tmp/tmpj79exm_2/rob/cells/R2_single_secondary_trickle/8203/qmix_seed101_t350000/both/signal_phases.csv'"
+  }
+ ]
+}
+ok
+test_curve_validity_conflicts_and_minimum_green (test_article_analyses.JCycle.test_curve_validity_conflicts_and_minimum_green) ... ok
+test_a_cell_that_differs_when_re_read_is_excluded (test_b_runner.Analyse.test_a_cell_that_differs_when_re_read_is_excluded) ... ok
+test_a_technical_contract_violation_blocks_the_decisions (test_b_runner.Analyse.test_a_technical_contract_violation_blocks_the_decisions) ... ok
+test_decisions_on_synthetic_effects (test_b_runner.Analyse.test_decisions_on_synthetic_effects) ... ok
+test_equivalence_and_missing_cells_are_not_imputed (test_b_runner.Analyse.test_equivalence_and_missing_cells_are_not_imputed) ... ok
+test_the_report_is_written_when_the_default_encoding_is_cp1252 (test_b_runner.Analyse.test_the_report_is_written_when_the_default_encoding_is_cp1252)
+Windows retour of 2026-11-25: open() without encoding used cp1252 and "D̄" (D-bar) failed in write_report. ... ok
+test_without_re_read_nothing_is_confirmatory (test_b_runner.Analyse.test_without_re_read_nothing_is_confirmatory) ... ok
+test_a_code_change_after_the_freeze_is_refused (test_b_runner.Freeze.test_a_code_change_after_the_freeze_is_refused) ... ok
+test_a_new_selection_after_the_freeze_is_refused (test_b_runner.Freeze.test_a_new_selection_after_the_freeze_is_refused) ... ok
+test_a_resolution_with_another_statistics_module_or_a_changed_report_is_refused (test_b_runner.Freeze.test_a_resolution_with_another_statistics_module_or_a_changed_report_is_refused) ... ok
+test_a_statistics_1_2_resolution_is_refused (test_b_runner.Freeze.test_a_statistics_1_2_resolution_is_refused) ... ok
+test_a_tampered_plan_or_margins_is_refused (test_b_runner.Freeze.test_a_tampered_plan_or_margins_is_refused) ... ok
+test_freeze_needs_the_run_in_the_stack_the_tested_code_and_clean_reports (test_b_runner.Freeze.test_freeze_needs_the_run_in_the_stack_the_tested_code_and_clean_reports) ... ok
+test_freeze_once_then_prepare_with_the_frozen_fingerprint (test_b_runner.Freeze.test_freeze_once_then_prepare_with_the_frozen_fingerprint) ... ok
+test_measure_is_a_gate (test_b_runner.Freeze.test_measure_is_a_gate) ... ok
+test_measure_under_spawn_as_on_windows (test_b_runner.Freeze.test_measure_under_spawn_as_on_windows) ... ok
+test_measure_uses_design_seeds_only (test_b_runner.Freeze.test_measure_uses_design_seeds_only) ... ok
+test_measure_with_the_planned_parallelism (test_b_runner.Freeze.test_measure_with_the_planned_parallelism) ... ok
+test_nothing_runs_before_the_freeze (test_b_runner.Freeze.test_nothing_runs_before_the_freeze) ... ok
+test_seed_guard_refuses_confirmation_traffic_before_the_freeze (test_b_runner.Freeze.test_seed_guard_refuses_confirmation_traffic_before_the_freeze) ... ok
+test_exact_count_and_no_duplicate_folder (test_b_runner.PlanCount.test_exact_count_and_no_duplicate_folder) ... ok
+test_shards_partition_the_unique_jobs (test_b_runner.PlanCount.test_shards_partition_the_unique_jobs) ... ok
+test_the_10_idqn_checkpoints_are_required (test_b_runner.PlanCount.test_the_10_idqn_checkpoints_are_required) ... ok
+test_the_fingerprint_ignores_the_estimate_only (test_b_runner.PlanCount.test_the_fingerprint_ignores_the_estimate_only) ... ok
+test_B1_primary_from_the_A_selections (test_b_runner.Primary.test_B1_primary_from_the_A_selections) ... ok
+test_B2_actuated_g5_is_primary_when_best_and_secondary_otherwise (test_b_runner.Primary.test_B2_actuated_g5_is_primary_when_best_and_secondary_otherwise) ... ok
+test_a_broken_seal_is_refused (test_b_runner.Primary.test_a_broken_seal_is_refused) ... ok
+test_margins (test_b_runner.Primary.test_margins) ... ok
+test_no_plan_without_the_A_ext_selections (test_b_runner.Primary.test_no_plan_without_the_A_ext_selections) ... ok
+test_ties_follow_the_declared_order (test_b_runner.Primary.test_ties_follow_the_declared_order) ... ok
+test_a_changed_counter_in_the_gzip_trace_is_detected (test_b_runner.RealReaders.test_a_changed_counter_in_the_gzip_trace_is_detected) ... ok
+test_a_changed_gzip_log_is_detected_on_re_read (test_b_runner.RealReaders.test_a_changed_gzip_log_is_detected_on_re_read) ... ok
+test_a_scientific_failure_cell_from_the_real_reader_stays_a_finished_observation (test_b_runner.RealReaders.test_a_scientific_failure_cell_from_the_real_reader_stays_a_finished_observation) ... ok
+test_a_truncated_gzip_log_is_reported_not_crashing (test_b_runner.RealReaders.test_a_truncated_gzip_log_is_reported_not_crashing) ... ok
+test_real_summary_gzip_logs_and_re_read (test_b_runner.RealReaders.test_real_summary_gzip_logs_and_re_read) ... ok
+test_the_same_failure_in_a_guarantee_arm_is_a_technical_violation (test_b_runner.RealReaders.test_the_same_failure_in_a_guarantee_arm_is_a_technical_violation) ... ok
+test_a_missing_critical_field_is_a_technical_failure (test_b_runner.Run.test_a_missing_critical_field_is_a_technical_failure) ... ok
+test_a_scientific_failure_is_finished_and_never_rerun (test_b_runner.Run.test_a_scientific_failure_is_finished_and_never_rerun) ... ok
+test_a_second_interruption_is_left_for_diagnosis (test_b_runner.Run.test_a_second_interruption_is_left_for_diagnosis) ... ok
+test_a_sumo_signal_mismatch_fails_every_learned_arm (test_b_runner.Run.test_a_sumo_signal_mismatch_fails_every_learned_arm) ... ok
+test_cell_metrics_problems_make_a_cell_corrupted (test_b_runner.Run.test_cell_metrics_problems_make_a_cell_corrupted) ... ok
+test_cleared_guarantee_cell_above_the_counter_bound_is_a_technical_failure (test_b_runner.Run.test_cleared_guarantee_cell_above_the_counter_bound_is_a_technical_failure) ... ok
+test_disk_threshold (test_b_runner.Run.test_disk_threshold) ... ok
+test_finished_cells_have_gzipped_readable_logs_and_metrics_last (test_b_runner.Run.test_finished_cells_have_gzipped_readable_logs_and_metrics_last) ... ok
+test_identity_mismatch_is_corrupted (test_b_runner.Run.test_identity_mismatch_is_corrupted) ... ok
+test_minimum_green_follows_the_evaluated_controller (test_b_runner.Run.test_minimum_green_follows_the_evaluated_controller) ... ok
+test_resume_one_retry_and_corrupted_never_rerun (test_b_runner.Run.test_resume_one_retry_and_corrupted_never_rerun) ... ok
+test_the_counter_bound_is_not_imposed_on_the_none_arm (test_b_runner.Run.test_the_counter_bound_is_not_imposed_on_the_none_arm) ... ok
+test_a_corrupted_result_blocks_finalise_and_is_never_rerun (test_comparator_search.Pipeline.test_a_corrupted_result_blocks_finalise_and_is_never_rerun) ... ok
+test_a_scientific_failure_is_kept_excluded_and_never_rerun (test_comparator_search.Pipeline.test_a_scientific_failure_is_kept_excluded_and_never_rerun) ... ok
+test_code_changed_after_the_plan_is_refused (test_comparator_search.Pipeline.test_code_changed_after_the_plan_is_refused) ... ok
+test_every_stage_chains_and_selects_by_the_frozen_rules (test_comparator_search.Pipeline.test_every_stage_chains_and_selects_by_the_frozen_rules) ... ok
+test_orders_are_written_once_and_checked_against_their_seal (test_comparator_search.Pipeline.test_orders_are_written_once_and_checked_against_their_seal) ... ok
+test_scope_and_declared_deviation_of_2026_11_07 (test_comparator_search.Pipeline.test_scope_and_declared_deviation_of_2026_11_07) ... ok
+test_gap_out_after_the_7_s_minimum_green (test_comparators.Actuated.test_gap_out_after_the_7_s_minimum_green) ... ok
+test_max_out_with_continuous_detection (test_comparators.Actuated.test_max_out_with_continuous_detection) ... ok
+test_minimum_green_holds_on_both_phases_and_yellow_is_3_s (test_comparators.Actuated.test_minimum_green_holds_on_both_phases_and_yellow_is_3_s) ... ok
+test_refuses_a_minimum_green_below_7_s (test_comparators.Actuated.test_refuses_a_minimum_green_below_7_s) ... ok
+test_rests_in_green_without_a_conflicting_call (test_comparators.Actuated.test_rests_in_green_without_a_conflicting_call) ... ok
+test_canonical_split_names_the_realized_plan (test_comparators.Grids.test_canonical_split_names_the_realized_plan) ... ok
+test_counts_reproduce_amendment_002_and_min7 (test_comparators.Grids.test_counts_reproduce_amendment_002_and_min7) ... ok
+test_fine_rule_equals_the_frozen_generator_on_the_original_bounds (test_comparators.Grids.test_fine_rule_equals_the_frozen_generator_on_the_original_bounds) ... ok
+test_reduced_coarse_grid_declared_on_2026_11_07 (test_comparators.Grids.test_reduced_coarse_grid_declared_on_2026_11_07) ... ok
+test_failures_are_counted_and_excluded_from_the_j_range (test_comparators.MpCheckSummary.test_failures_are_counted_and_excluded_from_the_j_range) ... ok
+test_r0_is_the_qualification_demand_and_a_change_is_reported (test_comparators.R0Demand.test_r0_is_the_qualification_demand_and_a_change_is_reported) ... ok
+test_registry_is_disjoint_and_guards_the_confirmation_seeds (test_comparators.Seeds.test_registry_is_disjoint_and_guards_the_confirmation_seeds) ... ok
+test_dwell_transition_keeps_cycles_whole_and_restores_the_offset (test_comparators.TimeOfDay.test_dwell_transition_keeps_cycles_whole_and_restores_the_offset) ... ok
+test_refuses_periods_that_do_not_start_at_zero (test_comparators.TimeOfDay.test_refuses_periods_that_do_not_start_at_zero) ... ok
+test_a_duplicate_never_replaces_a_missing_cell (test_confirmation_analysis.Analysis.test_a_duplicate_never_replaces_a_missing_cell) ... ok
+test_a_failure_in_the_descriptive_none_arm_does_not_touch_the_guarantee_contrast (test_confirmation_analysis.Analysis.test_a_failure_in_the_descriptive_none_arm_does_not_touch_the_guarantee_contrast) ... ok
+test_a_level_other_than_the_family_level_is_refused (test_confirmation_analysis.Analysis.test_a_level_other_than_the_family_level_is_refused) ... ok
+test_a_missing_cell_gives_no_decision (test_confirmation_analysis.Analysis.test_a_missing_cell_gives_no_decision) ... ok
+test_an_idqn_cell_outside_R0_is_unexpected (test_confirmation_analysis.Analysis.test_an_idqn_cell_outside_R0_is_unexpected) ... ok
+test_an_open_wait_failure_is_a_service_failure_with_a_descriptive_sensitivity (test_confirmation_analysis.Analysis.test_an_open_wait_failure_is_a_service_failure_with_a_descriptive_sensitivity) ... ok
+test_an_unresolved_primary_is_refused (test_confirmation_analysis.Analysis.test_an_unresolved_primary_is_refused) ... ok
+test_decisions_follow_the_preregistered_rules (test_confirmation_analysis.Analysis.test_decisions_follow_the_preregistered_rules) ... ok
+test_idqn_missing_cell_forbids_the_statement (test_confirmation_analysis.Analysis.test_idqn_missing_cell_forbids_the_statement) ... ok
+test_idqn_service_statement_on_its_R0_scope_only (test_confirmation_analysis.Analysis.test_idqn_service_statement_on_its_R0_scope_only) ... ok
+test_joint_contrast_rules_and_conditional_descriptive (test_confirmation_analysis.Analysis.test_joint_contrast_rules_and_conditional_descriptive) ... ok
+test_joint_learning_contrast_without_idqn_tags_is_incomplete_not_a_crash (test_confirmation_analysis.Analysis.test_joint_learning_contrast_without_idqn_tags_is_incomplete_not_a_crash) ... ok
+test_only_the_reference_statistics_module_is_accepted (test_confirmation_analysis.Analysis.test_only_the_reference_statistics_module_is_accepted) ... ok
+test_qmix_vdn_coverage_rule_unchanged (test_confirmation_analysis.Analysis.test_qmix_vdn_coverage_rule_unchanged) ... ok
+test_service_counts_by_unit_and_no_pooled_interval (test_confirmation_analysis.Analysis.test_service_counts_by_unit_and_no_pooled_interval) ... ok
+test_classification_order_and_boundaries (test_confirmation_analysis.Plan.test_classification_order_and_boundaries) ... ok
+test_margin_rule_of_2026_11_07 (test_confirmation_analysis.Plan.test_margin_rule_of_2026_11_07) ... ok
+test_the_plan_fingerprint_and_its_fields (test_confirmation_analysis.Plan.test_the_plan_fingerprint_and_its_fields) ... ok
+test_identical_and_different_bootstraps_are_told_apart (test_confirmation_analysis.StatisticsCheck.test_identical_and_different_bootstraps_are_told_apart) ... {
+ "a004_sha256": "0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab",
+ "a004_hash_ok": true,
+ "verdict": "IDENTICAL_BOOTSTRAP",
+ "signature": {
+  "a004": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)",
+  "frozen_8c14f32": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)"
+ }
+}
+{
+ "a004_sha256": "588a27b8209054db20366a567028d361311264230f719ccd860e4f3907a27e66",
+ "a004_hash_ok": true,
+ "verdict": "DIFFERENT_BOOTSTRAP",
+ "signature": {
+  "a004": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)",
+  "frozen_8c14f32": "(treatment, comparator, replicates=10000, confidence=0.95, rng_seed=1398030676, comparator_kind=None, draw_log=None, official=False)"
+ }
+}
+ok
+test_wrong_file_is_refused (test_confirmation_analysis.StatisticsCheck.test_wrong_file_is_refused) ... {
+ "a004_sha256": "0e43bf5b65696f7184d61e307c3ccc1f8226d2d1eef5a0aa36e0cec84a592fab",
+ "a004_hash_ok": false,
+ "verdict": "A004_FILE_NOT_VERIFIED",
+ "signature": null
+}
+ok
+test_archive_verify_dry_run_and_two_step_delete (test_disk.Archive.test_archive_verify_dry_run_and_two_step_delete) ... ok
+test_delete_refused_when_a_source_changed_or_the_zip_changed (test_disk.Archive.test_delete_refused_when_a_source_changed_or_the_zip_changed) ... ok
+test_deletion_is_disabled_in_this_delivery (test_disk.Archive.test_deletion_is_disabled_in_this_delivery) ... ok
+test_existing_zip_is_refused_and_pointer_is_written (test_disk.Archive.test_existing_zip_is_refused_and_pointer_is_written) ... ok
+test_selection_excludes_protected_stages_and_files (test_disk.Archive.test_selection_excludes_protected_stages_and_files) ... ok
+test_audit_reports_stages_iev_total_and_need (test_disk.Audit.test_audit_reports_stages_iev_total_and_need) ... ok
+test_b_run_checks_freeze_and_disk_before_launching (test_etapes_cmd.EtapesCmd.test_b_run_checks_freeze_and_disk_before_launching) ... ok
+test_crlf_only (test_etapes_cmd.EtapesCmd.test_crlf_only) ... ok
+test_every_step_has_a_block_ending_with_an_explicit_exit (test_etapes_cmd.EtapesCmd.test_every_step_has_a_block_ending_with_an_explicit_exit) ... ok
+test_new_roots_have_defaults (test_etapes_cmd.EtapesCmd.test_new_roots_have_defaults) ... ok
+test_no_deletion_command_in_this_delivery (test_etapes_cmd.EtapesCmd.test_no_deletion_command_in_this_delivery) ... ok
+test_no_goto_eof_after_a_command (test_etapes_cmd.EtapesCmd.test_no_goto_eof_after_a_command) ... ok
+test_optional_argument_branches_end_with_their_own_exit (test_etapes_cmd.EtapesCmd.test_optional_argument_branches_end_with_their_own_exit) ... ok
+test_parallel_steps_return_the_launch_code_and_say_so (test_etapes_cmd.EtapesCmd.test_parallel_steps_return_the_launch_code_and_say_so) ... ok
+test_python_console_output_is_utf8 (test_etapes_cmd.EtapesCmd.test_python_console_output_is_utf8)
+2026-11-25: a cp850/cp1252 console must never make a print fail; set once, before any step. ... ok
+test_rob_default_and_guard (test_etapes_cmd.EtapesCmd.test_rob_default_and_guard) ... ok
+test_statistics_steps_never_write_bytecode_and_freeze_imports_nothing (test_etapes_cmd.EtapesCmd.test_statistics_steps_never_write_bytecode_and_freeze_imports_nothing) ... ok
+test_backup_logs_copies_and_deletes_nothing (test_monitor.Monitor.test_backup_logs_copies_and_deletes_nothing) ... ok
+test_processes_lists_workers_and_never_itself (test_monitor.Monitor.test_processes_lists_workers_and_never_itself) ... /usr/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 862 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 861 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_snapshot_rate_over_the_last_30_minutes (test_monitor.Monitor.test_snapshot_rate_over_the_last_30_minutes) ... ok
+test_snapshot_without_history_says_estimation_unavailable (test_monitor.Monitor.test_snapshot_without_history_says_estimation_unavailable) ... ok
+test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise) ... ERROR
+test_fixed_plans_equal_frozen_make_plan (test_robustness.Adapter.test_fixed_plans_equal_frozen_make_plan) ... ok
+test_exact_counts_determinism_and_ids (test_robustness.Generator.test_exact_counts_determinism_and_ids) ... ok
+test_profiles_respected (test_robustness.Generator.test_profiles_respected) ... ok
+test_seed_guards_and_constants (test_robustness.Generator.test_seed_guards_and_constants) ... ok
+test_writer_refuses_existing_and_records_N (test_robustness.Generator.test_writer_refuses_existing_and_records_N) ... ok
+test_a_clean_world_passes_and_uses_the_manifest_n (test_robustness_analysis.Analysis.test_a_clean_world_passes_and_uses_the_manifest_n) ... ok
+test_a_constant_denominator_is_detected (test_robustness_analysis.Analysis.test_a_constant_denominator_is_detected)
+A run whose J was divided by 2800 instead of N = 18 fails the consistency check. ... ok
+test_a_failure_under_the_guarantee_forbids_the_service_statement (test_robustness_analysis.Analysis.test_a_failure_under_the_guarantee_forbids_the_service_statement) ... ok
+test_a_logged_counter_that_does_not_recompute_is_reported (test_robustness_analysis.Analysis.test_a_logged_counter_that_does_not_recompute_is_reported) ... ok
+test_a_manifest_changed_after_preparation_fails_t4 (test_robustness_analysis.Analysis.test_a_manifest_changed_after_preparation_fails_t4) ... ok
+test_applied_once_and_bound_to_the_plan (test_robustness_analysis.Analysis.test_applied_once_and_bound_to_the_plan) ... ok
+test_contract_and_signal_violations_fail_the_technical_criteria (test_robustness_analysis.Analysis.test_contract_and_signal_violations_fail_the_technical_criteria) ... ok
+test_failures_are_kept_never_given_a_j_and_excluded_from_pairs (test_robustness_analysis.Analysis.test_failures_are_kept_never_given_a_j_and_excluded_from_pairs) ... ok
+test_guarantee_cost_is_evaluated_only_with_an_intervention_during_the_demand (test_robustness_analysis.Analysis.test_guarantee_cost_is_evaluated_only_with_an_intervention_during_the_demand) ... ok
+test_missing_cells_stop_the_analysis_unless_declared (test_robustness_analysis.Analysis.test_missing_cells_stop_the_analysis_unless_declared) ... ok
+test_a_complete_grid_with_a_scientific_failure_is_complete (test_robustness_analysis.Completeness.test_a_complete_grid_with_a_scientific_failure_is_complete) ... {
+ "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+ "cells_planned": 44,
+ "cells_analysed": 44,
+ "cells_missing_declared": [],
+ "complete": true,
+ "integrity_ok": true,
+ "all_ok": true,
+ "analysis_sha256": "f48f12ec0ebcc8089cbe14b075047eb16f72891e45060366b0ec62ce0a2e0336"
+}
+ok
+test_a_corrupted_result_stops_the_analysis_even_if_declared (test_robustness_analysis.Completeness.test_a_corrupted_result_stops_the_analysis_even_if_declared) ... ok
+test_a_result_of_another_cell_stops_the_analysis (test_robustness_analysis.Completeness.test_a_result_of_another_cell_stops_the_analysis) ... ok
+test_an_entire_absent_arm_forbids_s1_and_shows_zero_present (test_robustness_analysis.Completeness.test_an_entire_absent_arm_forbids_s1_and_shows_zero_present) ... ok
+test_one_absent_both_cell_makes_the_report_incomplete_and_forbids_s1 (test_robustness_analysis.Completeness.test_one_absent_both_cell_makes_the_report_incomplete_and_forbids_s1) ... {
+ "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+ "cells_planned": 44,
+ "cells_analysed": 43,
+ "cells_missing_declared": [
+  "cells/R0_reference/8001/qmix_seed101_t350000/both"
+ ],
+ "complete": false,
+ "integrity_ok": true,
+ "all_ok": false,
+ "analysis_sha256": "f48f12ec0ebcc8089cbe14b075047eb16f72891e45060366b0ec62ce0a2e0336"
+}
+ok
+test_a_guarantee_intervention_in_both_is_activation_not_an_identified_cost (test_robustness_analysis.CostAttribution.test_a_guarantee_intervention_in_both_is_activation_not_an_identified_cost) ... ok
+test_no_guarantee_intervention_during_the_demand_stays_not_evaluated_in_both_arms (test_robustness_analysis.CostAttribution.test_no_guarantee_intervention_during_the_demand_stays_not_evaluated_in_both_arms) ... ok
+test_the_paired_differences_are_computed_against_none (test_robustness_analysis.CostAttribution.test_the_paired_differences_are_computed_against_none) ... ok
+test_a_result_corrupted_after_the_run_blocks_progress_and_analysis (test_robustness_end_to_end.EndToEnd.test_a_result_corrupted_after_the_run_blocks_progress_and_analysis) ... ok
+test_plan_run_progress_analysis (test_robustness_end_to_end.EndToEnd.test_plan_run_progress_analysis) ... STOP: 1 cells have no result and are not declared missing, e.g. ['cells/R0_reference/8001/qmix_seed101_t350000/both']
+ok
+test_a_clean_run_finishes_every_cell_and_progress_returns_0 (test_robustness_runner.Runner.test_a_clean_run_finishes_every_cell_and_progress_returns_0) ... ok
+test_a_complete_scientific_failure_is_finished_and_never_rerun (test_robustness_runner.Runner.test_a_complete_scientific_failure_is_finished_and_never_rerun) ... ok
+test_a_first_interruption_is_resumed_and_then_complete (test_robustness_runner.Runner.test_a_first_interruption_is_resumed_and_then_complete) ... ok
+test_an_inconsistent_identity_is_corrupted (test_robustness_runner.Runner.test_an_inconsistent_identity_is_corrupted) ... ok
+test_an_interruption_without_result_is_retried_once_then_left_for_diagnosis (test_robustness_runner.Runner.test_an_interruption_without_result_is_retried_once_then_left_for_diagnosis) ... ok
+test_an_unknown_status_is_corrupted_not_finished (test_robustness_runner.Runner.test_an_unknown_status_is_corrupted_not_finished) ... ok
+test_missing_required_files_are_corrupted (test_robustness_runner.Runner.test_missing_required_files_are_corrupted) ... ok
+test_truncated_metrics_are_corrupted_preserved_reported_and_never_rerun (test_robustness_runner.Runner.test_truncated_metrics_are_corrupted_preserved_reported_and_never_rerun) ... ok
+test_check_smoke (test_robustness_runner.SmokeCheck.test_check_smoke) ... ok
+test_a_folder_changed_since_the_inspection_is_refused (test_stats_reference.A003.test_a_folder_changed_since_the_inspection_is_refused) ... ok
+test_extraction_is_guarded_and_leaves_the_folder_unchanged (test_stats_reference.A003.test_extraction_is_guarded_and_leaves_the_folder_unchanged) ... ok
+test_inspection_imports_nothing_and_reports_a_pycache_without_touching_it (test_stats_reference.A003.test_inspection_imports_nothing_and_reports_a_pycache_without_touching_it) ... ok
+test_top_level_code_blocks_the_extraction (test_stats_reference.A003.test_top_level_code_blocks_the_extraction) ... ok
+test_a_content_change_beyond_line_endings_is_a_module_difference_only (test_stats_reference.Results.test_a_content_change_beyond_line_endings_is_a_module_difference_only) ... ok
+test_a_crlf_checkout_of_the_reference_file_is_the_same_module (test_stats_reference.Results.test_a_crlf_checkout_of_the_reference_file_is_the_same_module) ... ok
+test_reference_results_are_reproduced_and_a_changed_module_is_detected (test_stats_reference.Results.test_reference_results_are_reproduced_and_a_changed_module_is_detected) ... ok
+test_resolution_requires_reproduced_results (test_stats_reference.Results.test_resolution_requires_reproduced_results) ... ok
+test_every_text_open_names_its_encoding (test_text_encoding.TextEncoding.test_every_text_open_names_its_encoding) ... <unknown>:1: DeprecationWarning: invalid escape sequence '\c'
+ok
+test_print_literals_are_ascii (test_text_encoding.TextEncoding.test_print_literals_are_ascii) ... <unknown>:1: DeprecationWarning: invalid escape sequence '\c'
+ok
+test_the_rule_catches_what_it_should (test_text_encoding.TextEncoding.test_the_rule_catches_what_it_should) ... ok
+test_the_sealed_files_exist (test_text_encoding.TextEncoding.test_the_sealed_files_exist) ... ok
+test_changed_or_missing_file_fails (test_verify_manifest.Manifest.test_changed_or_missing_file_fails) ... ok
+test_clean_copy_passes_and_extras_do_not_fail (test_verify_manifest.Manifest.test_clean_copy_passes_and_extras_do_not_fail) ... ok
+
+======================================================================
+ERROR: test_equals_protected_service_counters (test_ablation_metrics.CounterReconstruction.test_equals_protected_service_counters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<copie>/tests/test_ablation_metrics.py", line 52, in test_equals_protected_service_counters
+    from adaptive_qmix_protected.protection import ServiceCounters
+ModuleNotFoundError: No module named 'adaptive_qmix_protected'
+
+======================================================================
+ERROR: test_equivalence_at_2800_and_denominator_otherwise (test_robustness.Adapter.test_equivalence_at_2800_and_denominator_otherwise)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<copie>/tests/test_robustness.py", line 91, in test_equivalence_at_2800_and_denominator_otherwise
+    n_adapter.install()
+  File "<copie>/tools/comparators/../robustness/n_adapter.py", line 60, in install
+    mod = importlib.import_module(name)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1126, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1140, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'adaptive_qmix_protected'
+
+----------------------------------------------------------------------
+Ran 181 tests in 388.173s
+
+FAILED (errors=2)

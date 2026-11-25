@@ -20,13 +20,13 @@ class Monitor(unittest.TestCase):
         self.b, self.x = os.path.join(self.base, "b"), os.path.join(self.base, "x")
         jobs = [{"profile": "R0_reference", "directory": "cells/R0/{}".format(k)} for k in range(6)]
         os.makedirs(self.b)
-        with open(os.path.join(self.b, "plan.json"), "w") as f:
+        with open(os.path.join(self.b, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"jobs": jobs}, f)
         for k in range(2):
             os.makedirs(os.path.join(self.b, "cells", "R0", str(k)))
-            open(os.path.join(self.b, "cells", "R0", str(k), "evaluation_metrics.json"), "w").close()
+            open(os.path.join(self.b, "cells", "R0", str(k), "evaluation_metrics.json"), "w", encoding="utf-8").close()
         os.makedirs(os.path.join(self.x, "orders"))
-        with open(os.path.join(self.x, "orders", "aext-design.json"), "w") as f:
+        with open(os.path.join(self.x, "orders", "aext-design.json"), "w", encoding="utf-8") as f:
             json.dump({"jobs": [{"directory": "runs/a"}, {"directory": "runs/a"}, {"directory": "runs/b"}]}, f)
         self.cwd = os.getcwd()
         os.chdir(self.base)
@@ -36,7 +36,7 @@ class Monitor(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def log(self, times):
-        with open(os.path.join(self.b, "run_log_shard0of4.jsonl"), "w") as f:
+        with open(os.path.join(self.b, "run_log_shard0of4.jsonl"), "w", encoding="utf-8") as f:
             for t in times:
                 f.write(json.dumps({"dir": "d", "state": "complete", "t_end": t}) + "\n")
 
@@ -76,7 +76,7 @@ class Monitor(unittest.TestCase):
     def test_backup_logs_copies_and_deletes_nothing(self):
         os.makedirs("logs")
         for name in ("b_shard0.log", "aext_aext-design_shard1.log", "other.log"):
-            with open(os.path.join("logs", name), "w") as f:
+            with open(os.path.join("logs", name), "w", encoding="utf-8") as f:
                 f.write(name)
         self.log([time.time()])
         dest, copied = W.backup_logs(self.b, self.x)

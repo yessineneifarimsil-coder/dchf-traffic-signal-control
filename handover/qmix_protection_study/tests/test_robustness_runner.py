@@ -32,7 +32,7 @@ def write_result(directory, cell, status="CLEARED", checkpoint_sha256=None, skip
     for name in cs.required_files(cell["controller"]):
         if name in skip or name == cs.METRICS:
             continue
-        with open(os.path.join(directory, name), "w") as handle:
+        with open(os.path.join(directory, name), "w", encoding="utf-8") as handle:
             handle.write("{}" if name.endswith(".json") else "x\n")
     if cs.METRICS in skip:
         return
@@ -40,7 +40,7 @@ def write_result(directory, cell, status="CLEARED", checkpoint_sha256=None, skip
                "traffic_seed": cell["seed"]}
     if cell.get("model"):
         metrics["checkpoint_sha256"] = checkpoint_sha256
-    with open(os.path.join(directory, cs.METRICS), "w") as handle:
+    with open(os.path.join(directory, cs.METRICS), "w", encoding="utf-8") as handle:
         json.dump(metrics, handle)
 
 
@@ -65,7 +65,7 @@ class Runner(unittest.TestCase):
                                                                         arm)})
         self.plan = {"fingerprint": "f" * 64, "cells": cells, "n_cells": len(cells), "root": self.root,
                      "models": [{"tag": MODEL, "sha256": self.sha}]}
-        with open(os.path.join(self.root, "plan.json"), "w") as handle:
+        with open(os.path.join(self.root, "plan.json"), "w", encoding="utf-8") as handle:
             json.dump(self.plan, handle)
         self.calls = []
         self.fail_next = []          # directories whose next evaluation raises before writing any result
@@ -126,7 +126,7 @@ class Runner(unittest.TestCase):
         targets = [self.cell(0), self.cell(3)]
         for c, d in targets:
             write_result(d, c, checkpoint_sha256=self.sha)
-            with open(os.path.join(d, cs.METRICS), "w") as handle:
+            with open(os.path.join(d, cs.METRICS), "w", encoding="utf-8") as handle:
                 handle.write('{"clearance_status": "CLEA')
         code, text = self.progress()
         self.assertEqual(code, 5)
@@ -136,7 +136,7 @@ class Runner(unittest.TestCase):
         self.assertEqual(code, 5)
         for c, d in targets:
             self.assertNotIn(c["directory"], self.calls)
-            with open(os.path.join(d, cs.METRICS)) as handle:
+            with open(os.path.join(d, cs.METRICS), encoding="utf-8") as handle:
                 self.assertEqual(handle.read(), '{"clearance_status": "CLEA')      # preserved as found
             self.assertIn("CORRUPTED, preserved, NOT rerun: " + c["directory"], text)
         self.assertEqual(len(self.calls), len(self.plan["cells"]) - 2)
@@ -195,7 +195,7 @@ class Runner(unittest.TestCase):
     def test_an_interruption_without_result_is_retried_once_then_left_for_diagnosis(self):
         c, d = self.cell(1)
         os.makedirs(d)                            # an interrupted earlier attempt: directory, no metrics
-        with open(os.path.join(d, "tripinfo.xml"), "w") as handle:
+        with open(os.path.join(d, "tripinfo.xml"), "w", encoding="utf-8") as handle:
             handle.write("partial")
         self.fail_next.append(c["directory"])
         code, text = self.run_shard()
@@ -227,7 +227,7 @@ class SmokeCheck(unittest.TestCase):
     def setUp(self):
         self.base = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.base, "manifests"))
-        with open(os.path.join(self.base, "manifests", "R2_single_secondary_trickle_8201.metadata.json"), "w") as h:
+        with open(os.path.join(self.base, "manifests", "R2_single_secondary_trickle_8201.metadata.json"), "w", encoding="utf-8") as h:
             json.dump({"scenario": "R2_single_secondary_trickle", "seed_value": 8201}, h)
 
     def tearDown(self):

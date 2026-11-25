@@ -48,7 +48,7 @@ def finite(x):
 
 
 def rows(path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
@@ -165,7 +165,7 @@ def write_csv(path, records):
     keys = []
     for r in records:
         keys += [k for k in r if k not in keys]
-    with open(path, "w", newline="") as f:
+    with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()
         w.writerows(records)
@@ -226,7 +226,7 @@ def confront(outputs):
             "per_stream": per_stream}
     out["matches_reported"] = {"idqn_D2": out["idqn_D2"]["runs"] == 35,
                                "qmix_guarantee_arm_in_demand": out["qmix_guarantee_arm_in_demand"]["runs"] == 17}
-    with open(os.path.join(outputs, "confrontation.json"), "w") as f:
+    with open(os.path.join(outputs, "confrontation.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
     return out
 
@@ -270,7 +270,7 @@ def main(argv=None):
               "idqn_degraded_D2": summary_of(events, "idqn_degraded_D2"),
               "qmix_guarantee_acts": summary_of(events, "qmix_guarantee_acts"),
               "threshold_opposite_green_s": LONG_OPPOSITE_GREEN_S, "cells_not_readable": missing}
-    with open(os.path.join(a.out, "summary.json"), "w") as f:
+    with open(os.path.join(a.out, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, indent=1)
     print(json.dumps(result, indent=1))
     return 1 if missing else 0

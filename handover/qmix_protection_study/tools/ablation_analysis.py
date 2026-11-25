@@ -30,12 +30,12 @@ METHODS = ("qmix", "vdn", "idqn")
 
 
 def rows(path):
-    with open(path, newline="") as f:
+    with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
 def rj(path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -141,7 +141,7 @@ def main():
         for k in r:
             if k not in keys:
                 keys.append(k)
-    with open(os.path.join(a.out, "cells.csv"), "w", newline="") as f:
+    with open(os.path.join(a.out, "cells.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()
         for r in cells:
@@ -160,7 +160,7 @@ def main():
                       "dMaxVehicleWait_s": r["max_vehicle_waiting_s"] - b["max_vehicle_waiting_s"],
                       "interventions_guarantee_demand": r["interventions_guarantee_demand"],
                       "interventions_min_green_demand": r["interventions_min_green_demand"]})
-    with open(os.path.join(a.out, "pairs.csv"), "w", newline="") as f:
+    with open(os.path.join(a.out, "pairs.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(pairs[0].keys()))
         w.writeheader()
         w.writerows(pairs)
@@ -207,11 +207,11 @@ def main():
                                      "blocks_all_four_cleared": len(inter_j), "blocks": len(inter_d)}
     summary["reconstruction_check"] = {"new_none_cells": len(checks), "cells_with_differences":
                                        sum(c["rows_differing"] > 0 for c in checks)}
-    with open(os.path.join(a.out, "reconstruction_check.json"), "w") as f:
+    with open(os.path.join(a.out, "reconstruction_check.json"), "w", encoding="utf-8") as f:
         json.dump(checks, f, indent=1)
-    with open(os.path.join(a.out, "failures.json"), "w") as f:
+    with open(os.path.join(a.out, "failures.json"), "w", encoding="utf-8") as f:
         json.dump([r for r in cells if r["status"] != "CLEARED"], f, indent=1, default=str)
-    with open(os.path.join(a.out, "summary.json"), "w") as f:
+    with open(os.path.join(a.out, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=1, default=str)
     for k, v in summary["by_method_arm"].items():
         print(k, "cleared {}/{}".format(v["cleared"], v["evaluations"]), "J n={} mean={}".format(v["J_n"], v["J_mean_over_cleared"]),

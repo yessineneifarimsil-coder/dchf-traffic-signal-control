@@ -58,7 +58,7 @@ def main():
             data = z.read(rel)
             bad += sha(data) != h or len(data) != int(size)
     archive_sha = sha(open(dest, "rb").read())
-    with open(dest + ".sha256", "w") as f:
+    with open(dest + ".sha256", "w", encoding="utf-8") as f:
         f.write("{}  {}\n".format(archive_sha, os.path.basename(dest)))
     print("archive {} | {} members verified, {} mismatches | sha256 {}".format(dest, len(lines), bad, archive_sha))
     return 1 if bad else 0

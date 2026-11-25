@@ -32,14 +32,14 @@ class A003(unittest.TestCase):
         self.spec = spec
         canon = __import__("hashlib").sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()
         self.canon = canon
-        with open(os.path.join(self.a003, "amendment003.py"), "w") as f:
+        with open(os.path.join(self.a003, "amendment003.py"), "w", encoding="utf-8") as f:
             f.write('"""A003 stand-in."""\nimport hashlib\nimport json\nSTATISTICS_1_2 = %r\n\n\n'
                     'def protocol_hashes():\n    return {"statistics_1_2": hashlib.sha256(json.dumps(STATISTICS_1_2, '
                     'sort_keys=True).encode()).hexdigest()}\n' % (spec,))
-        with open(os.path.join(self.a003, "data.txt"), "w") as f:
+        with open(os.path.join(self.a003, "data.txt"), "w", encoding="utf-8") as f:
             f.write("x")
         lines = ["{}  {}".format(SR.sha256_file(os.path.join(self.a003, n)), n) for n in ("amendment003.py", "data.txt")]
-        with open(os.path.join(self.a003, "SHA256SUMS.txt"), "w") as f:
+        with open(os.path.join(self.a003, "SHA256SUMS.txt"), "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
 
     def tearDown(self):
@@ -84,7 +84,7 @@ class A003(unittest.TestCase):
         self.assertFalse(ex["valid"])
 
     def test_top_level_code_blocks_the_extraction(self):
-        with open(os.path.join(self.a003, "amendment003.py"), "a") as f:
+        with open(os.path.join(self.a003, "amendment003.py"), "a", encoding="utf-8") as f:
             f.write("open('side_effect.txt', 'w').write('x')\n")
         ins = os.path.join(self.base, "inspection.json")
         self.q(["inspect-a003", "--a003", self.a003, "--out", ins])
@@ -96,7 +96,7 @@ class A003(unittest.TestCase):
     def test_a_folder_changed_since_the_inspection_is_refused(self):
         ins = os.path.join(self.base, "inspection.json")
         self.q(["inspect-a003", "--a003", self.a003, "--out", ins])
-        with open(os.path.join(self.a003, "data.txt"), "w") as f:
+        with open(os.path.join(self.a003, "data.txt"), "w", encoding="utf-8") as f:
             f.write("y")
         code, text = self.q(["extract-a003", "--a003", self.a003, "--inspection", ins, "--out", os.path.join(self.base, "x.json")])
         self.assertEqual(code, 1)
@@ -118,9 +118,9 @@ class Results(unittest.TestCase):
         self.assertEqual((payload["status"], diffs), ("REPRODUCED", []))
         self.assertEqual(payload["results"]["non_finite_refused"], "StatisticsError")
         changed = os.path.join(self.base, "statistics.py")
-        with open(SR.default_statistics()) as f:
+        with open(SR.default_statistics(), encoding="utf-8") as f:
             src = f.read()
-        with open(changed, "w") as f:
+        with open(changed, "w", encoding="utf-8") as f:
             f.write(src.replace("rows = generator.integers(0, row_count, size=row_count)",
                                 "rows = generator.integers(0, row_count, size=row_count)[::-1].copy()"))
         payload, diffs = SR.results(changed, os.path.join(self.base, "r2.json"))

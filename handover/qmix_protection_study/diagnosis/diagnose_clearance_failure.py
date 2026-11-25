@@ -92,7 +92,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     res = {"model": a.model, "failed_traffic": a.failed, "ok_traffic": a.ok,
            "phase_log_semantics": "signal_phases.actual_phase is the executor's commanded state; no SUMO read-back was logged in these runs"}
-    cf = json.loads((fail / "clearance_failures.jsonl").read_text().splitlines()[-1])
+    cf = json.loads((fail / "clearance_failures.jsonl").read_text(encoding="utf-8").splitlines()[-1])
     res["end_record"] = {k: cf[k] for k in ("time", "active_ids", "pending_due_ids", "scheduled_future_ids",
                                             "teleport_started_ids") if k in cf}
     rem = cf["active_ids"] + cf.get("pending_due_ids", [])

@@ -23,7 +23,7 @@ class Manifest(unittest.TestCase):
             with open(os.path.join(self.root, *rel.split("/")), "wb") as f:
                 f.write(data)
             lines.append("{} {:>11}  {}".format(hashlib.sha256(data).hexdigest(), len(data), rel))
-        with open(os.path.join(self.root, "MANIFEST_SHA256.txt"), "w") as f:
+        with open(os.path.join(self.root, "MANIFEST_SHA256.txt"), "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
 
     def tearDown(self):
@@ -35,7 +35,7 @@ class Manifest(unittest.TestCase):
         return code, out.getvalue()
 
     def test_clean_copy_passes_and_extras_do_not_fail(self):
-        with open(os.path.join(self.root, "logs.txt"), "w") as f:
+        with open(os.path.join(self.root, "logs.txt"), "w", encoding="utf-8") as f:
             f.write("later")
         code, out = self.run_main()
         self.assertEqual(code, 0)

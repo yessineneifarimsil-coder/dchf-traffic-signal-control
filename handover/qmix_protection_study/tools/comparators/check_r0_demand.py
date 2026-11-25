@@ -166,7 +166,7 @@ def main(argv=None):
     result = check(config)
     text = json.dumps(result, indent=1)
     if a.out:
-        with open(a.out, "w") as f:
+        with open(a.out, "w", encoding="utf-8") as f:
             f.write(text + "\n")
     print(text)
     return 0 if result["verdict"] == "IDENTICAL_LAW" else 1

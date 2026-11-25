@@ -138,3 +138,37 @@ Le détail des commandes lancées ici se trouve dans `logs/revue_2026-11-23/JOUR
 4. `disk-audit`.
 
 Le `tests_B.txt` actuel, en `FAILED`, ne peut pas servir au gel.
+
+## 9. Retour Windows du 2026-11-25 sur 1aa6731 : encodage du texte
+
+**Rapporté (Windows, Python 3.7.16, numpy 1.21.6, SUMO 1.25) :**
+- 175 tests : 170 réussis, 5 erreurs ;
+- les 2 tests qui demandent `adaptive_qmix_protected` passent ;
+- `b-stats-results` : `REPRODUCED`, 74 nombres, 0 différence ;
+- `verify_etapes_cmd` : 355 contrôles, 0 failed.
+
+**Les 5 erreurs** (`test_b_runner.Analyse`, lues dans `tests_B.txt`) ont une cause unique. `write_report` ouvrait `RESULTATS_B.md` sans encodage, Windows a donc pris cp1252 par défaut, et le caractère combinant `\u0304` de « D̄ » a levé `UnicodeEncodeError`. **Reproduit ici** sur le code de 1aa6731 par le nouveau test, qui force cp1252 : même exception, même caractère (`logs/revue_2026-11-25/cp1252_avant_1aa6731.log`).
+
+**Corrections, sans aucun changement de calcul.**
+1. **Fichiers.** `encoding="utf-8"` est passé à 175 ouvertures de fichiers texte, en lecture comme en écriture, y compris `gzip.open` en mode texte et `read_text`. Elles se répartissent dans 35 fichiers : `tools/` (b_runner, confirmation_analysis, stats_reference, check_statistics, disk, monitor, aext_search, article_analyses, mp_check, check_r0_demand, ablation_analysis, smoke, etapes_check, make_archive, verify_manifest), `tests/`, `diagnosis/` et `figures/`.
+   - Le nouveau test statique `tests/test_text_encoding.py` refuse toute ouverture en mode texte sans encodage, ainsi qu'un mode non littéral.
+   - **Exception déclarée : 12 fichiers scellés**, inchangés octet pour octet. Leur SHA-256 figure dans les plans de campagnes déjà exécutées : `CODE_FILES` de la campagne A, `plan.json` de la robustesse et de l'ablation. `robustness_analysis.py` refuse de tourner si sa propre empreinte diffère de celle du plan de robustesse.
+   - Ces 12 fichiers ne lisent et n'écrivent que de l'ASCII (`json.dump` avec `ensure_ascii`, CSV numériques, sorties SUMO). Ils ont déjà tourné sous Windows. La suite passe ici sous une locale ASCII stricte (voir plus bas).
+2. **Console.**
+   - `ETAPES.cmd` fixe `PYTHONIOENCODING=utf-8` juste après `setlocal`, avant toute étape (testé).
+   - Les chaînes littérales des `print` des outils sont en ASCII (testé). Les sorties console de `b-analyse` sont en ASCII ; « D̄ » reste dans les fichiers UTF-8.
+3. **Test d'exécution.** `test_the_report_is_written_when_the_default_encoding_is_cp1252` :
+   - toute ouverture sans encodage des modules de l'analyse est forcée en cp1252, comme sous Windows ;
+   - la console est un flux ASCII strict ;
+   - `b_runner.main(["analyse", …])` doit réussir, avec 12 lignes de décision et un `RESULTATS_B.md` lisible en UTF-8 strict qui contient « D̄ ».
+
+**Contrôles ici** (`logs/revue_2026-11-25/`) : 181 tests ; seules les 2 erreurs du paquet protégé absent, dans trois configurations :
+- code figé CRLF ;
+- code figé LF ;
+- **locale C**, où l'encodage par défaut est l'ASCII, avec `PYTHONIOENCODING=ascii:strict`.
+
+**Inchangés :** l'algorithme, la référence statistique, le plan (`693bab0a…`), les marges, les règles, la famille de 12 et le total de 2470.
+
+**Conséquence pour A-ext.** `aext_search.py` fait partie des fichiers corrigés, et donc des empreintes de code d'A-ext. Si un `aext-plan` a déjà été produit, `aext-prepare` et `aext-run` refuseront avec « code differs ». Il faut refaire `aext-plan` dans une racine neuve. Rien n'a été lancé.
+
+**À refaire sous Windows, dans un nouveau dossier :** `ETAPES.cmd tests` (attendu : 181 tests, `OK`), `verify_etapes_cmd.cmd` (355 attendus, 0 failed), `b-stats-results`.

@@ -46,7 +46,7 @@ EXPECTED_A = {(R1, "g5"): 1.9399, (R1, "min7"): 2.6677, (R1, "actuated"): 2.5753
 def sealed(path, payload):
     payload = dict(payload)
     payload["sha256"] = BR.sha_obj(payload)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f)
 
 
@@ -99,12 +99,12 @@ def write_rob(root):
                 f.write(data)
             models.append({"method": method, "training_seed": 0, "tag": tag, "source": "x",
                            "sha256": hashlib.sha256(data).hexdigest()})
-    with open(os.path.join(root, "plan.json"), "w") as f:
+    with open(os.path.join(root, "plan.json"), "w", encoding="utf-8") as f:
         json.dump({"models": models}, f)
 
 
 def fake_manifest(profile, seed, prefix):
-    with open(prefix + ".metadata.json", "w") as f:
+    with open(prefix + ".metadata.json", "w", encoding="utf-8") as f:
         json.dump({"scenario": profile, "seed_value": seed, "scheduled_total": 100}, f)
 
 
@@ -151,12 +151,12 @@ class FakeEvaluator(object):
             value = base
             ident = {"controller": "cmp", "comparator_spec_sha256": j["spec_sha256"]}
         for name in set(n for n in names if not n.endswith(".gz") and n not in ("cell_summary.json",)):
-            with open(os.path.join(work, name), "w") as f:
+            with open(os.path.join(work, name), "w", encoding="utf-8") as f:
                 f.write("x" * 200)
         m = dict(ident, scenario=j["profile"], traffic_seed=j["seed"], clearance_status="CLEARED", J=value)
         if j["directory"] in self.not_cleared:                                 # a scientific failure, recorded
             m.update(clearance_status="CLEARANCE_FAILURE", J=None, D_bar=2.5)
-        with open(os.path.join(work, "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(work, "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             json.dump(m, f)
 
 
@@ -179,9 +179,9 @@ class Base(unittest.TestCase):
         os.makedirs(self.reports)
         self.etapes = os.path.join(self.reports, "verify_etapes_B.txt")
         self.tests = os.path.join(self.reports, "tests_B.txt")
-        with open(self.etapes, "w") as f:
+        with open(self.etapes, "w", encoding="utf-8") as f:
             f.write("...\nResult: 300 checks passed, 0 failed.\n")
-        with open(self.tests, "w") as f:
+        with open(self.tests, "w", encoding="utf-8") as f:
             f.write("Ran 130 tests in 200.1s\n\nOK (skipped=3)\n")
         SUMMARY_OVERRIDES.clear()
 
@@ -277,7 +277,7 @@ class Primary(Base):
         path = os.path.join(self.x, "selections", "{}__actuated_g5.json".format(R1))
         payload = BR.read_json(path)
         payload["selected"]["mean_J"] = 0.5
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f)
         with self.assertRaises(BR.BError):
             BR.load_selections(self.a, self.x)
@@ -319,7 +319,7 @@ class PlanCount(Base):
         path = os.path.join(self.rob, "plan.json")
         plan = BR.read_json(path)
         plan["models"] = [m for m in plan["models"] if m["tag"] != "idqn_seed107_tTEST"]
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(plan, f)
         with self.assertRaises(BR.BError):
             BR.build_plan(self.root, *self.roots())
@@ -327,7 +327,7 @@ class PlanCount(Base):
     def test_the_fingerprint_ignores_the_estimate_only(self):
         plan = BR.build_plan(self.root, *self.roots())
         os.makedirs(self.root)
-        with open(os.path.join(self.root, "measure.json"), "w") as f:
+        with open(os.path.join(self.root, "measure.json"), "w", encoding="utf-8") as f:
             json.dump({"seconds_learned": 20.0, "seconds_comparator": 15.0, "seconds_learned_max": 30.0,
                        "seconds_comparator_max": 20.0, "bytes_per_run": 10 ** 6, "parallel_efficiency": 0.8,
                        "workers": 4}, f)
@@ -414,11 +414,11 @@ class Freeze(Base):
         mj["code_sha256"] = BR.code_hashes()
         BR.write_json(path, mj)
         bad = os.path.join(self.reports, "bad.txt")
-        with open(bad, "w") as f:
+        with open(bad, "w", encoding="utf-8") as f:
             f.write("Result: 299 checks passed, 1 failed.\n")
         with self.assertRaises(BR.BError):
             self.q(BR.freeze, self.root, *self.roots(), etapes_report=bad, tests_report=self.tests)
-        with open(bad, "w") as f:
+        with open(bad, "w", encoding="utf-8") as f:
             f.write("Ran 3 tests\n\nFAILED (errors=1)\n")
         with self.assertRaises(BR.BError):
             self.q(BR.freeze, self.root, *self.roots(), etapes_report=self.etapes, tests_report=bad)
@@ -461,7 +461,7 @@ class Freeze(Base):
         with self.assertRaises(BR.BError):
             self.freeze()
         BR.write_json(path, r)
-        with open(r["results"]["path"], "a") as f:
+        with open(r["results"]["path"], "a", encoding="utf-8") as f:
             f.write(" ")
         with self.assertRaises(BR.BError):
             self.freeze()
@@ -498,7 +498,7 @@ class Freeze(Base):
         try:
             plan = self.frozen_and_prepared()
             self.assertEqual(BR.load_plan(self.root)["fingerprint"], plan["fingerprint"])
-            with open(os.path.join(copy_tools, "comparators_ext", "controllers_g5.py"), "a") as f:
+            with open(os.path.join(copy_tools, "comparators_ext", "controllers_g5.py"), "a", encoding="utf-8") as f:
                 f.write("\n# changed\n")
             with self.assertRaises(BR.BError):
                 BR.load_plan(self.root)
@@ -511,7 +511,7 @@ class Freeze(Base):
         path = os.path.join(self.root, "plan.json")
         plan = BR.read_json(path)
         plan["margins"][R1]["delta_s"] = 1.0
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(plan, f)
         with self.assertRaises(BR.BError):
             BR.load_plan(self.root)
@@ -551,7 +551,7 @@ class Run(Base):
         self.assertTrue(os.path.isdir(os.path.join(self.root, crash + ".incomplete1")))
         self.assertEqual(self.q(BR.progress, self.root), 0)
         victim = os.path.join(self.root, jobs[7]["directory"], "cell_summary.json")
-        with open(victim, "w") as f:
+        with open(victim, "w", encoding="utf-8") as f:
             f.write("{")
         ev3 = FakeEvaluator()
         self.assertEqual(self.q(BR.run, self.root, "0/1", evaluator=ev3, free=10 ** 13), 5)
@@ -574,7 +574,7 @@ class Run(Base):
         self.assertEqual(BR.classify(self.root, j)[0], "complete")
         for name in ("tripinfo.xml", "service_counters.csv", "signal_phases.csv"):
             self.assertFalse(os.path.exists(os.path.join(d, name)))
-            with gzip.open(os.path.join(d, name + ".gz"), "rt") as f:
+            with gzip.open(os.path.join(d, name + ".gz"), "rt", encoding="utf-8") as f:
                 self.assertEqual(f.read(), "x" * 200)
         self.assertFalse(os.path.exists(os.path.join(d, "evaluation_metrics.json.pending")))
         self.assertFalse(os.path.isdir(d + ".tmp"))
@@ -638,7 +638,7 @@ class Run(Base):
         path = os.path.join(self.root, j["directory"], "evaluation_metrics.json")
         m = BR.read_json(path)
         m["checkpoint_sha256"] = "0" * 64
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(m, f)
         self.assertEqual(BR.classify(self.root, j)[0], "corrupted")
 
@@ -685,7 +685,7 @@ class Analyse(Base):
         for name in ("decisions.csv", "service_counts.csv", "RESULTATS_B.md", "results.json"):
             self.assertTrue(os.path.isfile(os.path.join(out, name)), name)
         self.assertFalse(os.path.exists(os.path.join(out, "service_rates.csv")))      # no pooled interval any more
-        with open(os.path.join(out, "RESULTATS_B.md")) as f:
+        with open(os.path.join(out, "RESULTATS_B.md"), encoding="utf-8") as f:
             text = f.read()
         for words in ("scénario de référence", "scénario 3", "plan fixe optimisé", "règle anti-attente",
                       "temps d'attente moyen par véhicule", "n'établit pas un risque nul", "une seule famille de 12 contrastes",
@@ -708,7 +708,7 @@ class Analyse(Base):
         self.assertEqual(eff[(R0, "idqn")]["D_bar_guarantee_minus_none_all_valid_pairs"]["pairs"], 100)
         self.assertEqual(len(res["D_bar_contrasts"]), 12)
         import csv as _csv
-        with open(os.path.join(out, "service_counts.csv")) as f:
+        with open(os.path.join(out, "service_counts.csv"), encoding="utf-8") as f:
             rows = list(_csv.DictReader(f))
         g = [r for r in rows if r["profile"] == R0 and r["method"] == "idqn" and r["arm"] == "guarantee"
              and r["event"] == "failure"][0]
@@ -717,6 +717,38 @@ class Analyse(Base):
         self.assertEqual(set(r["profile"] for r in rows if r["method"] == "idqn"), {R0})   # no false incompleteness
         cmp_row = [r for r in rows if r["method"] == "canonical_mp" and r["profile"] == R0][0]
         self.assertEqual(cmp_row["models"], "")                                   # one deterministic controller
+
+    def test_the_report_is_written_when_the_default_encoding_is_cp1252(self):
+        """Windows retour of 2026-11-25: open() without encoding used cp1252 and "D\u0304" (D-bar) failed in write_report.
+        Every text open() of the modules used by the analysis now defaults to cp1252 here, as on Windows, and the
+        console is a strict ASCII stream: the report must still be written in UTF-8 and nothing printed may fail."""
+        import builtins
+        import confirmation_analysis as CA
+        import stats_reference as SR2
+        real_open = builtins.open
+
+        def windows_open(file, mode="r", buffering=-1, encoding=None, *args, **kw):
+            if "b" not in mode and encoding is None:
+                encoding = "cp1252"                      # what Python 3.7 uses on a French/English Windows
+            return real_open(file, mode, buffering, encoding, *args, **kw)
+        for module in (BR, CA, SR2):
+            setattr(module, "open", windows_open)
+            self.addCleanup(delattr, module, "open")
+        self.small()
+        self.run_all(-0.5)
+        out = os.path.join(self.base, "analysis")
+        console = io.TextIOWrapper(io.BytesIO(), encoding="ascii", errors="strict")
+        with redirect_stdout(console):
+            rc = BR.main(["analyse", "--root", self.root, "--out", out])          # the console lines of b-analyse
+            console.flush()
+        printed = console.buffer.getvalue().decode("ascii")
+        self.assertEqual(rc, 0, printed)
+        self.assertIn("missing cells: 0", printed)
+        self.assertEqual(printed.count("[family of 12]"), 12)
+        with real_open(os.path.join(out, "RESULTATS_B.md"), "rb") as f:
+            text = f.read().decode("utf-8")              # strict: the report is UTF-8
+        self.assertIn("D\u0304", text)
+        self.assertIn("scénario de référence", text)
 
     def test_equivalence_and_missing_cells_are_not_imputed(self):
         self.small()
@@ -750,7 +782,7 @@ class Analyse(Base):
         self.run_all(-0.5)
         result, _missing = self.q(BR.analyse, self.root, os.path.join(self.base, "diag"), recheck=False)
         self.assertTrue(all(d["category"] == BR.DIAGNOSTIC for d in result["primary"] + result["joint_learning"]))
-        with open(os.path.join(self.base, "diag", "RESULTATS_B.md")) as f:
+        with open(os.path.join(self.base, "diag", "RESULTATS_B.md"), encoding="utf-8") as f:
             self.assertIn("MODE DIAGNOSTIC", f.read())
 
     def test_a_technical_contract_violation_blocks_the_decisions(self):
@@ -780,7 +812,7 @@ class RealReaders(Base):
         os.makedirs(self.manifests)
         n = self.world.n[R0]
         for seed in range(8051, 8061):
-            with open(os.path.join(self.manifests, "{}_{}.metadata.json".format(R0, seed)), "w") as f:
+            with open(os.path.join(self.manifests, "{}_{}.metadata.json".format(R0, seed)), "w", encoding="utf-8") as f:
                 json.dump({"scenario": R0, "seed_value": seed, "scheduled_total": n}, f)
 
     def make(self, j, j_wait=3.0):
@@ -827,9 +859,9 @@ class RealReaders(Base):
         j = self.jobs()[0]
         d = self.make(j)
         trip = os.path.join(d, "tripinfo.xml.gz")
-        with gzip.open(trip, "rt") as f:
+        with gzip.open(trip, "rt", encoding="utf-8") as f:
             text = f.read()
-        with gzip.open(trip, "wt") as f:
+        with gzip.open(trip, "wt", encoding="utf-8") as f:
             f.write(text.replace('waitingTime="3.0"', 'waitingTime="4.0"', 1))
         diff = BR.recheck_cell(self.root, j, self.manifests)
         self.assertTrue(diff and any("problems differ" in x or "J_primary_s" in x for x in diff), diff)
@@ -840,14 +872,14 @@ class RealReaders(Base):
         j = self.jobs()[0]
         d = self.make(j)
         path = os.path.join(d, "service_counters.csv.gz")
-        with gzip.open(path, "rt") as f:
+        with gzip.open(path, "rt", encoding="utf-8") as f:
             lines = f.read().splitlines()
         head = lines[0].split(",")
         k = head.index("c_V")
         cells = lines[200].split(",")
         cells[k] = str(int(cells[k]) + 150)
         lines[200] = ",".join(cells)
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
         diff = BR.recheck_cell(self.root, j, self.manifests)
         self.assertTrue(any("counter_rows_differing" in x or "max_counter" in x for x in diff), diff)

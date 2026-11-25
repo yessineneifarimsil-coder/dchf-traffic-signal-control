@@ -6,7 +6,7 @@ import unittest
 
 class Stub(unittest.TestCase):
     def test_outcome_set_by_fake_rc(self):
-        with open(os.environ["ETAPES_CALLS"], "a") as handle:
+        with open(os.environ["ETAPES_CALLS"], "a", encoding="utf-8") as handle:
             handle.write("unittest-stub\n")
         self.assertEqual(os.environ.get("FAKE_RC", "0"), "0")
 

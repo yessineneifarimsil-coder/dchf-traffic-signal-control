@@ -131,12 +131,12 @@ def sha_obj(obj):
 
 
 def read_json(path):
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def write_json(path, payload):
-    with open(path, "w") as handle:
+    with open(path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=1, sort_keys=True)
 
 
@@ -734,7 +734,7 @@ def run(root, shard_spec, evaluator=None, free=None):
     evaluator = evaluator or default_evaluator
     corrupted, unfinished = [], []
     i, n = shard_spec.split("/")
-    log = open(os.path.join(root, "run_log_shard{}of{}.jsonl".format(i, n)), "a")
+    log = open(os.path.join(root, "run_log_shard{}of{}.jsonl".format(i, n)), "a", encoding="utf-8")
     for j in mine:
         if SD.role_of(j["profile"], j["seed"]) != "confirmation":
             raise BError("not a confirmation seed: {}".format(j["directory"]))
@@ -1201,7 +1201,7 @@ def analyse(root, out, recheck=True):
         "not_finished": [m for m in missing if m not in technical],
         "rule": "any technical failure (contract, re-read, identity, unreadable file) blocks every confirmatory decision"})
     level = aplan["statistics"]["decision_confidence"]
-    with open(os.path.join(out, "decisions.csv"), "w", newline="") as f:
+    with open(os.path.join(out, "decisions.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["question", "profile", "method", "against", "mean_difference_s", "ci_decision_low", "ci_decision_high",
                     "decision_confidence", "family", "ci_95_low", "ci_95_high", "delta_s", "decision"])
@@ -1214,7 +1214,7 @@ def analyse(root, out, recheck=True):
     fields = ["profile", "method", "arm", "event", "expected", "evaluations", "events"]
     for unit in ("models", "traffics"):
         fields += [unit, unit + "_with_event", unit + "_cp95_two_sided_low", unit + "_cp95_two_sided_high", unit + "_upper95_one_sided"]
-    with open(os.path.join(out, "service_counts.csv"), "w", newline="") as f:
+    with open(os.path.join(out, "service_counts.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         w.writerows(service)
@@ -1370,7 +1370,7 @@ def write_report(path, plan, result, service, missing, plotted, secondary, plott
         L.append("- {} — {} − {} : {} sur {} paires{}".format(PLAIN[d["profile"]], d["method"].upper(),
                  "IDQN" if d["against"] == IDQN else PLAIN_LABEL.get(d["against"], d["against"]), fmt(d["mean_difference"], 3), d["pairs"],
                  " [{} ; {}]".format(fmt(ci[0], 3), fmt(ci[1], 3)) if ci else ""))
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
 
 

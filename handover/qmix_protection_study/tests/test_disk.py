@@ -21,9 +21,9 @@ def make_root(base):
     os.makedirs(os.path.join(root, "orders"))
     os.makedirs(os.path.join(root, "selections"))
     os.makedirs(os.path.join(root, "manifests"))
-    with open(os.path.join(root, "plan.json"), "w") as f:
+    with open(os.path.join(root, "plan.json"), "w", encoding="utf-8") as f:
         f.write("{}")
-    with open(os.path.join(root, "run_log_coarse_shard0of4.jsonl"), "w") as f:
+    with open(os.path.join(root, "run_log_coarse_shard0of4.jsonl"), "w", encoding="utf-8") as f:
         f.write("{}\n")
     layout = {"coarse": [("8111", "fixed_a"), ("8111", "fixed_b")], "fine-g5": [("8112", "fixed_c")],
               "fine-min7": [("8112", "fixed_c"), ("8113", "fixed_d")], "actuated-design": [("8111", "actuated_e")],
@@ -38,11 +38,11 @@ def make_root(base):
             d = os.path.join(root, rel)
             if not os.path.isdir(d):
                 os.makedirs(d)
-                with open(os.path.join(d, "evaluation_metrics.json"), "w") as f:
+                with open(os.path.join(d, "evaluation_metrics.json"), "w", encoding="utf-8") as f:
                     json.dump({"name": name}, f)
-                with gzip.open(os.path.join(d, "tripinfo.xml.gz"), "wt") as f:
+                with gzip.open(os.path.join(d, "tripinfo.xml.gz"), "wt", encoding="utf-8") as f:
                     f.write("<tripinfos>" + name * 50 + "</tripinfos>")
-        with open(os.path.join(root, "orders", stage + ".json"), "w") as f:
+        with open(os.path.join(root, "orders", stage + ".json"), "w", encoding="utf-8") as f:
             json.dump({"stage": stage, "jobs": jobs}, f)
     return root
 
@@ -116,7 +116,7 @@ class Archive(unittest.TestCase):
         self.enable_deletion_for_this_test()
         self.q(["archive", "--a-root", self.root, "--zip", self.zip])
         ver = AR.read_json(self.zip + ".verification.json")
-        with open(os.path.join(self.root, "runs", "R1", "8111", "fixed_a", "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(self.root, "runs", "R1", "8111", "fixed_a", "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             f.write("{}")
         code, out = self.q(["--delete", "--confirm", ver["zip_sha256"], "--a-root", self.root, "--zip", self.zip])
         self.assertEqual(code, 1)
@@ -154,7 +154,7 @@ class Audit(unittest.TestCase):
             AU.main(["--qmix-results", self.base, "--iev", os.path.join(self.base, "iev"), "--a-root", self.root,
                      "--b-root", os.path.join(self.base, "B"), "--aext-root", os.path.join(self.base, "X"),
                      "--drives", self.base, "--out", out])
-        with open(out) as f:
+        with open(out, encoding="utf-8") as f:
             r = json.load(f)
         stages = r["campaign_A"]["runs_by_stage"]
         self.assertEqual(stages["coarse"]["folders"], 2)

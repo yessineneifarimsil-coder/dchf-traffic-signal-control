@@ -39,7 +39,7 @@ def sha(path):
 
 
 def write_csv(path, fields, records):
-    with open(path, "w", newline="") as handle:
+    with open(path, "w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(records)
@@ -73,9 +73,9 @@ class World(object):
         for scenario, (n, seeds) in sorted(SCENARIOS.items()):
             for seed in seeds:
                 prefix = os.path.join(self.root, "manifests", "{}_{}".format(scenario, seed))
-                with open(prefix + ".csv", "w") as handle:
+                with open(prefix + ".csv", "w", encoding="utf-8") as handle:
                     handle.write("vehicle_id\n" + "\n".join("v{}".format(i) for i in range(n)) + "\n")
-                with open(prefix + ".metadata.json", "w") as handle:
+                with open(prefix + ".metadata.json", "w", encoding="utf-8") as handle:
                     json.dump({"scenario": scenario, "seed_value": seed, "scheduled_total": n}, handle)
                 for c in CLASSICAL:
                     cells.append({"scenario": scenario, "seed": seed, "controller": c,
@@ -86,12 +86,12 @@ class World(object):
                                       "model": m, "directory": os.path.join("cells", scenario, str(seed), m, arm)})
         hashes = dict((name, sha(os.path.join(self.root, "manifests", name)))
                       for name in sorted(os.listdir(os.path.join(self.root, "manifests"))))
-        with open(os.path.join(self.root, "manifests_sha256.json"), "w") as handle:
+        with open(os.path.join(self.root, "manifests_sha256.json"), "w", encoding="utf-8") as handle:
             json.dump(hashes, handle)
         self.plan = {"fingerprint": "f" * 64, "cells": cells, "models": models, "n_cells": len(cells),
                      "root": self.root, "analysis_sha256": sha(ra.__file__), "cell_state_sha256": sha(cs.__file__)}
         self.model_sha = dict((m["tag"], m["sha256"]) for m in models)
-        with open(os.path.join(self.root, "plan.json"), "w") as handle:
+        with open(os.path.join(self.root, "plan.json"), "w", encoding="utf-8") as handle:
             json.dump(self.plan, handle)
         self.n = dict((s, v[0]) for s, v in SCENARIOS.items())
 
@@ -134,7 +134,7 @@ class World(object):
                   [{"time": t, "stopped_active_count": 1 if t <= 3600 else 0, "pending_due_count": 0}
                    for t in range(1, end + 1)])
         write_csv(os.path.join(d, "episode_summary.csv"), ["end_time"], [{"end_time": end}])
-        with open(os.path.join(d, "tripinfo.xml"), "w") as handle:
+        with open(os.path.join(d, "tripinfo.xml"), "w", encoding="utf-8") as handle:
             handle.write("<tripinfos>\n")
             for i in range(n):
                 arrival = "-1.00" if (fail and i == n - 1) else "100.00"
@@ -150,15 +150,15 @@ class World(object):
                    "controller": cell["controller"], "traffic_seed": cell["seed"]}
         if cell.get("model"):
             metrics["checkpoint_sha256"] = self.model_sha[cell["model"]]
-        with open(os.path.join(d, "evaluation_metrics.json"), "w") as handle:
+        with open(os.path.join(d, "evaluation_metrics.json"), "w", encoding="utf-8") as handle:
             json.dump(metrics, handle)
-        with open(os.path.join(d, "run_manifest.json"), "w") as handle:
+        with open(os.path.join(d, "run_manifest.json"), "w", encoding="utf-8") as handle:
             json.dump({"controller": cell["controller"]}, handle)
         kind = cell["controller"].split(":")[0]
         if kind in ("learned", "p5"):
             write_csv(os.path.join(d, "protection_decisions.csv"), ["decision_time", "intervention"],
                       [{"decision_time": t, "intervention": k} for t, k in interventions])
-            with open(os.path.join(d, "protection_record.json"), "w") as handle:
+            with open(os.path.join(d, "protection_record.json"), "w", encoding="utf-8") as handle:
                 json.dump({"sumo_index_mismatch_s": sumo_mismatch, "sumo_state_mismatch_s": 0}, handle)
         return d
 
@@ -186,7 +186,7 @@ class Analysis(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def read(self, name):
-        with open(os.path.join(self.out, name)) as handle:
+        with open(os.path.join(self.out, name), encoding="utf-8") as handle:
             return json.load(handle)
 
     def test_a_clean_world_passes_and_uses_the_manifest_n(self):
@@ -195,14 +195,14 @@ class Analysis(unittest.TestCase):
         self.assertTrue(summary["all_ok"], self.read("technical_checks.json"))
         self.assertTrue(summary["complete"])
         self.assertEqual(summary["cells_analysed"], len(self.world.plan["cells"]))
-        with open(os.path.join(self.out, "cells.csv")) as handle:
+        with open(os.path.join(self.out, "cells.csv"), encoding="utf-8") as handle:
             cells = list(csv.DictReader(handle))
         for c in cells:
             n = SCENARIOS[c["scenario"]][0]
             self.assertEqual(int(c["N"]), n)
             self.assertAlmostEqual(float(c["D_bar_s"]), 3600.0 / n, places=9)   # D = 3600 veh-s
             self.assertAlmostEqual(float(c["J_from_tripinfo_s"]), float(c["J_primary_s"]), places=12)
-        with open(os.path.join(self.out, "REPORT.md")) as handle:
+        with open(os.path.join(self.out, "REPORT.md"), encoding="utf-8") as handle:
             report = handle.read()
         self.assertIn("NOT EVALUATED", report)                 # no guarantee intervention at all
         self.assertNotIn("FAILED", report)
@@ -219,14 +219,14 @@ class Analysis(unittest.TestCase):
         self.assertFalse(summary["integrity_ok"])
         checks = self.read("technical_checks.json")
         self.assertFalse(checks["T5_consistency"]["ok"])
-        with open(os.path.join(self.out, "REPORT.md")) as handle:
+        with open(os.path.join(self.out, "REPORT.md"), encoding="utf-8") as handle:
             self.assertIn("no scientific statement is made", handle.read())
 
     def test_failures_are_kept_never_given_a_j_and_excluded_from_pairs(self):
         key = ("R0_reference", 8001, "learned:none", "idqn_seed102_t300000")
         self.world.fill({key: {"fail": True}})
         ra.analyse(self.world.root, self.out)
-        with open(os.path.join(self.out, "cells.csv")) as handle:
+        with open(os.path.join(self.out, "cells.csv"), encoding="utf-8") as handle:
             failed = [c for c in csv.DictReader(handle) if c["status"] != "CLEARED"]
         self.assertEqual(len(failed), 1)
         self.assertEqual(failed[0]["J_primary_s"], "")
@@ -310,7 +310,7 @@ class Analysis(unittest.TestCase):
         with self.assertRaises(ra.AnalysisError):
             ra.analyse(self.world.root, self.out)
         self.world.plan["analysis_sha256"] = "0" * 64
-        with open(os.path.join(self.world.root, "plan.json"), "w") as handle:
+        with open(os.path.join(self.world.root, "plan.json"), "w", encoding="utf-8") as handle:
             json.dump(self.world.plan, handle)
         with self.assertRaises(ra.AnalysisError):
             ra.analyse(self.world.root, os.path.join(self.base, "other"))
@@ -318,7 +318,7 @@ class Analysis(unittest.TestCase):
     def test_a_manifest_changed_after_preparation_fails_t4(self):
         self.world.fill()
         path = os.path.join(self.world.root, "manifests", "R0_reference_8001.csv")
-        with open(path, "a") as handle:
+        with open(path, "a", encoding="utf-8") as handle:
             handle.write("tampered\n")
         ra.analyse(self.world.root, self.out)
         checks = self.read("technical_checks.json")
@@ -337,11 +337,11 @@ class Completeness(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def read(self, name):
-        with open(os.path.join(self.out, name)) as handle:
+        with open(os.path.join(self.out, name), encoding="utf-8") as handle:
             return json.load(handle)
 
     def report(self):
-        with open(os.path.join(self.out, "REPORT.md")) as handle:
+        with open(os.path.join(self.out, "REPORT.md"), encoding="utf-8") as handle:
             return handle.read()
 
     def test_one_absent_both_cell_makes_the_report_incomplete_and_forbids_s1(self):
@@ -381,7 +381,7 @@ class Completeness(unittest.TestCase):
 
     def declare(self, directories):
         path = os.path.join(self.base, "declared.txt")
-        with open(path, "w") as handle:
+        with open(path, "w", encoding="utf-8") as handle:
             handle.write("\n".join(directories) + "\n")
         return path
 
@@ -428,7 +428,7 @@ class Completeness(unittest.TestCase):
     def test_a_corrupted_result_stops_the_analysis_even_if_declared(self):
         self.world.fill()
         bad = self.world.planned(scenario="R0_reference", controller="learned:guarantee")[0]
-        with open(os.path.join(self.world.root, bad["directory"], "evaluation_metrics.json"), "w") as handle:
+        with open(os.path.join(self.world.root, bad["directory"], "evaluation_metrics.json"), "w", encoding="utf-8") as handle:
             handle.write('{"clearance_status": "CLEA')
         with self.assertRaises(ra.AnalysisError):
             ra.analyse(self.world.root, self.out, declared_missing=[bad["directory"]])
@@ -438,10 +438,10 @@ class Completeness(unittest.TestCase):
         self.world.fill()
         bad = self.world.planned(scenario="R0_reference", controller="learned:none", method="qmix")[0]
         path = os.path.join(self.world.root, bad["directory"], "evaluation_metrics.json")
-        with open(path) as handle:
+        with open(path, encoding="utf-8") as handle:
             metrics = json.load(handle)
         metrics["checkpoint_sha256"] = self.world.model_sha["idqn_seed102_t300000"]
-        with open(path, "w") as handle:
+        with open(path, "w", encoding="utf-8") as handle:
             json.dump(metrics, handle)
         with self.assertRaises(ra.AnalysisError):
             ra.analyse(self.world.root, self.out)
@@ -459,7 +459,7 @@ class CostAttribution(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def s3(self):
-        with open(os.path.join(self.out, "s3_costs.json")) as handle:
+        with open(os.path.join(self.out, "s3_costs.json"), encoding="utf-8") as handle:
             return dict(((r["scenario"], r["method"], r["arm"]), r) for r in json.load(handle))
 
     def test_a_guarantee_intervention_in_both_is_activation_not_an_identified_cost(self):
@@ -482,12 +482,12 @@ class CostAttribution(unittest.TestCase):
         for r in (b, g):
             self.assertIn("dJ_whole_episode_s", r)
             self.assertIn("dD_bar_demand_window_s", r)
-        with open(os.path.join(self.out, "REPORT.md")) as handle:
+        with open(os.path.join(self.out, "REPORT.md"), encoding="utf-8") as handle:
             report = handle.read()
         self.assertIn("dJ whole episode", report)
         self.assertIn("dD_bar demand window", report)
         self.assertIn("never isolates the guarantee", report)
-        with open(os.path.join(self.out, "pairs.csv")) as handle:
+        with open(os.path.join(self.out, "pairs.csv"), encoding="utf-8") as handle:
             pairs = list(csv.DictReader(handle))
         self.assertTrue(all(p["contrast"] in ("guarantee - none", "both - none") for p in pairs))
         self.assertIn("dD_bar_demand_window_s", pairs[0])
@@ -508,7 +508,7 @@ class CostAttribution(unittest.TestCase):
         both = self.world.planned(scenario="R0_reference", controller="learned:both", method="qmix")[0]
         self.world.fill({(both["scenario"], both["seed"], both["controller"], both["model"]): {"j_wait": 5.0}})
         ra.analyse(self.world.root, self.out)
-        with open(os.path.join(self.out, "pairs.csv")) as handle:
+        with open(os.path.join(self.out, "pairs.csv"), encoding="utf-8") as handle:
             pair = [p for p in csv.DictReader(handle) if p["model"] == both["model"] and int(p["seed"]) == both["seed"]
                     and p["arm"] == "both" and p["scenario"] == both["scenario"]][0]
         self.assertAlmostEqual(float(pair["dJ_whole_episode_s"]), 5.0 - 3.0, places=9)   # none has j_wait 3.0

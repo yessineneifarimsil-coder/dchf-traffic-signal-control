@@ -117,7 +117,7 @@ def main(argv=None):
         result["verdict"] = "A004_FILE_NOT_VERIFIED"
     text = json.dumps(result, indent=1, default=str)
     if a.out:
-        with open(a.out, "w") as f:
+        with open(a.out, "w", encoding="utf-8") as f:
             f.write(text + "\n")
     print(json.dumps({k: result.get(k) for k in ("a004_sha256", "a004_hash_ok", "verdict", "signature")}, indent=1))
     return 0 if result["a004_hash_ok"] else 2

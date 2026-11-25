@@ -32,6 +32,8 @@ rem covers the launch, never the workers' success. Check completion with the mat
 rem ROB (robustness root) defaults to the real root of 2026-11-04; the steps that read it stop with code 2
 rem when the folder does not exist. Override with: set ROB=<folder> before calling.
 setlocal
+rem Console output of every Python step is UTF-8 (2026-11-25): a cp850/cp1252 console never makes a print fail.
+set PYTHONIOENCODING=utf-8
 if "%QMIX_RESULTS%"=="" set QMIX_RESULTS=D:\QMIX_Results
 set ABL=%QMIX_RESULTS%\protection_ablation_2026-10-29
 set MIN7=%QMIX_RESULTS%\fixed_timing_min7_2026-10-28

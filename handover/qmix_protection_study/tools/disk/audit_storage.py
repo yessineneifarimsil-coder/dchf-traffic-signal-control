@@ -60,7 +60,7 @@ def free(drive):
 
 
 def read_json(path):
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -156,7 +156,7 @@ def main(argv=None):
     report = audit(a.qmix_results, a.iev, a.a_root, a.b_root, a.aext_root, a.drives)
     if os.path.dirname(a.out) and not os.path.isdir(os.path.dirname(a.out)):
         os.makedirs(os.path.dirname(a.out))
-    with open(a.out, "w") as handle:
+    with open(a.out, "w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=1)
     for drive, v in report["free_space"].items():
         print("free {}: {}".format(drive, "{} GB".format(v["free_gb"]) if "free_gb" in v else v.get("error")))

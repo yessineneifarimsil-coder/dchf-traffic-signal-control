@@ -35,7 +35,7 @@ except ImportError:
 import check_statistics as CS  # noqa: E402
 import confirmation_analysis as CA  # noqa: E402
 
-with open(os.path.join(HERE, "..", "tools", "confirmation", "confirmation_plan.json")) as handle:
+with open(os.path.join(HERE, "..", "tools", "confirmation", "confirmation_plan.json"), encoding="utf-8") as handle:
     PLAN = json.load(handle)
 
 
@@ -330,7 +330,7 @@ class StatisticsCheck(unittest.TestCase):
     def run_check(self, candidate):
         out = os.path.join(self.base, "out.json")
         code = CS.main(["--a004", candidate, "--frozen", STATS, "--reference-sha256", sha(candidate), "--out", out])
-        with open(out) as f:
+        with open(out, encoding="utf-8") as f:
             return code, json.load(f)
 
     def test_wrong_file_is_refused(self):
@@ -341,10 +341,10 @@ class StatisticsCheck(unittest.TestCase):
         code, result = self.run_check(STATS)
         self.assertEqual((code, result["verdict"]), (0, "IDENTICAL_BOOTSTRAP"))
         modified = os.path.join(self.base, "statistics_modified.py")
-        with open(STATS) as f:
+        with open(STATS, encoding="utf-8") as f:
             text = f.read()
         text = text.replace("alpha = (1.0 - float(confidence)) / 2.0", "alpha = (1.0 - float(confidence)) / 2.5")
-        with open(modified, "w") as f:
+        with open(modified, "w", encoding="utf-8") as f:
             f.write(text)
         code, result = self.run_check(modified)
         self.assertEqual((code, result["verdict"]), (0, "DIFFERENT_BOOTSTRAP"))

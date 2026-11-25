@@ -26,7 +26,7 @@ plt.rcParams.update({"font.size": 8, "axes.edgecolor": INK2, "axes.labelcolor": 
 
 
 def read(path):
-    with open(path, newline="") as f:
+    with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 

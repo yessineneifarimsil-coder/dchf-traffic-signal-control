@@ -55,7 +55,7 @@ class ClopperPearson(unittest.TestCase):
         path = os.path.join(HERE, "..", "analysis", "ablation", "cells.csv")
         if not os.path.isfile(path):
             self.skipTest("ablation table absent")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
         self.assertEqual(len(rows), 600)
         pooled = dict((r["event"], r) for r in CP.pooled(rows, "ablation", lambda r: r["arm"] in ("guarantee", "both"), "g"))
@@ -78,7 +78,7 @@ class JCycle(unittest.TestCase):
              "phase_parameters": {"cycle_s": c, "green_H_s": gh, "green_V_s": gv, "offset_s": off, "yellow_s": 3},
              "clearance_status": status, "J_primary_valid": status == "CLEARED",
              "J_primary_mean_scheduled_waiting_burden_s": j if status == "CLEARED" else float("nan")}
-        with open(os.path.join(d, "evaluation_metrics.json"), "w") as f:
+        with open(os.path.join(d, "evaluation_metrics.json"), "w", encoding="utf-8") as f:
             json.dump(m, f)
 
     def test_curve_validity_conflicts_and_minimum_green(self):
@@ -116,7 +116,7 @@ class GuaranteeDiagnostic(unittest.TestCase):
         self.analysis = os.path.join(self.base, "analysis")
         os.makedirs(os.path.join(self.root, "manifests"))
         os.makedirs(self.analysis)
-        with open(os.path.join(self.root, "manifests", "R2_single_secondary_trickle_8203.csv"), "w") as f:
+        with open(os.path.join(self.root, "manifests", "R2_single_secondary_trickle_8203.csv"), "w", encoding="utf-8") as f:
             f.write("vehicle_id,depart,stream\nv1,0,WE\nv2,5,N1S1\nv3,9,N1S1\n")
         self.cell("idqn_seed107_t300000", "guarantee", waits={"v1": 3, "v2": 400, "v3": 10},
                   interventions=[{"decision_time": "100", "intervention": "guarantee"}])
@@ -140,7 +140,7 @@ class GuaranteeDiagnostic(unittest.TestCase):
         shutil.rmtree(self.base)
 
     def write(self, name, records):
-        with open(os.path.join(self.analysis, name), "w", newline="") as f:
+        with open(os.path.join(self.analysis, name), "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=list(records[0]))
             w.writeheader()
             w.writerows(records)
@@ -151,14 +151,14 @@ class GuaranteeDiagnostic(unittest.TestCase):
         # J1: H until 100, yellow 101-103 (guarantee), V 104-113, yellow 114-116, H 117-196 (80 s), Y, V ...
         seq = ["H"] * 100 + ["Y"] * 3 + ["V"] * 10 + ["Y"] * 3 + ["H"] * 80 + ["Y"] * 3 + ["V"] * 5 + ["Y"] * 3 + ["H"] * 20
         j2 = ["H"] * len(seq)
-        with open(os.path.join(d, "signal_phases.csv"), "w") as f:
+        with open(os.path.join(d, "signal_phases.csv"), "w", encoding="utf-8") as f:
             f.write("time,intersection,actual_phase\n")
             for t, (a, b) in enumerate(zip(seq, j2), start=1):
                 f.write("{},J1,{}\n{},J2,{}\n".format(t, a, t, b))
-        with open(os.path.join(d, "protection_decisions.csv"), "w") as f:
+        with open(os.path.join(d, "protection_decisions.csv"), "w", encoding="utf-8") as f:
             f.write("decision_time,intervention\n" + "".join("{},{}\n".format(r["decision_time"], r["intervention"])
                                                              for r in interventions))
-        with open(os.path.join(d, "tripinfo.xml"), "w") as f:
+        with open(os.path.join(d, "tripinfo.xml"), "w", encoding="utf-8") as f:
             f.write("<tripinfos>" + "".join('<tripinfo id="{}" waitingTime="{}"/>'.format(v, w)
                                             for v, w in waits.items()) + "</tripinfos>")
 
@@ -180,7 +180,7 @@ class GuaranteeDiagnostic(unittest.TestCase):
         self.assertEqual(by["N1S1"]["d_max_wait_s"], 370)
         out = os.path.join(self.base, "out")
         self.assertEqual(GD.main(["--root", self.root, "--analysis", self.analysis, "--out", out]), 1)
-        with open(os.path.join(out, "summary.json")) as f:
+        with open(os.path.join(out, "summary.json"), encoding="utf-8") as f:
             summary = json.load(f)
         self.assertEqual(summary["primary_idqn_definition"], "D2 (dD_bar_demand_window_s > 0)")
         self.assertEqual(summary["idqn_degraded_D2"]["opposite_green_gt_60s"], 1)    # the 8203 pair is D2, not D1

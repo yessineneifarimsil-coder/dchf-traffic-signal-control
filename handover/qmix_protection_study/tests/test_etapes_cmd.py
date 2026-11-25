@@ -27,6 +27,13 @@ class EtapesCmd(unittest.TestCase):
     def test_crlf_only(self):
         self.assertEqual(self.raw.count(b"\n"), self.raw.count(b"\r\n"))
 
+    def test_python_console_output_is_utf8(self):
+        """2026-11-25: a cp850/cp1252 console must never make a print fail; set once, before any step."""
+        i = self.lines.index("setlocal")
+        self.assertEqual(self.lines[i + 2], "set PYTHONIOENCODING=utf-8")
+        first_dispatch = min(n for n, l in enumerate(self.lines) if l.startswith('if "%~1"=='))
+        self.assertLess(i + 2, first_dispatch)
+
     def test_no_goto_eof_after_a_command(self):
         code = [l for l in self.lines if not l.lower().startswith("rem ")]
         self.assertFalse([l for l in code if "goto :eof" in l.lower()])
