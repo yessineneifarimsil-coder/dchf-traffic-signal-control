@@ -1,4 +1,4 @@
-# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-25)
+# RUNBOOK B — de l'installation à l'analyse de la confirmation (version du 2026-11-25, reprise après l'incident TraCI)
 
 Ce document est la séquence complète, dans une **Anaconda Prompt** sous Windows. Chaque étape donne la commande exacte, la sortie et le code attendus, les fichiers produits et la conduite à tenir en cas d'écart. Les chemins marqués **[À RENSEIGNER]** ne sont pas connus ici : remplace-les avant de lancer la commande.
 
@@ -172,6 +172,27 @@ La procédure retenue pour B est **`b-crossed-bootstrap-1`** : le bootstrap croi
 2. `ETAPES.cmd b-backup-logs` copie `logs\b_shard*.log`, `logs\aext_*_shard*.log` et les `run_log_*.jsonl` dans `logs\backup_<date>\`. Rien n'est supprimé. Une relance écrase les journaux de console.
 3. `ETAPES.cmd b-run`, ou `aext-run <étape>`. Une exécution interrompue est relancée une seule fois ; une cellule corrompue ou un échec scientifique ne le sont jamais.
 4. Pour diagnostiquer un arrêt : `Get-WinEvent` sur le journal System, événements 41, 42, 1074 et 6008.
+
+## Étape 9 bis. Reprise après l'incident TraCI du 2026-11-25 (part 2/4)
+
+Cause et changements : `RETOURS_INCIDENT_2026-11-25.md`. **Ne pas utiliser `ETAPES.cmd b-run` pour cette reprise.** Il relancerait les 563 tâches sur la seule part 2, avec le démarrage TraCI non protégé. La reprise passe par `REPRISE_B.cmd`. `ETAPES.cmd` et les fichiers scellés par le gel sont inchangés : `b-progress`, `b-processes`, `b-watch` et `b-backup-logs` restent valables.
+
+Dans une Anaconda Prompt :
+
+| # | Commande | Attendu | Code | En cas d'écart |
+|---|---|---|---|---|
+| R.0 | `cd /d C:\research\qmix_protection_study_B_2467ddd`, `set BCONF=C:\research\confirmation_B_2026-11-24`, puis `ETAPES.cmd b-processes` \| `0 B / A-ext process(es) running: a relaunch is possible` | 0 | **Code 3 : les parts 0, 1 et 3 tournent encore. Attendre leur fin, ne rien lancer.** Les étapes R.1 à R.6 (installation, tests, contrôles en lecture seule) peuvent attendre aussi : les tests consomment du processeur |
+| R.1 | `ETAPES.cmd b-backup-logs` (dans **l'ancien** dossier, celui des `logs\b_shard*.log`) \| `copied … file(s) to logs\backup_<date> (nothing deleted)` | 0 | Copier le message |
+| R.2 | `ETAPES.cmd b-progress` (même dossier) ; noter la ligne \| `finished … | corrupted 0 | interrupted 563 | not started 0` attendu après la fin des parts 0, 1 et 3 \| 3 \| Un autre nombre d'interrompues ou un `corrupted` non nul : noter et signaler, puis continuer, la reprise ne relance jamais une cellule corrompue |
+| R.3 | Installation dans un **nouveau** dossier : `certutil -hashfile "[chemin du ZIP]" SHA256` (égal au SHA-256 livré) ; `mkdir C:\research\qmix_protection_study_B_reprise_2026-11-25` ; `%SystemRoot%\System32\tar.exe -xf "[chemin du ZIP]" -C C:\research\qmix_protection_study_B_reprise_2026-11-25` ; `cd /d C:\research\qmix_protection_study_B_reprise_2026-11-25` ; `python tools\verify_manifest.py` \| `MANIFEST OK` | 0 | Réextraire dans un autre nouveau dossier |
+| R.4 | `ETAPES.cmd tests > logs\tests_reprise.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_reprise.txt` \| `Ran 208 tests` puis `OK` \| 0 \| `FAILED` : ne pas reprendre, envoyer le fichier. Les tests réseau n'utilisent que les ports 25000–25999 |
+| R.5 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_reprise.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_reprise.txt` \| `Result: 355 checks passed, 0 failed.` (`ETAPES.cmd` est inchangé) \| 0 \| Le moindre `FAIL` : ne pas reprendre |
+| R.6 | `set BCONF=C:\research\confirmation_B_2026-11-24`, puis `REPRISE_B.cmd check` \| `plan af3fd986… | complete … | interrupted 563` ; `note: AdaptiveTrafficEnvironment.reset calls self.traci.start` ; plages 21000–24999 et plage dynamique lue ; `0 B / A-ext process(es) running` ; aucun `PROBLEM` \| 0 \| `PROBLEM` (une voie de démarrage non couverte, par exemple `traci.init` dans le paquet protégé, ou un conflit de plage) : **ne pas reprendre**, envoyer la sortie. Code 3 : processus actifs |
+| R.7 | `REPRISE_B.cmd verify-finished` (lecture seule) \| `finished cells N | verified N | header N | ids = manifest N | summary ok N | …`, `0 overlap(s)`, puis `VERIFIED` \| 0 \| Code 1 (`PROBLEM` ou `OVERLAP`) : ne pas reprendre, envoyer `logs\verify_finished_B.json`. Code 4 : l'en-tête SUMO manque sous 1.25 ; le noter et envoyer la sortie |
+| R.8 | `REPRISE_B.cmd assign` \| `written …\resume\assignment_01.json`, puis 4 lignes `worker k: 140 ou 141 job(s), ports …` \| 0 \| Code 3 : un processus tourne. `nothing to resume` : tout est terminé |
+| R.9 | `REPRISE_B.cmd run` \| `resume preflight OK: assignment_01.json | 563 job(s) …`, puis 4 fenêtres `r0` à `r3` \| 0 \| `STOP` : rien n'a été lancé ; lire le message |
+| R.10 | Suivi : `ETAPES.cmd b-progress`, `ETAPES.cmd b-processes`, et dans une seconde fenêtre `ETAPES.cmd b-watch`. Les incidents de démarrage : `findstr "TRACI GUARD" logs\b_shard_resume_w*.log` et `%BCONF%\resume\traci_guard_r01_w*.jsonl` \| à la fin : `finished 2470/2470`, code 0 | 0 | Code 3 : des cellules ont été interrompues une seconde fois. Elles sont conservées et ne sont pas relancées (règle figée) : signaler |
+| R.11 | Après la fin : `REPRISE_B.cmd verify-finished`, puis `ETAPES.cmd b-backup-logs` dans le nouveau dossier \| `VERIFIED` | 0 | Comme en R.7 |
 
 ## Étape 10. Analyse
 

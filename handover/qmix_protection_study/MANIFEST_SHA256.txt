@@ -1,10 +1,12 @@
-# base: b574cbd + Windows return of 2026-11-25 (static encoding test independent of the Python version: ast.Str on 3.7, ast.Constant on 3.8+) | 238 files
+# base: 2467ddd + TraCI incident of 2026-11-25 (guarded start, 4-worker resumption, read-only check of finished cells; sealed files unchanged) | 253 files
 705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da           8  .gitattributes
 e20257adaa5ca06f499dc79c1c03e8a1350128132fd70920a579884de69a0329          35  .gitignore
 bb563c8cfe74777d76ebce0b96262e127b3fc7df83af0953a5ac289e2510d5f4       20256  ETAPES.cmd
 fb3dc6c90053d6eed2c74708420775cdd0fa4542fc204734f54926061e3c7da8        7761  README.md
-bd01b4e5f6a77717450653fd1e996b18fe7109f7b23f8e13dd323a372e224c28       18990  RETOURS.md
-e94d4e0b05f71b75e9563855931de997fd02c3fe50c952069c4dad4c7c8c709c       17510  RUNBOOK_B.md
+f7538e8cb4c33be991885c1bca746f98580b05e1a353ec084ff210c5821cd993        3330  REPRISE_B.cmd
+6945a5f7a07083ddc4454eb12b3eb464d9f7b8031990b82bee348abcd1c2ee29       19181  RETOURS.md
+0f0da7f5440b4cbe4d5a70baa3d5121ea739cc3949a867eac55fa136de5e34ad        8521  RETOURS_INCIDENT_2026-11-25.md
+e664c0d915a05c39cdb25812118ee06a7197569776d073e4850e575e36168ffb       21882  RUNBOOK_B.md
 2a47a02d209c24d6c4db656176e49f3cdd013d65dba452e64e1db1324bc3f872       26722  analysis/mp_check_robustness.json
 4c1f4dde9b7f835ddd0b447bb7465adf11772ef08897e33d4165e08c4bdbaa83      147951  analysis/ablation/cells.csv
 f898fc06966a35e5f0b74ebab9954e02157660e69e0f01d1da5809eb40c1218b        7394  analysis/ablation/failures.json
@@ -64,6 +66,14 @@ a572c53c58d71a638765de0724f2186686a681b9a63f1a13adba6023adac2f70        1832  lo
 deaaa7644b703d92e50a5a0cc83c512fef3eb67397a9b8538b41da16885673d3        4230  logs/robustness_smoke.log
 9b3cdb12f0960ad180df606240332b66174ce67410c47a7e6630124ae650ab0e        1273  logs/robustness_smoke_report.json
 c73f5863e4d23faea21eb555ba87334c63b521bcb130528416a4c698a78c7e22        1050  logs/unittest_final.log
+c236bed4b3304d4e504237971c35baedbcf55ec23fdacb0bd8ee9bd37bbaf996        1657  logs/incident_2026-11-25/README.md
+71ea605d93ac8b2b56c7ae968c76a282a0e9efb27e1ba0d53602e60ac7b183c3        4929  logs/incident_2026-11-25/code_lu_traci125_et_environnement_fige.txt
+b6cc5bf50a1388f16ebed93c959ce4a82a1a4dd866b7ddd20f9ff98597d669b9         194  logs/incident_2026-11-25/roues_traci125_sha256.txt
+2cb069991b5db2ede5835ae7949aa115930554e8c088a6f19924d7088d19a838         186  logs/incident_2026-11-25/self_connect_repro.log
+53d477c6d168005b5b156aa1a0e7b2c2866aca04e7ef3e343636300015aa9597        1381  logs/incident_2026-11-25/self_connect_repro.py
+57c6c7b2d4d545a890383933771a5683cdca8f1c5fd8e04b748530dd79f2206d        1171  logs/incident_2026-11-25/tripinfo_header_sumo128_exemple.xml
+1ac0d5d92e484c9162f0838e2720a332025eed9bc5ce07111827eb192e4b644b       34779  logs/incident_2026-11-25/unittest_all_crlf.log
+9a3a1f7f4fe39c3aae578563477d6cbc57a244cd494dd36686060eeb9fd5aad5        5996  logs/incident_2026-11-25/unittest_all_locale_ascii.log
 1aee02852778e2abd24085416881486e1ef1775db609a44c605e34fef7309062        6955  logs/revue_2026-10-30/MANIFEST_SHA256_archive_f962478.txt
 6e2b4b9a130a241d2409e30935e5b08195ec51a81d18433d7badc30557790cd2         168  logs/revue_2026-10-30/archive_recue_sha256.txt
 1a3500af72b4bda527c77dc5efefc223685943dbecbef83417340770599d2e04        2924  logs/revue_2026-10-30/check_cells.log
@@ -181,6 +191,7 @@ b90af32a40a0fbcadd1b3af027030fd28a5f793424b852927aaa8d7f219a4744       18945  pl
 0764d9e38009790ffcd1601e417ecb8b3164a5a2949a4f9e6f191498aef9fb2f        1160  review/check_fixed.py
 49f9a907cb9ba50dc4e9781a55c1da647ddd61c10821b3a3ddad33b51ab4055c        3187  review/check_numbers.py
 965cd2adbd7fb2f68c4f0412ad7a712a81bc729a9c6e36e927d0532dc811de3c        4449  review/repro_robustness_defects.py
+34fb7930a5ab2315037eee415b1793009366ba0d64b869240e197e477ae39631        2845  tests/fake_traci_server.py
 b2798336130d852992e80c30ea1e1f99da65c64b44a225bed00ab31aa3f9488f        4805  tests/test_ablation_metrics.py
 c3f2c109aaebb00bff11dd83dcbb694250f08a5a988f3c61054ee9bf475a08f2       11452  tests/test_aext.py
 5723029b16a809867e09b3e3b875601f1792d294b11e4759841b2246ef14853d       11066  tests/test_article_analyses.py
@@ -191,6 +202,7 @@ f1be0a2d1834d74de512614284762f3c41243139b5dc7af4a1f3cf9d070c5c76       21122  te
 12f87574f711070005652a4009d1affc4b0a6a0901135a9d3e97ebe5b705df7d        8725  tests/test_disk.py
 c9014188c7d0203e9868164a422922b69e86c619098b456d799f0925cf192af5        6509  tests/test_etapes_cmd.py
 7ce170f57f298febc5ad5e966e61fb244d97d8c80b649706af8fcd0c79e2d45a        4055  tests/test_monitor.py
+3f2c112a775d01e1364592ef9a24a614454d62b7fe1e5fe9647870d30a2c75c2       33009  tests/test_resume_b.py
 f1f1a379983434e948bf2e6ee78c78992a02225b513e558bad7d7ddbf7e85565        6427  tests/test_robustness.py
 3b37cfe7e4bb8bfdb25414d6a9b0f97afe3d882a75bf9b4572ecb236eebf0cfb       30460  tests/test_robustness_analysis.py
 a922b4327d4f118cbb75c00d36d5810a3410f2c09237c9d2d55103e95f0a4619        5449  tests/test_robustness_end_to_end.py
@@ -220,8 +232,11 @@ b1a88390aede8cb01019c2e9e5f43cf531d1dfae63d25e7895775c065a02945f        2041  to
 7d6896f6d5bd779f657c55bb6b39d6cddde38b0cdc070f8c01ae5806aee370e9        6837  tools/confirmation/check_statistics.py
 ad927e39a32485c5e9e7cfd3b0e71ece2d262d1cb3d99ca58cb4ee036e353b54       23740  tools/confirmation/confirmation_analysis.py
 a1382c6f4500d2941e58030f46164c14cc0cae0fc2cfb57d62d7d4fc812b7e43       24374  tools/confirmation/confirmation_plan.json
+c51f27d5bd55c6bd9cdbd4f6e509910d83c533db42b72c62adb0a9860bb5a126       17013  tools/confirmation/resume_b_runner.py
 3cf674c4d2c7cc240170cbf22843150e09eae952d385e84a2d42bb4f8f6777cc       22699  tools/confirmation/stats_reference.py
 a8590decb222328bb484c5f227516c29a0708222cc46fe3930e15aac2b0184c6        3733  tools/confirmation/stats_reference_results.json
+49c78fc88a7a923c6fe7925b64c15a2d3835692dffb0564e5c564dc8baa85583       14030  tools/confirmation/traci_guard.py
+ec7d1e9ec8192ecc49b16983bfad11a089786d05a7e5b38483d66d43e5d0b8ac       11613  tools/confirmation/verify_finished_b.py
 0254b84be55ed6cbe2b1e8fdd5330e1d6862e1c76d014b04984d3893eb75f109       11728  tools/disk/archive_campaign_A.py
 d742a86f614afbc8ef94ffc8ec69e497f45a4746de2bb847c8270c9a324ea3b7        8832  tools/disk/audit_storage.py
 1d548f280aa7634896f6c26dcb37ed5c3794ed6738b9f608cad8b425ef4e5f09         633  tools/etapes_check/stub.py

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-11-25T18:30:15.343161+00:00 by Eclipse SUMO sumo 1.28.0
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="<scratchpad>/frozen/sumo_scenarios/two_intersections/corridor_2x2/corridor_2x2.net.xml"/>
+        <route-files value="<scratchpad>/cmp_smoke/broot/manifests/R3_time_varying_8311.rou.xml"/>
+    </input>
+
+    <output>
+        <tripinfo-output value="<scratchpad>/incident/hdr/tripinfo.xml"/>
+        <tripinfo-output.write-unfinished value="true"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+        <end value="600"/>
+        <step-length value="1"/>
+    </time>
+
+    <processing>
+        <route-steps value="0"/>
+        <time-to-teleport value="-1"/>
+    </processing>
+
+    <report>
+        <duration-log.statistics value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+    <traci_server>
+        <remote-port value="21007"/>
+    </traci_server>
+
+    <random_number>
+        <seed value="12345"/>
+    </random_number>
+
+</sumoConfiguration>

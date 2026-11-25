@@ -201,3 +201,7 @@ Le `tests_B.txt` actuel, en `FAILED`, ne peut pas servir au gel.
 **Contrôles ici :** 183 tests ; seules les 2 erreurs du paquet protégé absent, avec le code figé en CRLF et sous une locale ASCII stricte.
 
 **À refaire sous Windows**, dans un nouveau dossier : `ETAPES.cmd tests` (attendu : 183 tests, `OK`).
+
+## 11. Incident TraCI de la part 2/4 pendant B (2026-11-25)
+
+Voir `RETOURS_INCIDENT_2026-11-25.md` (causes confirmées, changements, ce qui n'a pas changé) et `RUNBOOK_B.md`, étape 9 bis.

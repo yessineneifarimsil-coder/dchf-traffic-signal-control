@@ -1,0 +1,3 @@
+1st start : error('unpack requires a buffer of 3 bytes') | type struct.error
+label 'default' still registered: True
+next start: TraCIException("Connection 'default' is already active.")

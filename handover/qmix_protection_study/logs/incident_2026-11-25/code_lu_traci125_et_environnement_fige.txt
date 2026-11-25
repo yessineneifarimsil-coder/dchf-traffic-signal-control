@@ -1,0 +1,118 @@
+# Extraits lus du code de traci 1.25.0 / sumolib 1.25.0 (roues PyPI), lecture seule
+
+## traci/main.py 109-159
+def init(port=8813, numRetries=tc.DEFAULT_NUM_RETRIES, host="localhost", label="default", proc=None, doSwitch=True,
+         traceFile=None, traceGetters=True):
+    """
+    Establish a connection to a TraCI-Server and store it under the given
+    label. This method is not thread-safe. It accesses the connection
+    pool concurrently.
+    """
+    con = connect(port, numRetries, host, proc, 1, traceFile, traceGetters, label)
+    if doSwitch:
+        switch(label)
+    return con.getVersion()
+
+
+def start(cmd, port=None, numRetries=tc.DEFAULT_NUM_RETRIES, label="default", verbose=False,
+          traceFile=None, traceGetters=True, stdout=None, doSwitch=True):
+    """
+    Start a sumo server using cmd, establish a connection to it and
+    store it under the given label. This method is not thread-safe.
+
+    - cmd (list): uses the Popen syntax. i.e. ['sumo', '-c', 'run.sumocfg']. The remote
+      port option will be added automatically
+    - numRetries (int): retries on failing to connect to sumo (more retries are needed
+      if a big .net.xml file must be loaded)
+    - label (string) : distinguish multiple traci connections used in the same script
+    - verbose (bool): print complete cmd
+    - traceFile (string): write all traci commands to FILE for debugging
+    - traceGetters (bool): whether to include get-commands in traceFile
+    - stdout (iostream): where to pipe sumo process stdout
+    """
+    if connection.has(label):
+        raise TraCIException("Connection '%s' is already active." % label)
+    while numRetries >= 0 and not connection.has(label):
+        sumoPort = getFreeSocketPort() if port is None else port
+        cmd2 = cmd + ["--remote-port", str(sumoPort)]
+        if verbose:
+            print("Calling " + ' '.join(cmd2))
+        sumoProcess = subprocess.Popen(cmd2, stdout=stdout)
+        try:
+            result = init(sumoPort, numRetries, "localhost", label, sumoProcess, doSwitch, traceFile, traceGetters)
+            if traceFile is not None:
+                connection.get(label)._traceFile.write("import traci\n")
+                connection.get(label)._traceFile.write("traci.start(%s, port=%s, label=%s)\n" % (
+                    repr(cmd), repr(port), repr(label)))
+            return result
+        except TraCIException as e:
+            if port is not None:
+                break
+            warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+                           " Retrying with different port.") % (sumoPort, e))
+            numRetries -= 1
+    raise FatalTraCIError("Could not connect.")
+
+## traci/connection.py 72-100
+    def __init__(self, host, port, process, traceFile, traceGetters, label=None):
+        StepManager.__init__(self)
+        if label in _connections:
+            raise TraCIException("Connection '%s' is already active." % label)
+        if sys.platform.startswith('java'):
+            # working around jython 2.7.0 bug #2273
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+        else:
+            self._socket = socket.socket()
+        self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        try:
+            self._socket.connect((host, port))
+        except socket.error:
+            self._socket.close()
+            raise
+        self._process = process
+        self._string = bytes()
+        self._queue = []
+        self._subscriptionMapping = {}
+        self._lock = threading.Lock()
+        if traceFile is not None:
+            self.startTracing(traceFile, traceGetters, DOMAINS)
+        for domain in DOMAINS:
+            domain._register(self, self._subscriptionMapping)
+        self._label = label
+        if _connectHook is not None:
+            _connectHook(self)
+        if label is not None:
+            _connections[label] = self
+
+## sumolib/miscutils.py 241-252
+def getFreeSocketPort(numTries=10):
+    for _ in range(numTries):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('', 0))
+            p = s.getsockname()[1]
+            s.close()
+            return p
+        except socket.error:
+            pass
+    return None
+
+## adaptive_qmix/environment.py (code figé 8c14f32) 92-104 et 419-422
+    def reset(self, episode_index=0):
+        if self.connection_open:
+            self.close()
+        command = build_sumo_command(
+            self.config,
+            self.repository_root,
+            self.route_xml_path,
+            self.tripinfo_path,
+            self.sumo_seed,
+            self.gui,
+        )
+        self.traci.start(command)
+        self.connection_open = True
+    def close(self):
+        if self.connection_open:
+            self.traci.close()
+            self.connection_open = False
