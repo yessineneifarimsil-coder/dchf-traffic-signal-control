@@ -185,7 +185,7 @@ Dans une Anaconda Prompt :
 | R.1 | `ETAPES.cmd b-backup-logs` (dans **l'ancien** dossier, celui des `logs\b_shard*.log`) \| `copied … file(s) to logs\backup_<date> (nothing deleted)` | 0 | Copier le message |
 | R.2 | `ETAPES.cmd b-progress` (même dossier) ; noter la ligne \| `finished … | corrupted 0 | interrupted 563 | not started 0` attendu après la fin des parts 0, 1 et 3 \| 3 \| Un autre nombre d'interrompues ou un `corrupted` non nul : noter et signaler, puis continuer, la reprise ne relance jamais une cellule corrompue |
 | R.3 | Installation dans un **nouveau** dossier : `certutil -hashfile "[chemin du ZIP]" SHA256` (égal au SHA-256 livré) ; `mkdir C:\research\qmix_protection_study_B_reprise_2026-11-25` ; `%SystemRoot%\System32\tar.exe -xf "[chemin du ZIP]" -C C:\research\qmix_protection_study_B_reprise_2026-11-25` ; `cd /d C:\research\qmix_protection_study_B_reprise_2026-11-25` ; `python tools\verify_manifest.py` \| `MANIFEST OK` | 0 | Réextraire dans un autre nouveau dossier |
-| R.4 | `ETAPES.cmd tests > logs\tests_reprise.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_reprise.txt` \| `Ran 208 tests` puis `OK` \| 0 \| `FAILED` : ne pas reprendre, envoyer le fichier. Les tests réseau n'utilisent que les ports 25000–25999 |
+| R.4 | `ETAPES.cmd tests > logs\tests_reprise.txt 2>&1`, puis `findstr /b "Ran OK FAILED" logs\tests_reprise.txt` \| `Ran 216 tests` puis `OK` (208 avant l'export du 2026-11-26) \| 0 \| `FAILED` : ne pas reprendre, envoyer le fichier. Les tests réseau n'utilisent que les ports 25000–25999 |
 | R.5 | `tools\etapes_check\verify_etapes_cmd.cmd > logs\verify_etapes_reprise.txt 2>&1`, puis `findstr "Result:" logs\verify_etapes_reprise.txt` \| `Result: 355 checks passed, 0 failed.` (`ETAPES.cmd` est inchangé) \| 0 \| Le moindre `FAIL` : ne pas reprendre |
 | R.6 | `set BCONF=C:\research\confirmation_B_2026-11-24`, puis `REPRISE_B.cmd check` \| `plan af3fd986… | complete … | interrupted 563` ; `note: AdaptiveTrafficEnvironment.reset calls self.traci.start` ; plages 21000–24999 et plage dynamique lue ; `0 B / A-ext process(es) running` ; aucun `PROBLEM` \| 0 \| `PROBLEM` (une voie de démarrage non couverte, par exemple `traci.init` dans le paquet protégé, ou un conflit de plage) : **ne pas reprendre**, envoyer la sortie. Code 3 : processus actifs |
 | R.7 | `REPRISE_B.cmd verify-finished` (lecture seule) \| `finished cells N | verified N | header N | ids = manifest N | summary ok N | …`, `0 overlap(s)`, puis `VERIFIED` \| 0 \| Code 1 (`PROBLEM` ou `OVERLAP`) : ne pas reprendre, envoyer `logs\verify_finished_B.json`. Code 4 : l'en-tête SUMO manque sous 1.25 ; le noter et envoyer la sortie |
@@ -203,3 +203,28 @@ Dans une Anaconda Prompt :
 Chaque cellule est relue depuis ses traces gzip, ce qui coûte environ 2470 × `recheck_s_per_run` de 5.2. L'option `--no-recheck`, qui ne passe pas par `ETAPES.cmd`, ne produit qu'un diagnostic, sans décision.
 
 Aucune conclusion de B n'est rédigée avant ces fichiers.
+
+## Étape 11. Export public des données de B (2026-11-26)
+
+Le dossier d'export est **neuf** : `C:\research\B_export_2026-11-26`. Toutes les sources sont lues sans modification : BCONF, D:, le code figé et les checkpoints. Aucune simulation n'est lancée et rien n'est supprimé. Chaque fichier n'est écrit qu'une fois : relancer une étape déjà faite échoue, il faut alors repartir d'un dossier neuf (`set BEXPORT=…`). Les chemins exportés sont remplacés par `<home>`, `<BCONF>`, `<PROTECTED>` et `<frozen>`.
+
+Dans **chaque nouvelle** Anaconda Prompt :
+
+```
+cd /d C:\research\qmix_protection_study_B_export_2026-11-26
+set BCONF=C:\research\confirmation_B_2026-11-24
+```
+
+| # | Commande | Durée estimée | Attendu | En cas d'écart |
+|---|---|---|---|---|
+| X.0 | Installation dans un nouveau dossier : `certutil -hashfile <ZIP> SHA256`, `mkdir C:\research\qmix_protection_study_B_export_2026-11-26`, `%SystemRoot%\System32\tar.exe -xf <ZIP> -C …`, `python tools\verify_manifest.py`. L'analyse figée est lue en place : `BANALYSIS` vaut par défaut `C:\research\qmix_protection_study_B_reprise_2026-11-25\analysis\confirmation` | 2 min | `MANIFEST OK` | Réextraire |
+| X.1 | `EXPORT_B.cmd episodes` | 2 à 5 min (2 470 lectures de `cell_summary.json`) | `B_episodes.csv: 2470 rows (2470 jobs in the plan, 0 not finished) …`, code 0 | Code 3 : des cellules ne sont pas terminées. Une colonne absente est **signalée**, pas inventée |
+| X.2 | `EXPORT_B.cmd reestimate` | 3 à 8 min (dont les sensibilités : 100 000 réplicats et 5 graines) | 12 lignes `[family of 12] …`, puis `VERDICT: IDENTICAL (12 decisions, numbers equal to within 1e-9)`, puis `sensitivity_B.csv: … rows (NOT DECISIONAL)` | Code 4 : écarts, **à signaler sans rien corriger** (`reestimation_vs_frozen.txt`) |
+| X.3 | `EXPORT_B.cmd search-counts` | 5 à 30 min (lecture d'environ 30 000 `evaluation_metrics.json` sur D:) | une ligne par étape, puis `hypothesis tasks / distinct / reused_fine_min7 / reused_validation`, code 0 | Code 1 : conflits d'identité, détaillés dans `search_counts_details.json` |
+| X.4 | `EXPORT_B.cmd facts` | < 1 min | `network …: J1-J2: 300.0 m apart …`, puis `training_facts.json written (n value(s) 'non disponible')` | Copier le message |
+| X.5 | `EXPORT_B.cmd check` | < 1 min | 10 lignes `PASS`, puis `10 check(s), 0 failed` | Un `FAIL` : ne pas publier ; envoyer `check_export.txt` |
+| X.6 | `EXPORT_B.cmd finalize` | 1 min | `B_export_2026-11-26.zip: … files + MANIFEST, 0 mismatch(es) \| sha256 …` | Copier le message |
+
+`EXPORT_B.cmd all` enchaîne X.1 à X.6 et s'arrête à la première erreur. Valeurs par défaut, modifiables par `set` : `BANALYSIS=C:\research\qmix_protection_study_B_reprise_2026-11-25\analysis\confirmation`, `CMP=D:\QMIX_Results\comparators_robustness_profiles`, `AEXT=D:\QMIX_Results\comparators_actuated_g5`, `ROB=D:\QMIX_Results\robustness_validation_2026-11-04`, `QMIX_PROTECTED_ROOT=C:\Users\LENOVO\QMIX_PROTECTED`, `AQ_FROZEN_REPOSITORY=C:\Users\LENOVO\QMIX_Traffic_Coordination`.
+
+Le contrôle X.5 attend 2 470 lignes, 30 échecs scientifiques, aucun échec dans les bras protégés, 1 100 évaluations protégées, les 12 décisions figées retrouvées et aucun chemin personnel. Ce sont les nombres annoncés pour B : un écart est signalé, jamais corrigé.

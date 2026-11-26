@@ -1,12 +1,14 @@
-# base: 2467ddd + TraCI incident of 2026-11-25 (guarded start, 4-worker resumption, read-only check of finished cells; sealed files unchanged) | 253 files
+# base: 4708cff + public export tools of B (tools/export_b, EXPORT_B.cmd; read-only; sealed files unchanged) | 267 files
 705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da           8  .gitattributes
 e20257adaa5ca06f499dc79c1c03e8a1350128132fd70920a579884de69a0329          35  .gitignore
 bb563c8cfe74777d76ebce0b96262e127b3fc7df83af0953a5ac289e2510d5f4       20256  ETAPES.cmd
+b279c4549d3b3381edd6c6d18f89b4c696d23bcc2f98a43b1eed403665e9142d        3631  EXPORT_B.cmd
 fb3dc6c90053d6eed2c74708420775cdd0fa4542fc204734f54926061e3c7da8        7761  README.md
 f7538e8cb4c33be991885c1bca746f98580b05e1a353ec084ff210c5821cd993        3330  REPRISE_B.cmd
-6945a5f7a07083ddc4454eb12b3eb464d9f7b8031990b82bee348abcd1c2ee29       19181  RETOURS.md
+06002a5f34f0c79c1cab05c630ff3e80b10b76446fb5bcace8af7655c8394e73       19305  RETOURS.md
+b13bbd92f63ac543927ed439a6b0f9d6915e55d1681cbf3d02732191bc3daa4f        6736  RETOURS_EXPORT_2026-11-26.md
 0f0da7f5440b4cbe4d5a70baa3d5121ea739cc3949a867eac55fa136de5e34ad        8521  RETOURS_INCIDENT_2026-11-25.md
-e664c0d915a05c39cdb25812118ee06a7197569776d073e4850e575e36168ffb       21882  RUNBOOK_B.md
+93740e4e696857e88e51e228ecfd3a7265199d96c42b2cbb2f02ab04477c735f       25250  RUNBOOK_B.md
 2a47a02d209c24d6c4db656176e49f3cdd013d65dba452e64e1db1324bc3f872       26722  analysis/mp_check_robustness.json
 4c1f4dde9b7f835ddd0b447bb7465adf11772ef08897e33d4165e08c4bdbaa83      147951  analysis/ablation/cells.csv
 f898fc06966a35e5f0b74ebab9954e02157660e69e0f01d1da5809eb40c1218b        7394  analysis/ablation/failures.json
@@ -66,6 +68,8 @@ a572c53c58d71a638765de0724f2186686a681b9a63f1a13adba6023adac2f70        1832  lo
 deaaa7644b703d92e50a5a0cc83c512fef3eb67397a9b8538b41da16885673d3        4230  logs/robustness_smoke.log
 9b3cdb12f0960ad180df606240332b66174ce67410c47a7e6630124ae650ab0e        1273  logs/robustness_smoke_report.json
 c73f5863e4d23faea21eb555ba87334c63b521bcb130528416a4c698a78c7e22        1050  logs/unittest_final.log
+671b562f6c2c4f9859c3f60d5695899612e57c26264bf87cff91c6a89e600589        1434  logs/export_2026-11-26/README.md
+1d27de3af3056fae23fa8f708495502de34fbeca29367cabd8597e9afb883e65        7203  logs/export_2026-11-26/unittest_all_crlf.log
 c236bed4b3304d4e504237971c35baedbcf55ec23fdacb0bd8ee9bd37bbaf996        1657  logs/incident_2026-11-25/README.md
 71ea605d93ac8b2b56c7ae968c76a282a0e9efb27e1ba0d53602e60ac7b183c3        4929  logs/incident_2026-11-25/code_lu_traci125_et_environnement_fige.txt
 b6cc5bf50a1388f16ebed93c959ce4a82a1a4dd866b7ddd20f9ff98597d669b9         194  logs/incident_2026-11-25/roues_traci125_sha256.txt
@@ -201,6 +205,7 @@ d91644567f477bb2659e02ca0ff00f8294e5ce9a7216e803d3aafea93a34701f       13428  te
 f1be0a2d1834d74de512614284762f3c41243139b5dc7af4a1f3cf9d070c5c76       21122  tests/test_confirmation_analysis.py
 12f87574f711070005652a4009d1affc4b0a6a0901135a9d3e97ebe5b705df7d        8725  tests/test_disk.py
 c9014188c7d0203e9868164a422922b69e86c619098b456d799f0925cf192af5        6509  tests/test_etapes_cmd.py
+70c1238fc1e24141f0ce3e444abab32e2d3eb67cfe959ca2ab4e1d9ea2f1ba3a       16644  tests/test_export_b.py
 7ce170f57f298febc5ad5e966e61fb244d97d8c80b649706af8fcd0c79e2d45a        4055  tests/test_monitor.py
 3f2c112a775d01e1364592ef9a24a614454d62b7fe1e5fe9647870d30a2c75c2       33009  tests/test_resume_b.py
 f1f1a379983434e948bf2e6ee78c78992a02225b513e558bad7d7ddbf7e85565        6427  tests/test_robustness.py
@@ -243,6 +248,15 @@ d742a86f614afbc8ef94ffc8ec69e497f45a4746de2bb847c8270c9a324ea3b7        8832  to
 1eaf897a0405c4f17548409a2b63fc2ca5d1b9a824c6896fe445c98bb7a81b6f         489  tools/etapes_check/test_stub.py
 6c0589cf661f1b6c02f2a3d0e7bb52272fd72b5db56facf5888e196056adc34e         519  tools/etapes_check/tex_stub.py
 47651a01aea035618050946ebfb33d1eff2783c7869c52bf52d860b460d7b4d7       13328  tools/etapes_check/verify_etapes_cmd.cmd
+5a62713456aeced3688c2b39032db5bd7fa27b6cbd9962baa09325d11bf182b1        5467  tools/export_b/check_export.py
+3a2399a96c403faa5bd94d1d615264eb454d753f057631272e6f0565260a7f9d        4319  tools/export_b/common.py
+e497e924118e7f8001ae05beb4bb0779c3add19268f8c28623006dee629e77ab         330  tools/export_b/copy_once.py
+b01da3c63b8982c1801bc27333fd2b1a2c8dc84864511793b1a9cb167fcd74a3        8863  tools/export_b/export_episodes.py
+e38d7d614c66ce03bca6147e32d90865e60acaac7cef4eac49a72fd6739dd18e        9489  tools/export_b/finalize_export.py
+adf7bb43e0fc32f08055f5a854f10011088cf8b6c235917ff1481ac6e9623335        8387  tools/export_b/network_facts.py
+9271ae33d80688b987e7cefc2b74eb71e8caeff5c4314bc9a5e10aa07f16e749       19223  tools/export_b/reestimate_B.py
+c4b007a0d95f0cc1909af4442b3fd3c26303a48896e4e1625061ae2f59671c1c        9996  tools/export_b/search_counts.py
+82d3dd1a111d49d42ff3371d1ff3a6755f2f3e9eda588ee9a91c45e78072ec40       12326  tools/export_b/training_facts.py
 8885eb156bcc99b3d4258b3074bfae5ecfbd76e678ccc29ba58c673c0500ca95       10752  tools/monitor/b_watch.py
 cbd6dd2e90f9695cc83cfd7f48219231d547804ed6ce9e6100648d139d4a3684        7536  tools/robustness/cell_state.py
 677cd368d2c827d1bdeaf99e2b53c12a43ffbe52e4f99c52578617b87934e26b       11315  tools/robustness/evaluate_any.py

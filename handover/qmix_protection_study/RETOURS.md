@@ -205,3 +205,7 @@ Le `tests_B.txt` actuel, en `FAILED`, ne peut pas servir au gel.
 ## 11. Incident TraCI de la part 2/4 pendant B (2026-11-25)
 
 Voir `RETOURS_INCIDENT_2026-11-25.md` (causes confirmées, changements, ce qui n'a pas changé) et `RUNBOOK_B.md`, étape 9 bis.
+
+## 12. Export public de B (2026-11-26)
+
+Voir `RETOURS_EXPORT_2026-11-26.md` et `RUNBOOK_B.md`, étape 11 (`EXPORT_B.cmd`).
